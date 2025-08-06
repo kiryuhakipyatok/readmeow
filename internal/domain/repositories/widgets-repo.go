@@ -2,10 +2,13 @@ package repositories
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"readmeow/internal/domain/models"
+	"readmeow/pkg/cache"
 	"readmeow/pkg/storage"
+	"time"
 )
 
 type WidgetRepo interface {
@@ -16,30 +19,48 @@ type WidgetRepo interface {
 
 type widgetRepo struct {
 	Storage *storage.Storage
+	Cache   *cache.Cache
 }
 
-func NewWidgetRepo(s *storage.Storage) WidgetRepo {
+func NewWidgetRepo(s *storage.Storage, c *cache.Cache) WidgetRepo {
 	return &widgetRepo{
 		Storage: s,
+		Cache:   c,
 	}
 }
 
 func (wr *widgetRepo) Get(ctx context.Context, id string) (*models.Widget, error) {
 	op := "widgetRepo.Get"
-	query := "SELECT * FROM widgets WHERE id = $1"
-	widget := models.Widget{}
-	if err := wr.Storage.Pool.QueryRow(ctx, query, id).Scan(
-		&widget.Id,
-		&widget.Title,
-		&widget.Image,
-		&widget.Description,
-		&widget.Link,
-		&widget.Likes,
-		&widget.NumOfUsers,
-	); err != nil {
+	widget := &models.Widget{}
+	cachedWidget, err := wr.Cache.Redis.Get(ctx, id).Result()
+	if err == nil {
+		if err := json.Unmarshal([]byte(cachedWidget), widget); err != nil {
+			return nil, fmt.Errorf("%s : %w", op, err)
+		}
+		return widget, nil
+	}
+	if err == cache.Empty {
+		query := "SELECT * FROM widgets WHERE id = $1"
+		if err := wr.Storage.Pool.QueryRow(ctx, query, id).Scan(
+			&widget.Id,
+			&widget.Title,
+			&widget.Image,
+			&widget.Description,
+			&widget.Link,
+			&widget.Likes,
+			&widget.NumOfUsers,
+		); err != nil {
+			return nil, fmt.Errorf("%s : %w", op, err)
+		}
+	}
+	cache, err := json.Marshal(widget)
+	if err != nil {
 		return nil, fmt.Errorf("%s : %w", op, err)
 	}
-	return &widget, nil
+	if err := wr.Cache.Redis.Set(ctx, widget.Id.String(), cache, time.Hour*24).Err(); err != nil {
+		return nil, fmt.Errorf("%s : %w", op, err)
+	}
+	return widget, nil
 }
 
 func (wr *widgetRepo) Fetch(ctx context.Context, amount, page uint) ([]models.Widget, error) {

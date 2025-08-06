@@ -39,7 +39,7 @@ type StorageConfig struct {
 type CacheConfig struct {
 	User     string
 	Host     string
-	Port     int
+	Port     string
 	Password string
 }
 
