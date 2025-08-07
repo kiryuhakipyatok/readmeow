@@ -9,6 +9,7 @@ type Template struct {
 	OwnerId        uuid.UUID
 	Title          string
 	Image          string
+	Description    string
 	Text           []string
 	Links          []string
 	Widgets        []string

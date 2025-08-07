@@ -43,6 +43,13 @@ type CacheConfig struct {
 	Password string
 }
 
+type SearchConfig struct {
+	Host     string
+	Port     string
+	User     string
+	Password string
+}
+
 func LoadConfig(path string) *Config {
 	if path == "" {
 		panic("config path is empty")

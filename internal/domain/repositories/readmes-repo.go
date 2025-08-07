@@ -130,9 +130,6 @@ func (rr *readmeRepo) FetchByUser(ctx context.Context, amount, page uint, uid st
 		return nil, fmt.Errorf("%s : %w", op, err)
 	}
 	defer rows.Close()
-	if rows.CommandTag().RowsAffected() == 0 {
-		return nil, fmt.Errorf("%s : %w", op, errReadmesNotFound)
-	}
 	readmes := []models.Readme{}
 	for rows.Next() {
 		readme := models.Readme{}
@@ -151,6 +148,8 @@ func (rr *readmeRepo) FetchByUser(ctx context.Context, amount, page uint, uid st
 		}
 		readmes = append(readmes, readme)
 	}
-
+	if len(readmes) == 0 {
+		return nil, fmt.Errorf("%s : %w", op, errReadmesNotFound)
+	}
 	return readmes, nil
 }

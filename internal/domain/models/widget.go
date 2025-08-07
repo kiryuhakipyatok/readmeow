@@ -7,6 +7,7 @@ type Widget struct {
 	Title       string
 	Image       string
 	Description string
+	Type        string
 	Link        string
 	Likes       uint16
 	NumOfUsers  uint16

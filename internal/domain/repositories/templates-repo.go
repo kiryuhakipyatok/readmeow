@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"readmeow/internal/domain/models"
 	"readmeow/pkg/cache"
+	"readmeow/pkg/search"
 	"readmeow/pkg/storage"
 	"strings"
 	"time"
@@ -22,8 +23,9 @@ type TemplateRepo interface {
 }
 
 type templateRepo struct {
-	Storage *storage.Storage
-	Cache   *cache.Cache
+	Storage      *storage.Storage
+	Cache        *cache.Cache
+	SearchClient *search.SearchClient
 }
 
 func NewTemplateRepo(s *storage.Storage, c *cache.Cache) TemplateRepo {
@@ -41,8 +43,8 @@ var (
 
 func (tr *templateRepo) Create(ctx context.Context, template *models.Template) error {
 	op := "templateRepo.Create"
-	query := "INSERT INTO templates (id, owner_id, title, image, text, links, widgets, order, create_time) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)"
-	if _, err := tr.Storage.Pool.Exec(ctx, query, template.Id, template.OwnerId, template.Title, template.Image, template.Text, template.Links, template.Widgets, template.Order, template.CreateTime); err != nil {
+	query := "INSERT INTO templates (id, owner_id, title, image,description, text, links, widgets, order, create_time) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)"
+	if _, err := tr.Storage.Pool.Exec(ctx, query, template.Id, template.OwnerId, template.Title, template.Image, template.Description, template.Text, template.Links, template.Widgets, template.Order, template.CreateTime); err != nil {
 		if storage.ErrorAlreadyExists(err) {
 			return fmt.Errorf("%s : %w", op, errTemplateAlreadyExists)
 		}
@@ -143,6 +145,7 @@ func (tr *templateRepo) Get(ctx context.Context, id string) (*models.Template, e
 				&template.OwnerId,
 				&template.Title,
 				&template.Image,
+				&template.Description,
 				&template.Text,
 				&template.Links,
 				&template.Widgets,
@@ -163,6 +166,7 @@ func (tr *templateRepo) Get(ctx context.Context, id string) (*models.Template, e
 				&template.OwnerId,
 				&template.Title,
 				&template.Image,
+				&template.Description,
 				&template.Text,
 				&template.Links,
 				&template.Widgets,
@@ -199,9 +203,6 @@ func (tr *templateRepo) Fetch(ctx context.Context, amount, page uint) ([]models.
 	if err != nil {
 		return nil, fmt.Errorf("%s : %w", op, err)
 	}
-	if rows.CommandTag().RowsAffected() == 0 {
-		return nil, fmt.Errorf("%s : %w", op, errTemplatesNotFound)
-	}
 	defer rows.Close()
 	for rows.Next() {
 		template := models.Template{}
@@ -210,6 +211,7 @@ func (tr *templateRepo) Fetch(ctx context.Context, amount, page uint) ([]models.
 			&template.OwnerId,
 			&template.Title,
 			&template.Image,
+			&template.Description,
 			&template.Text,
 			&template.Links,
 			&template.Widgets,
@@ -222,6 +224,9 @@ func (tr *templateRepo) Fetch(ctx context.Context, amount, page uint) ([]models.
 			return nil, fmt.Errorf("%s : %w", op, err)
 		}
 		templates = append(templates, template)
+	}
+	if len(templates) == 0 {
+		return nil, fmt.Errorf("%s : %w", op, errTemplatesNotFound)
 	}
 	return templates, nil
 }
@@ -245,9 +250,6 @@ func (tr *templateRepo) Sort(ctx context.Context, amount, page uint, dest, field
 	if err != nil {
 		return nil, fmt.Errorf("%s : %w", op, err)
 	}
-	if rows.CommandTag().RowsAffected() == 0 {
-		return nil, fmt.Errorf("%s : %w", op, errTemplatesNotFound)
-	}
 	defer rows.Close()
 	for rows.Next() {
 		template := models.Template{}
@@ -256,6 +258,7 @@ func (tr *templateRepo) Sort(ctx context.Context, amount, page uint, dest, field
 			&template.OwnerId,
 			&template.Title,
 			&template.Image,
+			&template.Description,
 			&template.Text,
 			&template.Links,
 			&template.Widgets,
@@ -268,6 +271,9 @@ func (tr *templateRepo) Sort(ctx context.Context, amount, page uint, dest, field
 			return nil, fmt.Errorf("%s : %w", op, err)
 		}
 		templates = append(templates, template)
+	}
+	if len(templates) == 0 {
+		return nil, fmt.Errorf("%s : %w", op, errTemplatesNotFound)
 	}
 	return templates, nil
 }
