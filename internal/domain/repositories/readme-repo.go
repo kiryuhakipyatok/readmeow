@@ -27,10 +27,19 @@ func NewReadmeStorage(s *storage.Storage) ReadmeRepo {
 	}
 }
 
+var (
+	errReadmeNotFound      = errors.New("readme not found")
+	errReadmesNotFound     = errors.New("readmes not found")
+	errReadmeAlreadyExists = errors.New("readme already exists")
+)
+
 func (rr *readmeRepo) Create(ctx context.Context, readme *models.Readme) error {
 	op := "readmeRepo.Create"
 	query := "INSERT INTO readmes (id, owner_id, title, text, links, widgets, order, create_time) VALUES($1,$2,$3,$4,$5,$6,$7,$8)"
 	if _, err := rr.Storage.Pool.Exec(ctx, query, readme.Id, readme.OwnerId, readme.Text, readme.Links, readme.Widgets, readme.Order, readme.CreateTime); err != nil {
+		if storage.ErrorAlreadyExists(err) {
+			return fmt.Errorf("%s : %w", op, errReadmeAlreadyExists)
+		}
 		return fmt.Errorf("%s : %w", op, err)
 	}
 	return nil
@@ -39,8 +48,12 @@ func (rr *readmeRepo) Create(ctx context.Context, readme *models.Readme) error {
 func (rr *readmeRepo) Delete(ctx context.Context, id string) error {
 	op := "readmeRepo.Delete"
 	query := "DELETE FROM readmes WHERE id = $1"
-	if _, err := rr.Storage.Pool.Exec(ctx, query, id); err != nil {
+	res, err := rr.Storage.Pool.Exec(ctx, query, id)
+	if err != nil {
 		return fmt.Errorf("%s : %w", op, err)
+	}
+	if res.RowsAffected() == 0 {
+		return fmt.Errorf("%s : %w", op, errReadmeNotFound)
 	}
 	return nil
 }
@@ -68,6 +81,9 @@ func (rr *readmeRepo) Update(ctx context.Context, updates map[string]any, id str
 	args = append(args, id)
 	query := fmt.Sprintf("UPDATE readmes SET%s WHERE id = $%d", strings.Join(str, ","), i)
 	if _, err := rr.Storage.Pool.Exec(ctx, query, args...); err != nil {
+		if errors.Is(err, storage.ErrNotFound()) {
+			return fmt.Errorf("%s : %w", op, errReadmeNotFound)
+		}
 		return fmt.Errorf("%s : %w", op, err)
 	}
 	return nil
@@ -87,6 +103,9 @@ func (rr *readmeRepo) Get(ctx context.Context, id string) (*models.Readme, error
 		&readme.Order,
 		&readme.CreateTime,
 	); err != nil {
+		if errors.Is(err, storage.ErrNotFound()) {
+			return nil, fmt.Errorf("%s : %w", op, errReadmeNotFound)
+		}
 		return nil, fmt.Errorf("%s : %w", op, err)
 	}
 	return &readme, nil
@@ -100,6 +119,9 @@ func (rr *readmeRepo) FetchByUser(ctx context.Context, amount, page uint, uid st
 		return nil, fmt.Errorf("%s : %w", op, err)
 	}
 	defer rows.Close()
+	if rows.CommandTag().RowsAffected() == 0 {
+		return nil, fmt.Errorf("%s : %w", op, errReadmesNotFound)
+	}
 	readmes := []models.Readme{}
 	for rows.Next() {
 		readme := models.Readme{}

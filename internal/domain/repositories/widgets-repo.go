@@ -29,6 +29,11 @@ func NewWidgetRepo(s *storage.Storage, c *cache.Cache) WidgetRepo {
 	}
 }
 
+var (
+	errWidgetNotFound  = errors.New("widget not found")
+	errWidgetsNotFound = errors.New("widgets not found")
+)
+
 func (wr *widgetRepo) Get(ctx context.Context, id string) (*models.Widget, error) {
 	op := "widgetRepo.Get"
 	widget := &models.Widget{}
@@ -50,6 +55,9 @@ func (wr *widgetRepo) Get(ctx context.Context, id string) (*models.Widget, error
 			&widget.Likes,
 			&widget.NumOfUsers,
 		); err != nil {
+			if errors.Is(err, storage.ErrNotFound()) {
+				return nil, fmt.Errorf("%s : %w", op, errWidgetNotFound)
+			}
 			return nil, fmt.Errorf("%s : %w", op, err)
 		}
 	}
@@ -69,6 +77,9 @@ func (wr *widgetRepo) Fetch(ctx context.Context, amount, page uint) ([]models.Wi
 	rows, err := wr.Storage.Pool.Query(ctx, query, amount*page-amount, amount)
 	if err != nil {
 		return nil, fmt.Errorf("%s : %w", op, err)
+	}
+	if rows.CommandTag().RowsAffected() == 0 {
+		return nil, fmt.Errorf("%s : %w", op, errWidgetsNotFound)
 	}
 	defer rows.Close()
 	widgets := []models.Widget{}
@@ -98,6 +109,9 @@ func (wr *widgetRepo) Sort(ctx context.Context, amount, page uint, field, dest s
 	rows, err := wr.Storage.Pool.Query(ctx, query, amount*page-amount, amount)
 	if err != nil {
 		return nil, fmt.Errorf("%s : %w", op, err)
+	}
+	if rows.CommandTag().RowsAffected() == 0 {
+		return nil, fmt.Errorf("%s : %w", op, errWidgetsNotFound)
 	}
 	defer rows.Close()
 	widgets := []models.Widget{}

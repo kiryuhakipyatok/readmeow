@@ -27,10 +27,18 @@ func NewUserRepo(s *storage.Storage) UserRepo {
 	}
 }
 
+var (
+	errUserNotFound      = errors.New("user not found")
+	errUserAlreadyExists = errors.New("user already exists")
+)
+
 func (ur *userRepo) Create(ctx context.Context, user *models.User) error {
 	op := "userRepo.Create"
 	query := "INSERT INTO users (id, login, email, avatar, password, time_of_register, num_of_templates) VALUES($1, $2, $3, $4, $5, $6, $7)"
 	if _, err := ur.Storage.Pool.Exec(ctx, query, user.Id, user.Login, user.Email, user.Avatar, user.Password, user.TimeOfRegister, user.NumOfTemplates); err != nil {
+		if storage.ErrorAlreadyExists(err) {
+			return fmt.Errorf("%s : %w", op, errUserAlreadyExists)
+		}
 		return fmt.Errorf("%s : %w", op, err)
 	}
 	return nil
@@ -39,18 +47,32 @@ func (ur *userRepo) Create(ctx context.Context, user *models.User) error {
 func (ur *userRepo) Get(ctx context.Context, id string) (*models.User, error) {
 	op := "userRepo.Get"
 	query := "SELECT id, login, email, avatar, time_of_register, num_of_register FROM users WHERE id = $1"
-	user := &models.User{}
-	if err := ur.Storage.Pool.QueryRow(ctx, query, id).Scan(user); err != nil {
+	user := models.User{}
+	if err := ur.Storage.Pool.QueryRow(ctx, query, id).Scan(
+		&user.Id,
+		&user.Login,
+		&user.Email,
+		&user.Avatar,
+		&user.TimeOfRegister,
+		&user.NumOfTemplates,
+	); err != nil {
+		if errors.Is(err, storage.ErrNotFound()) {
+			return nil, fmt.Errorf("%s : %w", op, errUserNotFound)
+		}
 		return nil, fmt.Errorf("%s : %w", op, err)
 	}
-	return user, nil
+	return &user, nil
 }
 
 func (ur *userRepo) Delete(ctx context.Context, id string) error {
 	op := "userRepo.Delete"
 	query := "DELETE FROM users WHERE id = $1"
-	if _, err := ur.Storage.Pool.Exec(ctx, query, id); err != nil {
+	res, err := ur.Storage.Pool.Exec(ctx, query, id)
+	if err != nil {
 		return fmt.Errorf("%s : %w", op, err)
+	}
+	if res.RowsAffected() == 0 {
+		return fmt.Errorf("%s : %w", op, errUserNotFound)
 	}
 	return nil
 }
@@ -76,6 +98,9 @@ func (ur *userRepo) Update(ctx context.Context, updates map[string]any, id strin
 	args = append(args, id)
 	query := fmt.Sprintf("UPDATE users SET%s WHERE id = $%d", strings.Join(str, ","), i)
 	if _, err := ur.Storage.Pool.Exec(ctx, query, args...); err != nil {
+		if errors.Is(err, storage.ErrNotFound()) {
+			return fmt.Errorf("%s : %w", op, errUserNotFound)
+		}
 		return fmt.Errorf("%s : %w", op, err)
 	}
 	return nil
@@ -85,6 +110,9 @@ func (ur *userRepo) UpdatePassword(ctx context.Context, id string, password []by
 	op := "userRepo.UpdatePassword"
 	query := "UPDATE users SET password=$1 WHERE id = $2"
 	if _, err := ur.Storage.Pool.Exec(ctx, query, password, id); err != nil {
+		if errors.Is(err, storage.ErrNotFound()) {
+			return fmt.Errorf("%s : %w", op, errUserNotFound)
+		}
 		return fmt.Errorf("%s : %w", op, err)
 	}
 	return nil

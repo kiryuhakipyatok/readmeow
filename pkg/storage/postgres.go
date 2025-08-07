@@ -14,7 +14,7 @@ type Storage struct {
 }
 
 func Connect(cfg *config.StorageConfig) *Storage {
-	dsn := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=%s&timezone=%s",
+	dsn := fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=%s&timezone=%s",
 		cfg.User,
 		cfg.Password,
 		cfg.Host,
