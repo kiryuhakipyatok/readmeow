@@ -11,18 +11,28 @@ const (
 	prodEnv  = "prod"
 )
 
-func NewLogger(env string) *slog.Logger {
-	var logger *slog.Logger
+type Logger struct {
+	Log *slog.Logger
+}
+
+func NewLogger(env string) *Logger {
+	var log *slog.Logger
 	switch env {
 	case localEnv:
-		logger = slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}))
+		log = slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}))
 	case devEnv:
-		logger = slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}))
+		log = slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}))
 	case prodEnv:
-		logger = slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
+		log = slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
 	default:
-		logger = slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
+		log = slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
 	}
+	logger := &Logger{
+		Log: log.With(slog.String("env", env)),
+	}
+	return logger
+}
 
-	return logger.With("env", env)
+func (l *Logger) AddOp(op string) {
+	l.Log = l.Log.With(slog.String("op", op))
 }

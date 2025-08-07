@@ -1,8 +1,6 @@
 package models
 
 import (
-	"time"
-
 	"github.com/google/uuid"
 )
 
@@ -12,6 +10,7 @@ type User struct {
 	Email          string
 	Avatar         string
 	Password       []byte
-	TimeOfRegister time.Time
+	TimeOfRegister int64
 	NumOfTemplates uint16
+	NumOfReadmes   uint16
 }

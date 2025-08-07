@@ -35,8 +35,8 @@ var (
 
 func (rr *readmeRepo) Create(ctx context.Context, readme *models.Readme) error {
 	op := "readmeRepo.Create"
-	query := "INSERT INTO readmes (id, owner_id, title, text, links, widgets, order, create_time) VALUES($1,$2,$3,$4,$5,$6,$7,$8)"
-	if _, err := rr.Storage.Pool.Exec(ctx, query, readme.Id, readme.OwnerId, readme.Text, readme.Links, readme.Widgets, readme.Order, readme.CreateTime); err != nil {
+	query := "INSERT INTO readmes (id, owner_id, title, text, links, widgets, order, create_time, last_update_time) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)"
+	if _, err := rr.Storage.Pool.Exec(ctx, query, readme.Id, readme.OwnerId, readme.Text, readme.Links, readme.Widgets, readme.Order, readme.CreateTime, readme.LastUpdateTime); err != nil {
 		if storage.ErrorAlreadyExists(err) {
 			return fmt.Errorf("%s : %w", op, errReadmeAlreadyExists)
 		}
@@ -61,11 +61,12 @@ func (rr *readmeRepo) Delete(ctx context.Context, id string) error {
 func (rr *readmeRepo) Update(ctx context.Context, updates map[string]any, id string) error {
 	op := "readmeRepo.Update"
 	validFields := map[string]bool{
-		"title":   true,
-		"text":    true,
-		"links":   true,
-		"widgets": true,
-		"order":   true,
+		"title":            true,
+		"text":             true,
+		"links":            true,
+		"widgets":          true,
+		"order":            true,
+		"last_update_time": true,
 	}
 	str := []string{}
 	args := []any{}
@@ -80,11 +81,20 @@ func (rr *readmeRepo) Update(ctx context.Context, updates map[string]any, id str
 	}
 	args = append(args, id)
 	query := fmt.Sprintf("UPDATE readmes SET%s WHERE id = $%d", strings.Join(str, ","), i)
-	if _, err := rr.Storage.Pool.Exec(ctx, query, args...); err != nil {
-		if errors.Is(err, storage.ErrNotFound()) {
-			return fmt.Errorf("%s : %w", op, errReadmeNotFound)
+	if tx, ok := storage.GetTx(ctx); ok {
+		if _, err := tx.Exec(ctx, query, args...); err != nil {
+			if errors.Is(err, storage.ErrNotFound()) {
+				return fmt.Errorf("%s : %w", op, errReadmeNotFound)
+			}
+			return fmt.Errorf("%s : %w", op, err)
 		}
-		return fmt.Errorf("%s : %w", op, err)
+	} else {
+		if _, err := rr.Storage.Pool.Exec(ctx, query, args...); err != nil {
+			if errors.Is(err, storage.ErrNotFound()) {
+				return fmt.Errorf("%s : %w", op, errReadmeNotFound)
+			}
+			return fmt.Errorf("%s : %w", op, err)
+		}
 	}
 	return nil
 }
@@ -102,6 +112,7 @@ func (rr *readmeRepo) Get(ctx context.Context, id string) (*models.Readme, error
 		&readme.Widgets,
 		&readme.Order,
 		&readme.CreateTime,
+		&readme.LastUpdateTime,
 	); err != nil {
 		if errors.Is(err, storage.ErrNotFound()) {
 			return nil, fmt.Errorf("%s : %w", op, errReadmeNotFound)
@@ -134,6 +145,7 @@ func (rr *readmeRepo) FetchByUser(ctx context.Context, amount, page uint, uid st
 			&readme.Widgets,
 			&readme.Order,
 			&readme.CreateTime,
+			&readme.LastUpdateTime,
 		); err != nil {
 			return nil, fmt.Errorf("%s : %w", op, err)
 		}

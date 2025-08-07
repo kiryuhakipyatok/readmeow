@@ -74,12 +74,22 @@ func (tr *templateRepo) Update(ctx context.Context, updates map[string]any, id s
 	}
 	args = append(args, id)
 	query := fmt.Sprintf("UPDATE templates SET %s WHERE id = $%d", strings.Join(str, ","), i)
-	res, err := tr.Storage.Pool.Exec(ctx, query, args...)
-	if err != nil {
-		return fmt.Errorf("%s : %w", op, err)
-	}
-	if res.RowsAffected() == 0 {
-		return fmt.Errorf("%s : %w", op, errTemplateNotFound)
+	if tx, ok := storage.GetTx(ctx); ok {
+		res, err := tx.Exec(ctx, query, args...)
+		if err != nil {
+			return fmt.Errorf("%s : %w", op, err)
+		}
+		if res.RowsAffected() == 0 {
+			return fmt.Errorf("%s : %w", op, errTemplateNotFound)
+		}
+	} else {
+		res, err := tr.Storage.Pool.Exec(ctx, query, args...)
+		if err != nil {
+			return fmt.Errorf("%s : %w", op, err)
+		}
+		if res.RowsAffected() == 0 {
+			return fmt.Errorf("%s : %w", op, errTemplateNotFound)
+		}
 	}
 	template, err := tr.Get(ctx, id)
 	if err != nil {
@@ -127,25 +137,48 @@ func (tr *templateRepo) Get(ctx context.Context, id string) (*models.Template, e
 	}
 	if err == cache.Empty {
 		query := "SELECT * FROM templates WHERE id = $1"
-		if err := tr.Storage.Pool.QueryRow(ctx, query, id).Scan(
-			&template.Id,
-			&template.OwnerId,
-			&template.Title,
-			&template.Image,
-			&template.Text,
-			&template.Links,
-			&template.Widgets,
-			&template.Likes,
-			&template.NumOfUsers,
-			&template.Order,
-			&template.CreateTime,
-			&template.LastUpdateTime,
-		); err != nil {
-			if errors.Is(err, storage.ErrNotFound()) {
-				return nil, fmt.Errorf("%s : %w", op, errTemplateNotFound)
+		if tx, ok := storage.GetTx(ctx); ok {
+			if err := tx.QueryRow(ctx, query, id).Scan(
+				&template.Id,
+				&template.OwnerId,
+				&template.Title,
+				&template.Image,
+				&template.Text,
+				&template.Links,
+				&template.Widgets,
+				&template.Likes,
+				&template.NumOfUsers,
+				&template.Order,
+				&template.CreateTime,
+				&template.LastUpdateTime,
+			); err != nil {
+				if errors.Is(err, storage.ErrNotFound()) {
+					return nil, fmt.Errorf("%s : %w", op, errTemplateNotFound)
+				}
+				return nil, fmt.Errorf("%s : %w", op, err)
 			}
-			return nil, fmt.Errorf("%s : %w", op, err)
+		} else {
+			if err := tr.Storage.Pool.QueryRow(ctx, query, id).Scan(
+				&template.Id,
+				&template.OwnerId,
+				&template.Title,
+				&template.Image,
+				&template.Text,
+				&template.Links,
+				&template.Widgets,
+				&template.Likes,
+				&template.NumOfUsers,
+				&template.Order,
+				&template.CreateTime,
+				&template.LastUpdateTime,
+			); err != nil {
+				if errors.Is(err, storage.ErrNotFound()) {
+					return nil, fmt.Errorf("%s : %w", op, errTemplateNotFound)
+				}
+				return nil, fmt.Errorf("%s : %w", op, err)
+			}
 		}
+
 	}
 
 	cache, err := json.Marshal(template)

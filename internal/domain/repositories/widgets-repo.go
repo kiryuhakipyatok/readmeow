@@ -46,19 +46,36 @@ func (wr *widgetRepo) Get(ctx context.Context, id string) (*models.Widget, error
 	}
 	if err == cache.Empty {
 		query := "SELECT * FROM widgets WHERE id = $1"
-		if err := wr.Storage.Pool.QueryRow(ctx, query, id).Scan(
-			&widget.Id,
-			&widget.Title,
-			&widget.Image,
-			&widget.Description,
-			&widget.Link,
-			&widget.Likes,
-			&widget.NumOfUsers,
-		); err != nil {
-			if errors.Is(err, storage.ErrNotFound()) {
-				return nil, fmt.Errorf("%s : %w", op, errWidgetNotFound)
+		if tx, ok := storage.GetTx(ctx); ok {
+			if err := tx.QueryRow(ctx, query, id).Scan(
+				&widget.Id,
+				&widget.Title,
+				&widget.Image,
+				&widget.Description,
+				&widget.Link,
+				&widget.Likes,
+				&widget.NumOfUsers,
+			); err != nil {
+				if errors.Is(err, storage.ErrNotFound()) {
+					return nil, fmt.Errorf("%s : %w", op, errWidgetNotFound)
+				}
+				return nil, fmt.Errorf("%s : %w", op, err)
 			}
-			return nil, fmt.Errorf("%s : %w", op, err)
+		} else {
+			if err := wr.Storage.Pool.QueryRow(ctx, query, id).Scan(
+				&widget.Id,
+				&widget.Title,
+				&widget.Image,
+				&widget.Description,
+				&widget.Link,
+				&widget.Likes,
+				&widget.NumOfUsers,
+			); err != nil {
+				if errors.Is(err, storage.ErrNotFound()) {
+					return nil, fmt.Errorf("%s : %w", op, errWidgetNotFound)
+				}
+				return nil, fmt.Errorf("%s : %w", op, err)
+			}
 		}
 	}
 	cache, err := json.Marshal(widget)
