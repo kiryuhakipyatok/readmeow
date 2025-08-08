@@ -16,9 +16,11 @@ type AppConfig struct {
 }
 
 type ServerConfig struct {
-	Host           string
-	Port           int
-	RequestTimeout int
+	Host         string
+	Port         int
+	WriteTimeout int
+	ReadTimeout  int
+	IdleTimeout  int
 }
 
 type AuthConfig struct {

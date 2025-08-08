@@ -9,7 +9,7 @@ type User struct {
 	Login          string
 	Email          string
 	Avatar         string
-	Password       []byte
+	Password       []byte `json:"-"`
 	TimeOfRegister int64
 	NumOfTemplates uint16
 	NumOfReadmes   uint16

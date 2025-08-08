@@ -16,6 +16,7 @@ type UserRepo interface {
 	Update(ctx context.Context, updates map[string]any, id string) error
 	Delete(ctx context.Context, id string) error
 	ChangePassword(ctx context.Context, id string, password []byte) error
+	GetPassword(ctx context.Context, id string) ([]byte, error)
 }
 
 type userRepo struct {
@@ -168,4 +169,17 @@ func (ur *userRepo) ChangePassword(ctx context.Context, id string, password []by
 		return fmt.Errorf("%s : %w", op, err)
 	}
 	return nil
+}
+
+func (ur *userRepo) GetPassword(ctx context.Context, id string) ([]byte, error) {
+	op := "userRepo.GetPassword"
+	query := "SELECT password FROM users WHERE id = $1"
+	password := []byte{}
+	if err := ur.Storage.Pool.QueryRow(ctx, query, id).Scan(&password); err != nil {
+		if errors.Is(err, storage.ErrNotFound()) {
+			return nil, fmt.Errorf("%s : %w", op, errUserNotFound)
+		}
+		return nil, fmt.Errorf("%s : %w", op, err)
+	}
+	return password, nil
 }

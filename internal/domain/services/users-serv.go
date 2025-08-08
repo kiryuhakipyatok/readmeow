@@ -5,12 +5,14 @@ import (
 	"fmt"
 	"readmeow/internal/domain/repositories"
 	"readmeow/pkg/logger"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 type UserServ interface {
 	Update(ctx context.Context, updates map[string]any, id string) error
 	Delete(ctx context.Context, id string) error
-	ChangePassword(ctx context.Context, id string, password []byte) error
+	ChangePassword(ctx context.Context, id string, oldPassword, newPasswrod string) error
 }
 
 type userServ struct {
@@ -49,11 +51,29 @@ func (us *userServ) Delete(ctx context.Context, id string) error {
 	return nil
 }
 
-func (us *userServ) ChangePassword(ctx context.Context, id string, password []byte) error {
+func (us *userServ) ChangePassword(ctx context.Context, id string, oldPassword, newPasswrod string) error {
 	op := "userServ.UpdatePassword"
 	us.Logger.AddOp(op)
 	us.Logger.Log.Info("changing user password")
-	if err := us.UserRepo.ChangePassword(ctx, id, password); err != nil {
+
+	userPassword, err := us.UserRepo.GetPassword(ctx, id)
+	if err != nil {
+		us.Logger.Log.Error("failed to get user password", logger.Err(err))
+		return fmt.Errorf("%s : %w", op, err)
+	}
+
+	if err := bcrypt.CompareHashAndPassword(userPassword, []byte(oldPassword)); err != nil {
+		us.Logger.Log.Error("old and entered passwords are not equal", logger.Err(err))
+		return fmt.Errorf("%s : %w", op, err)
+	}
+
+	newHashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPasswrod), 14)
+	if err != nil {
+		us.Logger.Log.Error("failed to hash password", logger.Err(err))
+		return fmt.Errorf("%s : %w", op, err)
+	}
+
+	if err := us.UserRepo.ChangePassword(ctx, id, newHashedPassword); err != nil {
 		us.Logger.Log.Error("failed to change user password", logger.Err(err))
 		return fmt.Errorf("%s : %w", op, err)
 	}

@@ -65,7 +65,6 @@ func (tr *templateRepo) Update(ctx context.Context, updates map[string]any, id s
 	op := "templdateRepo.Update"
 	validFields := map[string]bool{
 		"title":            true,
-		"image":            true,
 		"text":             true,
 		"links":            true,
 		"widgets":          true,
