@@ -11,6 +11,7 @@ import (
 	"readmeow/pkg/cache"
 	"readmeow/pkg/search"
 	"readmeow/pkg/storage"
+	"strings"
 	"time"
 
 	"github.com/elastic/go-elasticsearch/v8/esutil"
@@ -23,6 +24,8 @@ type WidgetRepo interface {
 	Fetch(ctx context.Context, amount, page uint) ([]models.Widget, error)
 	Sort(ctx context.Context, amount, page uint, field, dest string) ([]models.Widget, error)
 	Search(ctx context.Context, amount, page uint, query string) ([]models.Widget, error)
+	GetByIds(ctx context.Context, ids []string) ([]models.Widget, error)
+	Update(ctx context.Context, updates map[string]any, id string) error
 	MustBulk(cfg *config.SearchConfig)
 }
 
@@ -197,14 +200,14 @@ func (wr *widgetRepo) Search(ctx context.Context, amount, page uint, query strin
 	for _, hit := range res.Hits.Hits {
 		ids = append(ids, *hit.Id_)
 	}
-	widgets, err := wr.getByIds(ctx, ids)
+	widgets, err := wr.GetByIds(ctx, ids)
 	if err != nil {
 		return nil, fmt.Errorf("%s : %w", op, err)
 	}
 	return widgets, nil
 }
 
-func (wr *widgetRepo) getByIds(ctx context.Context, ids []string) ([]models.Widget, error) {
+func (wr *widgetRepo) GetByIds(ctx context.Context, ids []string) ([]models.Widget, error) {
 	op := "widgetRepo.SearchPreparing.getByIds"
 	query := "SELECT * FROM widgets WHERE id = ANY($1)"
 	widgets := make([]models.Widget, 0, len(ids))
@@ -318,4 +321,58 @@ func (wr *widgetRepo) MustBulk(cfg *config.SearchConfig) {
 	if err := bi.Close(ctx); err != nil {
 		panic(fmt.Errorf("%s : %w\n stats: flushed - %d, failed - %d", op, err, bi.Stats().NumFlushed, bi.Stats().NumFailed))
 	}
+}
+
+func (wr *widgetRepo) Update(ctx context.Context, updates map[string]any, id string) error {
+	op := "widgetRepo.Update"
+	validFields := map[string]bool{
+		"likes":        true,
+		"num_of_users": true,
+	}
+	str := []string{}
+	args := []any{}
+	i := 1
+	for k, v := range updates {
+		if !validFields[k] {
+			return fmt.Errorf("%s : %w", op, errors.New("not valid fields to update"))
+		}
+		str = append(str, fmt.Sprintf(" %s = $%d", k, i))
+		args = append(args, v)
+		i++
+	}
+	args = append(args, id)
+	query := fmt.Sprintf("UPDATE widgets SET %s WHERE id = $%d", strings.Join(str, ","), i)
+	if tx, ok := storage.GetTx(ctx); ok {
+		res, err := tx.Exec(ctx, query, args...)
+		if err != nil {
+			return fmt.Errorf("%s : %w", op, err)
+		}
+		if res.RowsAffected() == 0 {
+			return fmt.Errorf("%s : %w", op, errWidgetNotFound)
+		}
+	} else {
+		res, err := wr.Storage.Pool.Exec(ctx, query, args...)
+		if err != nil {
+			return fmt.Errorf("%s : %w", op, err)
+		}
+		if res.RowsAffected() == 0 {
+			return fmt.Errorf("%s : %w", op, errWidgetNotFound)
+		}
+	}
+	widget, err := wr.Get(ctx, id)
+	if err != nil {
+		return fmt.Errorf("%s : %w", op, err)
+	}
+	cache, err := json.Marshal(widget)
+	if err != nil {
+		return fmt.Errorf("%s : %w", op, err)
+	}
+	ttl, err := wr.Cache.Redis.TTL(ctx, widget.Id.String()).Result()
+	if err != nil {
+		return fmt.Errorf("%s : %w", op, err)
+	}
+	if err := wr.Cache.Redis.Set(ctx, widget.Id.String(), cache, ttl).Err(); err != nil {
+		return fmt.Errorf("%s : %w", op, err)
+	}
+	return nil
 }

@@ -64,12 +64,15 @@ func (tr *templateRepo) Create(ctx context.Context, template *models.Template) e
 func (tr *templateRepo) Update(ctx context.Context, updates map[string]any, id string) error {
 	op := "templdateRepo.Update"
 	validFields := map[string]bool{
-		"title":   true,
-		"image":   true,
-		"text":    true,
-		"links":   true,
-		"widgets": true,
-		"order":   true,
+		"title":            true,
+		"image":            true,
+		"text":             true,
+		"links":            true,
+		"widgets":          true,
+		"order":            true,
+		"likes":            true,
+		"num_of_users":     true,
+		"last_update_time": true,
 	}
 	str := []string{}
 	args := []any{}

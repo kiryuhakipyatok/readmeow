@@ -13,7 +13,7 @@ import (
 )
 
 type ReadmeServ interface {
-	Create(ctx context.Context, oid, title, order string, text, links, widgets []string, createTime int64) error
+	Create(ctx context.Context, tid, oid, title, order string, text, links, widgets []string, createTime int64) error
 	Delete(ctx context.Context, id string) error
 	Update(ctx context.Context, updates map[string]any, id string) error
 	Get(ctx context.Context, id string) (*models.Readme, error)
@@ -21,20 +21,25 @@ type ReadmeServ interface {
 }
 
 type readmeServ struct {
-	ReadmeRepo repositories.ReadmeRepo
-	UserRepo   repositories.UserRepo
-	Transactor storage.Transactor
-	Logger     *logger.Logger
+	ReadmeRepo   repositories.ReadmeRepo
+	UserRepo     repositories.UserRepo
+	TemplateRepo repositories.TemplateRepo
+	WidgetRepo   repositories.WidgetRepo
+	Transactor   storage.Transactor
+	Logger       *logger.Logger
 }
 
-func NewReadmeServ(rr repositories.ReadmeRepo, ur repositories.UserRepo, l *logger.Logger) ReadmeServ {
+func NewReadmeServ(rr repositories.ReadmeRepo, ur repositories.UserRepo, tr repositories.TemplateRepo, wr repositories.WidgetRepo, l *logger.Logger) ReadmeServ {
 	return &readmeServ{
-		ReadmeRepo: rr,
-		Logger:     l,
+		ReadmeRepo:   rr,
+		UserRepo:     ur,
+		TemplateRepo: tr,
+		WidgetRepo:   wr,
+		Logger:       l,
 	}
 }
 
-func (rs *readmeServ) Create(ctx context.Context, oid, title, order string, text, links, widgets []string, createTime int64) error {
+func (rs *readmeServ) Create(ctx context.Context, oid, title, order, tid string, text, links, widgets []string, createTime int64) error {
 	op := "readmeServ.Create"
 	rs.Logger.AddOp(op)
 	rs.Logger.Log.Info("creating readme")
@@ -42,21 +47,56 @@ func (rs *readmeServ) Create(ctx context.Context, oid, title, order string, text
 		user, err := rs.UserRepo.Get(ctx, oid)
 		if err != nil {
 			rs.Logger.Log.Error("failed to get user", logger.Err(err))
-			return nil, fmt.Errorf("%s : %w", op, err)
+			return nil, err
 		}
 		readme := &models.Readme{
-			Id:         uuid.New(),
-			OwnerId:    user.Id,
-			Title:      title,
-			Text:       text,
-			Links:      links,
-			Widgets:    widgets,
-			Order:      order,
-			CreateTime: time.Now().Unix(),
+			Id:             uuid.New(),
+			OwnerId:        user.Id,
+			Title:          title,
+			Text:           text,
+			Links:          links,
+			Widgets:        widgets,
+			Order:          order,
+			CreateTime:     time.Now().Unix(),
+			LastUpdateTime: time.Now().Unix(),
 		}
 		if err := rs.ReadmeRepo.Create(ctx, readme); err != nil {
-			rs.Logger.Log.Error("failed to get create readme", logger.Err(err))
-			return nil, fmt.Errorf("%s : %w", op, err)
+			rs.Logger.Log.Error("failed to create readme", logger.Err(err))
+			return nil, err
+		}
+		if tid != "" {
+			tempalate, err := rs.TemplateRepo.Get(ctx, tid)
+			if err != nil {
+				rs.Logger.Log.Error("failed to get template", logger.Err(err))
+				return nil, err
+			}
+			updatedNumOfUsers := tempalate.NumOfUsers + 1
+			update := map[string]any{
+				"num_of_users": updatedNumOfUsers,
+			}
+			if err := rs.TemplateRepo.Update(ctx, update, tempalate.Id.String()); err != nil {
+				rs.Logger.Log.Error("failed to update template info", logger.Err(err))
+				return nil, err
+			}
+		}
+		if len(widgets) != 0 {
+			widgetsData, err := rs.WidgetRepo.GetByIds(ctx, widgets)
+			if err != nil {
+				rs.Logger.Log.Error("failed to fetch widgets", logger.Err(err))
+				return nil, err
+			}
+
+			for _, w := range widgetsData {
+				updatedNumOfUsers := w.NumOfUsers + 1
+				update := map[string]any{
+					"num_of_users": updatedNumOfUsers,
+				}
+				if err := rs.WidgetRepo.Update(ctx, update, w.Id.String()); err != nil {
+					rs.Logger.Log.Error("failed to update widget info", logger.Err(err))
+					return nil, err
+				}
+			}
+
 		}
 		updatedNumOfReadmes := user.NumOfReadmes + 1
 		update := map[string]any{
@@ -64,7 +104,7 @@ func (rs *readmeServ) Create(ctx context.Context, oid, title, order string, text
 		}
 		if err := rs.UserRepo.Update(ctx, update, user.Id.String()); err != nil {
 			rs.Logger.Log.Error("failed to update user info", logger.Err(err))
-			return nil, fmt.Errorf("%s : %w", op, err)
+			return nil, err
 		}
 		return nil, nil
 	})
