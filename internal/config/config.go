@@ -48,6 +48,7 @@ type SearchConfig struct {
 	Port     string
 	User     string
 	Password string
+	Timeout  int
 }
 
 func LoadConfig(path string) *Config {

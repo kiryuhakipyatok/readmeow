@@ -10,7 +10,7 @@ type SearchClient struct {
 	Client *es.TypedClient
 }
 
-func Connect(cfg *config.SearchConfig) *SearchClient {
+func MustConnect(cfg *config.SearchConfig) *SearchClient {
 	client, err := es.NewTypedClient(es.Config{
 		Addresses: []string{cfg.Host + "" + cfg.Port},
 		Username:  cfg.User,

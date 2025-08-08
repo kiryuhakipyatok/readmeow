@@ -1,16 +1,22 @@
 package repositories
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"readmeow/internal/config"
 	"readmeow/internal/domain/models"
 	"readmeow/pkg/cache"
 	"readmeow/pkg/search"
 	"readmeow/pkg/storage"
 	"strings"
 	"time"
+
+	"github.com/elastic/go-elasticsearch/v9/esutil"
+	s "github.com/elastic/go-elasticsearch/v9/typedapi/core/search"
+	"github.com/elastic/go-elasticsearch/v9/typedapi/types"
 )
 
 type TemplateRepo interface {
@@ -20,6 +26,8 @@ type TemplateRepo interface {
 	Get(ctx context.Context, id string) (*models.Template, error)
 	Fetch(ctx context.Context, amount, page uint) ([]models.Template, error)
 	Sort(ctx context.Context, amount, page uint, dest, field string) ([]models.Template, error)
+	Search(ctx context.Context, amount, page uint, query string) ([]models.Template, error)
+	MustBulk(cfg *config.SearchConfig)
 }
 
 type templateRepo struct {
@@ -137,7 +145,7 @@ func (tr *templateRepo) Get(ctx context.Context, id string) (*models.Template, e
 		}
 		return template, nil
 	}
-	if err == cache.Empty {
+	if err == cache.EMPTY {
 		query := "SELECT * FROM templates WHERE id = $1"
 		if tx, ok := storage.GetTx(ctx); ok {
 			if err := tx.QueryRow(ctx, query, id).Scan(
@@ -276,4 +284,160 @@ func (tr *templateRepo) Sort(ctx context.Context, amount, page uint, dest, field
 		return nil, fmt.Errorf("%s : %w", op, errTemplatesNotFound)
 	}
 	return templates, nil
+}
+
+func (tr *templateRepo) Search(ctx context.Context, amount, page uint, query string) ([]models.Template, error) {
+	op := "templateRepo.Search"
+	if strings.TrimSpace(query) == "" {
+		return tr.getAll(ctx)
+	}
+	mainQuery := types.Query{
+		MultiMatch: &types.MultiMatchQuery{
+			Query:     query,
+			Fields:    []string{"title^4", "description^3", "num_of_users^2", "likes"},
+			Fuzziness: "AUTO",
+		},
+	}
+	res, err := tr.SearchClient.Client.Search().Index("templates").From(int(amount*page - amount)).Size(int(amount)).Request(&s.Request{
+		Query: &types.Query{
+			Bool: &types.BoolQuery{
+				Must: []types.Query{mainQuery},
+			},
+		},
+		Source_: &types.SourceFilter{Includes: []string{"id"}},
+	}).Do(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("%s : %w", op, err)
+	}
+	ids := []string{}
+	for _, hit := range res.Hits.Hits {
+		ids = append(ids, *hit.Id_)
+	}
+	if len(ids) == 0 {
+		return nil, fmt.Errorf("%s : %w", op, errTemplatesNotFound)
+	}
+	templates, err := tr.getByIds(ctx, ids)
+	if err != nil {
+		return nil, fmt.Errorf("%s : %w", op, err)
+	}
+
+	return templates, nil
+}
+
+func (tr *templateRepo) getByIds(ctx context.Context, ids []string) ([]models.Template, error) {
+	op := "templateRepo.SearchPreparing.getByIds"
+	query := "SELECT * FROM templates WHERE id = ANY($1)"
+	templates := make([]models.Template, 0, len(ids))
+	rows, err := tr.Storage.Pool.Query(ctx, query, ids)
+	if err != nil {
+		return nil, fmt.Errorf("%s : %w", op, err)
+	}
+	defer rows.Close()
+	byId := map[string]models.Template{}
+	for rows.Next() {
+		template := models.Template{}
+		if err := rows.Scan(
+			&template.Id,
+			&template.OwnerId,
+			&template.Title,
+			&template.Image,
+			&template.Description,
+			&template.Text,
+			&template.Links,
+			&template.Widgets,
+			&template.Likes,
+			&template.NumOfUsers,
+			&template.Order,
+			&template.CreateTime,
+			&template.LastUpdateTime,
+		); err != nil {
+			return nil, fmt.Errorf("%s : %w", op, err)
+		}
+		byId[template.Id.String()] = template
+	}
+	for _, id := range ids {
+		if t, ok := byId[id]; ok {
+			templates = append(templates, t)
+		}
+	}
+	if len(templates) == 0 {
+		return nil, fmt.Errorf("%s : %w", op, errTemplatesNotFound)
+	}
+	return templates, nil
+}
+
+func (tr *templateRepo) getAll(ctx context.Context) ([]models.Template, error) {
+	op := "templateRepo.SearchPreparing.getAll"
+	query := "SELECT id, title, description, likes, num_of_users FROM templates"
+	templates := []models.Template{}
+	rows, err := tr.Storage.Pool.Query(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("%s : %w", op, err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		template := models.Template{}
+		if err := rows.Scan(
+			&template.Id,
+			&template.Title,
+			&template.Description,
+			&template.Likes,
+			&template.NumOfUsers,
+		); err != nil {
+			return nil, fmt.Errorf("%s : %w", op, err)
+		}
+		templates = append(templates, template)
+	}
+	if len(templates) == 0 {
+		return nil, fmt.Errorf("%s : %w", op, errTemplatesNotFound)
+	}
+	return templates, nil
+}
+
+func (tr *templateRepo) MustBulk(cfg *config.SearchConfig) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*time.Duration(cfg.Timeout))
+	defer cancel()
+	op := "templateRepo.SearchPreparing.Bulk"
+	templates, err := tr.getAll(ctx)
+	if err != nil {
+		panic(fmt.Errorf("%s : %w", op, err))
+	}
+	bi, err := esutil.NewBulkIndexer(esutil.BulkIndexerConfig{
+		Client: tr.SearchClient.Client,
+		Index:  "templates",
+	})
+	if err != nil {
+		panic(fmt.Errorf("%s : %w", op, err))
+	}
+	type doc struct {
+		Id          string
+		Title       string
+		Description string
+		Likes       uint16
+		NumOfUsers  uint16
+	}
+	for _, t := range templates {
+		d := doc{
+			Id:          t.Id.String(),
+			Title:       t.Title,
+			Description: t.Description,
+			Likes:       t.Likes,
+			NumOfUsers:  t.NumOfUsers,
+		}
+		data, err := json.Marshal(d)
+		if err != nil {
+			panic(fmt.Errorf("%s : %w", op, err))
+		}
+		if err := bi.Add(ctx, esutil.BulkIndexerItem{
+			Action:     "index",
+			DocumentID: t.Id.String(),
+			Body:       bytes.NewReader(data),
+		}); err != nil {
+			panic(fmt.Errorf("%s : %w", op, err))
+		}
+	}
+	if err := bi.Close(ctx); err != nil {
+		panic(fmt.Errorf("%s : %w\n stats: flushed - %d, failed - %d", op, err, bi.Stats().NumFlushed, bi.Stats().NumFailed))
+	}
 }

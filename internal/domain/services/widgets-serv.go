@@ -11,8 +11,6 @@ type WidgetServ interface {
 	Get(ctx context.Context, id string) (*models.Widget, error)
 	Fetch(ctx context.Context, amount, page uint) ([]models.Widget, error)
 	Sort(ctx context.Context, amount, page uint, field, dest string) ([]models.Widget, error)
-	Use(ctx context.Context, tid, id string) (*models.Widget, error)
-	StopUser(ctx context.Context, uid, id string) (*models.Widget, error)
 }
 
 type widgetServ struct {

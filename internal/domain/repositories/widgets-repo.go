@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"readmeow/internal/config"
 	"readmeow/internal/domain/models"
 	"readmeow/pkg/cache"
 	"readmeow/pkg/search"
@@ -22,7 +23,7 @@ type WidgetRepo interface {
 	Fetch(ctx context.Context, amount, page uint) ([]models.Widget, error)
 	Sort(ctx context.Context, amount, page uint, field, dest string) ([]models.Widget, error)
 	Search(ctx context.Context, amount, page uint, query string) ([]models.Widget, error)
-	MustBulk()
+	MustBulk(cfg *config.SearchConfig)
 }
 
 type widgetRepo struct {
@@ -54,7 +55,7 @@ func (wr *widgetRepo) Get(ctx context.Context, id string) (*models.Widget, error
 		}
 		return widget, nil
 	}
-	if err == cache.Empty {
+	if err == cache.EMPTY {
 		query := "SELECT * FROM widgets WHERE id = $1"
 		if tx, ok := storage.GetTx(ctx); ok {
 			if err := tx.QueryRow(ctx, query, id).Scan(
@@ -132,7 +133,7 @@ func (wr *widgetRepo) Fetch(ctx context.Context, amount, page uint) ([]models.Wi
 }
 
 func (wr *widgetRepo) Sort(ctx context.Context, amount, page uint, field, dest string) ([]models.Widget, error) {
-	op := "widgerRepo.Filter"
+	op := "widgetRepo.Filter"
 	validFields := map[string]bool{
 		"likes":        true,
 		"num_of_users": true,
@@ -173,11 +174,11 @@ func (wr *widgetRepo) Sort(ctx context.Context, amount, page uint, field, dest s
 }
 
 func (wr *widgetRepo) Search(ctx context.Context, amount, page uint, query string) ([]models.Widget, error) {
-	op := "widgerRepo.Search"
+	op := "widgetRepo.Search"
 	mainQuery := types.Query{
 		MultiMatch: &types.MultiMatchQuery{
 			Query:     query,
-			Fields:    []string{"title^5", "description^4", "description^3", "num_of_users^2", "likes"},
+			Fields:    []string{"title^5", "type^4", "description^3", "num_of_users^2", "likes"},
 			Fuzziness: "AUTO",
 		},
 	}
@@ -187,7 +188,7 @@ func (wr *widgetRepo) Search(ctx context.Context, amount, page uint, query strin
 				Must: []types.Query{mainQuery},
 			},
 		},
-		Source_: types.NewSourceIndex(),
+		Source_: &types.SourceFilter{Includes: []string{"id"}},
 	}).Do(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("%s : %w", op, err)
@@ -204,15 +205,15 @@ func (wr *widgetRepo) Search(ctx context.Context, amount, page uint, query strin
 }
 
 func (wr *widgetRepo) getByIds(ctx context.Context, ids []string) ([]models.Widget, error) {
-	op := "widgerRepo.SearchPreparing.getByIds"
-	query := "SELECT * FROM widgets ANY($1)"
-	widgets := []models.Widget{}
+	op := "widgetRepo.SearchPreparing.getByIds"
+	query := "SELECT * FROM widgets WHERE id = ANY($1)"
+	widgets := make([]models.Widget, 0, len(ids))
 	rows, err := wr.Storage.Pool.Query(ctx, query, ids)
 	if err != nil {
 		return nil, fmt.Errorf("%s : %w", op, err)
 	}
 	defer rows.Close()
-
+	byId := map[string]models.Widget{}
 	for rows.Next() {
 		widget := models.Widget{}
 		if err := rows.Scan(
@@ -227,7 +228,12 @@ func (wr *widgetRepo) getByIds(ctx context.Context, ids []string) ([]models.Widg
 		); err != nil {
 			return nil, fmt.Errorf("%s : %w", op, err)
 		}
-		widgets = append(widgets, widget)
+		byId[widget.Id.String()] = widget
+	}
+	for _, id := range ids {
+		if w, ok := byId[id]; ok {
+			widgets = append(widgets, w)
+		}
 	}
 	if len(widgets) == 0 {
 		return nil, fmt.Errorf("%s : %w", op, errWidgetsNotFound)
@@ -236,7 +242,7 @@ func (wr *widgetRepo) getByIds(ctx context.Context, ids []string) ([]models.Widg
 }
 
 func (wr *widgetRepo) getAll(ctx context.Context) ([]models.Widget, error) {
-	op := "widgerRepo.SearchPreparing.getAll"
+	op := "widgetRepo.SearchPreparing.getAll"
 	query := "SELECT id, title, description, type, likes, num_of_users FROM widgets"
 	widgets := []models.Widget{}
 	rows, err := wr.Storage.Pool.Query(ctx, query)
@@ -265,10 +271,10 @@ func (wr *widgetRepo) getAll(ctx context.Context) ([]models.Widget, error) {
 	return widgets, nil
 }
 
-func (wr *widgetRepo) MustBulk() {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+func (wr *widgetRepo) MustBulk(cfg *config.SearchConfig) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(cfg.Timeout))
 	defer cancel()
-	op := "widgerRepo.SearchPreparing.Bulk"
+	op := "widgetRepo.SearchPreparing.Bulk"
 	widgets, err := wr.getAll(ctx)
 	if err != nil {
 		panic(fmt.Errorf("%s : %w", op, err))
@@ -310,6 +316,6 @@ func (wr *widgetRepo) MustBulk() {
 		}
 	}
 	if err := bi.Close(ctx); err != nil {
-		panic(fmt.Errorf("%s : %w", op, err))
+		panic(fmt.Errorf("%s : %w\n stats: flushed - %d, failed - %d", op, err, bi.Stats().NumFlushed, bi.Stats().NumFailed))
 	}
 }

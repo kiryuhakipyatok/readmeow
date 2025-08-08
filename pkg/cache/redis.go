@@ -12,9 +12,9 @@ type Cache struct {
 	Redis *redis.Client
 }
 
-const Empty = redis.Nil
+const EMPTY = redis.Nil
 
-func Connect(cfg config.CacheConfig) Cache {
+func MustConnect(cfg config.CacheConfig) Cache {
 	redis := redis.NewClient(&redis.Options{
 		Username: cfg.User,
 		Addr:     cfg.Host + ":" + cfg.Port,
@@ -32,7 +32,7 @@ func Connect(cfg config.CacheConfig) Cache {
 	return cache
 }
 
-func (c *Cache) Close() {
+func (c *Cache) MustClose() {
 	if err := c.Redis.Close(); err != nil {
 		panic("failed to close redis")
 	}
