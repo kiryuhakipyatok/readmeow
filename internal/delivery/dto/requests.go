@@ -32,6 +32,11 @@ type UpdateUserRequest struct {
 	Updates map[string]any `json:"user_updates" validate:"required,dive,keys,oneof=login email avatar,endkeys,required"`
 }
 
+type DeleteUserRequest struct {
+	Id       string `json:"user_id" validate:"required,uuid"`
+	Password string `json:"password" validate:"required"`
+}
+
 type ChangePasswordRequest struct {
 	Id          string `json:"user_id" validate:"required,uuid"`
 	OldPasswrod string `json:"old_password" validate:"required"`
@@ -68,6 +73,11 @@ type CreateReadmeRequest struct {
 	Text       []string `json:"text" validate:"dive,uuid"`
 	Links      []string `json:"links" validate:"dive,uuid"`
 	Widgets    []string `json:"widgets" validate:"dive,uuid"`
+}
+
+type DeleteReadmeRequest struct {
+	Id      string `json:"readme_id" validate:"required,uuid"`
+	OwnerId string `json:"owner_id" validate:"required,uuid"`
 }
 
 type UpdateReadmeRequest struct {

@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
+	"readmeow/internal/domain/models"
 	"readmeow/internal/domain/repositories"
 	"readmeow/pkg/logger"
 
@@ -10,8 +11,9 @@ import (
 )
 
 type UserServ interface {
+	Get(ctx context.Context, id string) (*models.User, error)
 	Update(ctx context.Context, updates map[string]any, id string) error
-	Delete(ctx context.Context, id string) error
+	Delete(ctx context.Context, id, password string) error
 	ChangePassword(ctx context.Context, id string, oldPassword, newPasswrod string) error
 }
 
@@ -39,10 +41,19 @@ func (us *userServ) Update(ctx context.Context, updates map[string]any, id strin
 	return nil
 }
 
-func (us *userServ) Delete(ctx context.Context, id string) error {
+func (us *userServ) Delete(ctx context.Context, id, password string) error {
 	op := "userServ.Delete"
 	us.Logger.AddOp(op)
 	us.Logger.Log.Info("deleting user")
+	userPassword, err := us.UserRepo.GetPassword(ctx, id)
+	if err != nil {
+		us.Logger.Log.Error("failed to get user password", logger.Err(err))
+		return fmt.Errorf("%s : %w", op, err)
+	}
+	if err := bcrypt.CompareHashAndPassword(userPassword, []byte(password)); err != nil {
+		us.Logger.Log.Error("user and entered passwords are not equal", logger.Err(err))
+		return fmt.Errorf("%s : %w", op, err)
+	}
 	if err := us.UserRepo.Delete(ctx, id); err != nil {
 		us.Logger.Log.Error("failed to delete user", logger.Err(err))
 		return fmt.Errorf("%s : %w", op, err)
@@ -79,4 +90,17 @@ func (us *userServ) ChangePassword(ctx context.Context, id string, oldPassword, 
 	}
 	us.Logger.Log.Info("user password changed successfully")
 	return nil
+}
+
+func (us *userServ) Get(ctx context.Context, id string) (*models.User, error) {
+	op := "userServ.Get"
+	us.Logger.AddOp(op)
+	us.Logger.Log.Info("receiving user")
+	user, err := us.UserRepo.Get(ctx, id)
+	if err != nil {
+		us.Logger.Log.Error("failed to get user", logger.Err(err))
+		return nil, fmt.Errorf("%s : %w", op, err)
+	}
+	us.Logger.Log.Info("user received successfully")
+	return user, nil
 }

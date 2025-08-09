@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"readmeow/internal/domain/models"
 	"readmeow/internal/domain/repositories"
@@ -14,7 +15,7 @@ import (
 
 type ReadmeServ interface {
 	Create(ctx context.Context, tid, oid, title, order string, text, links, widgets []string) error
-	Delete(ctx context.Context, id string) error
+	Delete(ctx context.Context, id, uid string) error
 	Update(ctx context.Context, updates map[string]any, id string) error
 	Get(ctx context.Context, id string) (*models.Readme, error)
 	FetchByUser(ctx context.Context, amount, page uint, uid string) ([]models.Readme, error)
@@ -116,10 +117,24 @@ func (rs *readmeServ) Create(ctx context.Context, oid, title, order, tid string,
 	return nil
 }
 
-func (rs *readmeServ) Delete(ctx context.Context, id string) error {
+func (rs *readmeServ) Delete(ctx context.Context, uid, id string) error {
 	op := "readmeServ"
 	rs.Logger.AddOp(op)
 	rs.Logger.Log.Info("deleting readme")
+	user, err := rs.UserRepo.Get(ctx, uid)
+	if err != nil {
+		rs.Logger.Log.Error("failed to get user", logger.Err(err))
+		return fmt.Errorf("%s : %w", op, err)
+	}
+	readme, err := rs.ReadmeRepo.Get(ctx, id)
+	if err != nil {
+		rs.Logger.Log.Error("failed to get user", logger.Err(err))
+		return fmt.Errorf("%s : %w", op, err)
+	}
+	if readme.OwnerId != user.Id {
+		rs.Logger.Log.Error("failed to delete readme", logger.Err(errors.New("readme owner id and user id are not equal")))
+		return fmt.Errorf("%s : %w", op, err)
+	}
 	if err := rs.ReadmeRepo.Delete(ctx, id); err != nil {
 		rs.Logger.Log.Error("failed to delete readme", logger.Err(err))
 		return fmt.Errorf("%s : %w", op, err)

@@ -16,8 +16,8 @@ import (
 
 type AuthServ interface {
 	Register(ctx context.Context, login, email, password string) error
-	Login(ctx context.Context, login, password string) (string, error)
-	Profile(ctx context.Context, id string) (*models.User, error)
+	Login(ctx context.Context, login, password string) (string, *time.Time, error)
+	GetId(ctx context.Context, cookie string) (string, error)
 }
 
 type authServ struct {
@@ -34,16 +34,16 @@ func NewAuthServ(ur repositories.UserRepo, l *logger.Logger, cfg *config.AuthCon
 	}
 }
 
-func (ur *authServ) Register(ctx context.Context, login, email, password string) error {
+func (as *authServ) Register(ctx context.Context, login, email, password string) error {
 	op := "authServ.Register"
 
-	ur.Logger.AddOp(op)
+	as.Logger.AddOp(op)
 
-	ur.Logger.Log.Info("registering user")
+	as.Logger.Log.Info("registering user")
 
 	userPassword, err := bcrypt.GenerateFromPassword([]byte(password), 14)
 	if err != nil {
-		ur.Logger.Log.Info("failed to generate password hash", logger.Err(err))
+		as.Logger.Log.Info("failed to generate password hash", logger.Err(err))
 		return fmt.Errorf("%s : %w", op, err)
 	}
 	user := models.User{
@@ -56,51 +56,57 @@ func (ur *authServ) Register(ctx context.Context, login, email, password string)
 		NumOfTemplates: 0,
 	}
 
-	if err := ur.UserRepo.Create(ctx, &user); err != nil {
-		ur.Logger.Log.Error("failed to create user", logger.Err(err))
+	if err := as.UserRepo.Create(ctx, &user); err != nil {
+		as.Logger.Log.Error("failed to create user", logger.Err(err))
 		return fmt.Errorf("%s : %w", op, err)
 	}
 
-	ur.Logger.Log.Info("user registered successfully")
+	as.Logger.Log.Info("user registered successfully")
 
 	return nil
 }
 
-func (ur *authServ) Login(ctx context.Context, login, password string) (string, error) {
+func (as *authServ) Login(ctx context.Context, login, password string) (string, *time.Time, error) {
 	op := "authServ.Login"
-	ur.Logger.AddOp(op)
-	ur.Logger.Log.Info("logining user")
-	user, err := ur.UserRepo.GetByLogin(ctx, login)
+	as.Logger.AddOp(op)
+	as.Logger.Log.Info("logining user")
+	user, err := as.UserRepo.GetByLogin(ctx, login)
 	if err != nil {
-		ur.Logger.Log.Error("failed to get user by login")
-		return "", fmt.Errorf("%s : %w", op, err)
+		as.Logger.Log.Error("failed to get user by login")
+		return "", nil, fmt.Errorf("%s : %w", op, err)
 	}
 	if err := bcrypt.CompareHashAndPassword(user.Password, []byte(password)); err != nil {
-		ur.Logger.Log.Info("invalid credentials", logger.Err(err))
-		return "", fmt.Errorf("%s : %w", op, err)
+		as.Logger.Log.Info("invalid credentials", logger.Err(err))
+		return "", nil, fmt.Errorf("%s : %w", op, err)
 	}
+	t := time.Now().Add(time.Hour * time.Duration(as.AuthConfig.TokenTTL))
+	ttl := jwt.NewNumericDate(t)
 	claims := jwt.MapClaims{
 		"sub": user.Id.String(),
-		"exp": jwt.NewNumericDate(time.Now().Add(time.Hour * time.Duration(ur.AuthConfig.TokenTTL))),
+		"exp": ttl,
 	}
-	token := jwt.NewWithClaims(jwt.SigningMethodES256, claims)
-	jwt, err := token.SignedString([]byte(ur.AuthConfig.Secret))
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	jwt, err := token.SignedString([]byte(as.AuthConfig.Secret))
 	if err != nil {
-		ur.Logger.Log.Error("failed to sign token", logger.Err(err))
-		return "", fmt.Errorf("%s : %w", op, err)
+		as.Logger.Log.Error("failed to sign token", logger.Err(err))
+		return "", nil, fmt.Errorf("%s : %w", op, err)
 	}
-	ur.Logger.Log.Info("tokin generated successfully")
-	return jwt, nil
+	as.Logger.Log.Info("tokin generated successfully")
+	return jwt, &t, nil
 }
 
-func (ur *authServ) Profile(ctx context.Context, id string) (*models.User, error) {
-	op := "authService.Profile"
-	ur.Logger.AddOp(op)
-	ur.Logger.Log.Info("profile receiving")
-	user, err := ur.UserRepo.Get(ctx, id)
+func (as *authServ) GetId(ctx context.Context, cookie string) (string, error) {
+	op := "authService.GetId"
+	as.Logger.AddOp(op)
+	as.Logger.Log.Info("id receiving")
+	token, err := jwt.ParseWithClaims(cookie, &jwt.RegisteredClaims{}, func(t *jwt.Token) (any, error) {
+		return []byte(as.AuthConfig.Secret), nil
+	})
 	if err != nil {
-		ur.Logger.Log.Error("failed to get user", logger.Err(err))
-		return nil, fmt.Errorf("%s : %w", op, err)
+		as.Logger.Log.Error("failed to parse cookie", logger.Err(err))
+		return "", fmt.Errorf("%s : %w", op, err)
 	}
-	return user, nil
+	claims := token.Claims.(*jwt.RegisteredClaims)
+	id := claims.Subject
+	return id, nil
 }
