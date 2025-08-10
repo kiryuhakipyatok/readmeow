@@ -3,8 +3,8 @@ package handlers
 import (
 	"readmeow/internal/delivery/dto"
 	"readmeow/internal/domain/services"
+	"readmeow/pkg/validator"
 
-	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 )
@@ -12,10 +12,10 @@ import (
 type ReadmeHandl struct {
 	ReadmeServ services.ReadmeServ
 	AuthServ   services.AuthServ
-	Validator  *validator.Validate
+	Validator  *validator.Validator
 }
 
-func NewReadmeHandl(rs services.ReadmeServ, as services.AuthServ, v *validator.Validate) *ReadmeHandl {
+func NewReadmeHandl(rs services.ReadmeServ, as services.AuthServ, v *validator.Validator) *ReadmeHandl {
 	return &ReadmeHandl{
 		ReadmeServ: rs,
 		Validator:  v,
@@ -31,13 +31,13 @@ func (rh *ReadmeHandl) CreateReadme(c *fiber.Ctx) error {
 			"error": "failed to parse reqeust: " + err.Error(),
 		})
 	}
-	if err := rh.Validator.Struct(req); err != nil {
+	if err := rh.Validator.Validate.Struct(req); err != nil {
 		c.Status(fiber.StatusBadRequest)
 		return c.JSON(fiber.Map{
 			"error": "validation failed: " + err.Error(),
 		})
 	}
-	if err := rh.ReadmeServ.Create(ctx, req.TemplateId, req.OwnerId, req.Title, req.Order, req.Text, req.Links, req.Widgets); err != nil {
+	if err := rh.ReadmeServ.Create(ctx, req.TemplateId, req.OwnerId, req.Title, req.Order, req.Image, req.Text, req.Links, req.Widgets); err != nil {
 		c.Status(fiber.StatusInternalServerError)
 		return c.JSON(fiber.Map{
 			"error": "failed to create readme: " + err.Error(),
@@ -86,7 +86,7 @@ func (rh *ReadmeHandl) UpdateReadme(c *fiber.Ctx) error {
 			"error": "failed to parse reqeust: " + err.Error(),
 		})
 	}
-	if err := rh.Validator.Struct(req); err != nil {
+	if err := rh.Validator.Validate.Struct(req); err != nil {
 		c.Status(fiber.StatusBadRequest)
 		return c.JSON(fiber.Map{
 			"error": "validation failed: " + err.Error(),
@@ -131,7 +131,7 @@ func (rh *ReadmeHandl) FetchReadmesByUser(c *fiber.Ctx) error {
 			"error": "failed to parse reqeust: " + err.Error(),
 		})
 	}
-	if err := rh.Validator.Struct(req); err != nil {
+	if err := rh.Validator.Validate.Struct(req); err != nil {
 		c.Status(fiber.StatusBadRequest)
 		return c.JSON(fiber.Map{
 			"error": "validation failed: " + err.Error(),

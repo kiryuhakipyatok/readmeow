@@ -1,0 +1,14 @@
+services:
+  migrate:
+    build: .
+    env_file:
+      - .env
+    command: goose -dir ${GOOSE_MIGRATIONS_DIR} up
+    volumes:
+      - ./internal/migrations:/migrations
+    networks:
+      - app-network
+networks:
+  app-network:
+    driver: bridge
+    external: true

@@ -7,6 +7,8 @@ import (
 	"readmeow/internal/domain/models"
 	"readmeow/pkg/storage"
 	"strings"
+
+	"github.com/google/uuid"
 )
 
 type ReadmeRepo interface {
@@ -35,8 +37,14 @@ var (
 
 func (rr *readmeRepo) Create(ctx context.Context, readme *models.Readme) error {
 	op := "readmeRepo.Create"
-	query := "INSERT INTO readmes (id, owner_id, title, text, links, widgets, order, create_time, last_update_time) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)"
-	if _, err := rr.Storage.Pool.Exec(ctx, query, readme.Id, readme.OwnerId, readme.Text, readme.Links, readme.Widgets, readme.Order, readme.CreateTime, readme.LastUpdateTime); err != nil {
+	var tId any
+	if readme.TemplateId == uuid.Nil {
+		tId = nil
+	} else {
+		tId = readme.TemplateId
+	}
+	query := "INSERT INTO readmes (id, owner_id, template_id, title, image, text, links, widgets, render_order, create_time, last_update_time) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)"
+	if _, err := rr.Storage.Pool.Exec(ctx, query, readme.Id, readme.OwnerId, tId, readme.Title, readme.Image, readme.Text, readme.Links, readme.Widgets, readme.Order, readme.CreateTime, readme.LastUpdateTime); err != nil {
 		if storage.ErrorAlreadyExists(err) {
 			return fmt.Errorf("%s : %w", op, errReadmeAlreadyExists)
 		}
@@ -106,6 +114,7 @@ func (rr *readmeRepo) Get(ctx context.Context, id string) (*models.Readme, error
 	if err := rr.Storage.Pool.QueryRow(ctx, query, id).Scan(
 		&readme.Id,
 		&readme.OwnerId,
+		&readme.TemplateId,
 		&readme.Title,
 		&readme.Text,
 		&readme.Links,
@@ -136,6 +145,7 @@ func (rr *readmeRepo) FetchByUser(ctx context.Context, amount, page uint, uid st
 		if err := rows.Scan(
 			&readme.Id,
 			&readme.OwnerId,
+			&readme.TemplateId,
 			&readme.Title,
 			&readme.Text,
 			&readme.Links,

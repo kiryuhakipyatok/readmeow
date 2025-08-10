@@ -27,7 +27,7 @@ type TemplateRepo interface {
 	Fetch(ctx context.Context, amount, page uint) ([]models.Template, error)
 	Sort(ctx context.Context, amount, page uint, dest, field string) ([]models.Template, error)
 	Search(ctx context.Context, amount, page uint, query string) ([]models.Template, error)
-	MustBulk(cfg *config.SearchConfig)
+	MustBulk(cfg config.SearchConfig)
 }
 
 type templateRepo struct {
@@ -51,7 +51,7 @@ var (
 
 func (tr *templateRepo) Create(ctx context.Context, template *models.Template) error {
 	op := "templateRepo.Create"
-	query := "INSERT INTO templates (id, owner_id, title, image,description, text, links, widgets, order, create_time) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)"
+	query := "INSERT INTO templates (id, owner_id, title, image,description, text, links, widgets, renderorder, create_time) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)"
 	if _, err := tr.Storage.Pool.Exec(ctx, query, template.Id, template.OwnerId, template.Title, template.Image, template.Description, template.Text, template.Links, template.Widgets, template.Order, template.CreateTime); err != nil {
 		if storage.ErrorAlreadyExists(err) {
 			return fmt.Errorf("%s : %w", op, errTemplateAlreadyExists)
@@ -397,8 +397,8 @@ func (tr *templateRepo) getAll(ctx context.Context) ([]models.Template, error) {
 	return templates, nil
 }
 
-func (tr *templateRepo) MustBulk(cfg *config.SearchConfig) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*time.Duration(cfg.Timeout))
+func (tr *templateRepo) MustBulk(cfg config.SearchConfig) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(int(time.Second)*cfg.Timeout))
 	defer cancel()
 	op := "templateRepo.SearchPreparing.Bulk"
 	templates, err := tr.getAll(ctx)

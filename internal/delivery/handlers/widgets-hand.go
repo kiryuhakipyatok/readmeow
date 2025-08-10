@@ -3,18 +3,18 @@ package handlers
 import (
 	"readmeow/internal/delivery/dto"
 	"readmeow/internal/domain/services"
+	"readmeow/pkg/validator"
 
-	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 )
 
 type WidgetHandl struct {
 	WidgetServ services.WidgetServ
-	Validator  *validator.Validate
+	Validator  *validator.Validator
 }
 
-func NewWidgetHandl(ws services.WidgetServ, v *validator.Validate) *WidgetHandl {
+func NewWidgetHandl(ws services.WidgetServ, v *validator.Validator) *WidgetHandl {
 	return &WidgetHandl{
 		WidgetServ: ws,
 		Validator:  v,
@@ -49,7 +49,7 @@ func (wh *WidgetHandl) FetchWidgets(c *fiber.Ctx) error {
 			"error": "failed to parse reqeust: " + err.Error(),
 		})
 	}
-	if err := wh.Validator.Struct(req); err != nil {
+	if err := wh.Validator.Validate.Struct(req); err != nil {
 		c.Status(fiber.StatusBadRequest)
 		return c.JSON(fiber.Map{
 			"error": "validation failed: " + err.Error(),
@@ -74,7 +74,7 @@ func (wh *WidgetHandl) FetchSortedWidgets(c *fiber.Ctx) error {
 			"error": "failed to parse reqeust: " + err.Error(),
 		})
 	}
-	if err := wh.Validator.Struct(req); err != nil {
+	if err := wh.Validator.Validate.Struct(req); err != nil {
 		c.Status(fiber.StatusBadRequest)
 		return c.JSON(fiber.Map{
 			"error": "validation failed: " + err.Error(),
@@ -99,7 +99,7 @@ func (wh *WidgetHandl) SearchWidgets(c *fiber.Ctx) error {
 			"error": "failed to parse reqeust: " + err.Error(),
 		})
 	}
-	if err := wh.Validator.Struct(req); err != nil {
+	if err := wh.Validator.Validate.Struct(req); err != nil {
 		c.Status(fiber.StatusBadRequest)
 		return c.JSON(fiber.Map{
 			"error": "validation failed: " + err.Error(),

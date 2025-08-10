@@ -14,19 +14,18 @@ type Cache struct {
 
 const EMPTY = redis.Nil
 
-func MustConnect(cfg config.CacheConfig) Cache {
+func MustConnect(cfg config.CacheConfig) *Cache {
 	redis := redis.NewClient(&redis.Options{
-		Username: cfg.User,
 		Addr:     cfg.Host + ":" + cfg.Port,
 		DB:       0,
 		Password: cfg.Password,
 	})
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*time.Duration(cfg.ConnectTimeout))
 	defer cancel()
 	if err := redis.Ping(ctx).Err(); err != nil {
-		panic("failed to ping redis client")
+		panic("failed to ping redis client" + err.Error())
 	}
-	cache := Cache{
+	cache := &Cache{
 		Redis: redis,
 	}
 	return cache
@@ -34,6 +33,6 @@ func MustConnect(cfg config.CacheConfig) Cache {
 
 func (c *Cache) MustClose() {
 	if err := c.Redis.Close(); err != nil {
-		panic("failed to close redis")
+		panic("failed to close redis" + err.Error())
 	}
 }

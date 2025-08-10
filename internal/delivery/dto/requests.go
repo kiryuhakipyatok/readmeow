@@ -7,7 +7,7 @@ type RegisterRequest struct {
 }
 
 type LoginRequest struct {
-	Login    string `json:"login" validate:"required,max=100"`
+	Login    string `json:"login" validate:"required,max=80"`
 	Password string `json:"password" validate:"required"`
 }
 
@@ -68,7 +68,8 @@ type SortTemplatesRequest struct {
 type CreateReadmeRequest struct {
 	TemplateId string   `json:"template_id" validate:"uuid"`
 	OwnerId    string   `json:"owner_id" validate:"required,uuid"`
-	Title      string   `json:"readme_title" validate:"required,max=50"`
+	Image      string   `json:"readme_image" validate:"required"`
+	Title      string   `json:"readme_title" validate:"required,max=80"`
 	Order      string   `json:"readme_order" validate:"required"`
 	Text       []string `json:"text" validate:"dive,uuid"`
 	Links      []string `json:"links" validate:"dive,uuid"`

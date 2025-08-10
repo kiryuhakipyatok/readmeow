@@ -33,63 +33,63 @@ func NewWidgetServ(wr repositories.WidgetRepo, ur repositories.UserRepo, l *logg
 
 func (ws *widgetServ) Get(ctx context.Context, id string) (*models.Widget, error) {
 	op := "widgetServ.Get"
-	ws.Logger.AddOp(op)
-	ws.Logger.Log.Info("receiving widget")
+	log := ws.Logger.AddOp(op)
+	log.Log.Info("receiving widget")
 	widget, err := ws.WidgetRepo.Get(ctx, id)
 	if err != nil {
-		ws.Logger.Log.Error("failed to get widget", logger.Err(err))
+		log.Log.Error("failed to get widget", logger.Err(err))
 		return nil, fmt.Errorf("%s : %w", op, err)
 	}
-	ws.Logger.Log.Info("widget received successfully")
+	log.Log.Info("widget received successfully")
 	return widget, nil
 }
 
 func (ws *widgetServ) Fetch(ctx context.Context, amount, page uint) ([]models.Widget, error) {
 	op := "widgetServ.Fetch"
-	ws.Logger.AddOp(op)
-	ws.Logger.Log.Info("fetching widgets")
+	log := ws.Logger.AddOp(op)
+	log.Log.Info("fetching widgets")
 	widgets, err := ws.WidgetRepo.Fetch(ctx, amount, page)
 	if err != nil {
-		ws.Logger.Log.Error("failed to fetch widgets", logger.Err(err))
+		log.Log.Error("failed to fetch widgets", logger.Err(err))
 		return nil, fmt.Errorf("%s : %w", op, err)
 	}
-	ws.Logger.Log.Info("widgets fetched successfully")
+	log.Log.Info("widgets fetched successfully")
 	return widgets, nil
 }
 
 func (ws *widgetServ) Sort(ctx context.Context, amount, page uint, field, dest string) ([]models.Widget, error) {
 	op := "widgetServ.Sort"
-	ws.Logger.AddOp(op)
-	ws.Logger.Log.Info("fetching sorted widgets")
+	log := ws.Logger.AddOp(op)
+	log.Log.Info("fetching sorted widgets")
 	widgets, err := ws.WidgetRepo.Sort(ctx, amount, page, field, dest)
 	if err != nil {
-		ws.Logger.Log.Error("failed to fetch sorted widgets", logger.Err(err))
+		log.Log.Error("failed to fetch sorted widgets", logger.Err(err))
 		return nil, fmt.Errorf("%s : %w", op, err)
 	}
-	ws.Logger.Log.Info("sorted widgets fetched successfully")
+	log.Log.Info("sorted widgets fetched successfully")
 	return widgets, nil
 }
 
 func (ws *widgetServ) Search(ctx context.Context, amount, page uint, query string) ([]models.Widget, error) {
 	op := "widgetServ.Search"
-	ws.Logger.AddOp(op)
-	ws.Logger.Log.Info("fetching searched widgets")
+	log := ws.Logger.AddOp(op)
+	log.Log.Info("fetching searched widgets")
 	widgets, err := ws.WidgetRepo.Search(ctx, amount, page, query)
 	if err != nil {
-		ws.Logger.Log.Error("failed to fetch searched widgets", logger.Err(err))
+		log.Log.Error("failed to fetch searched widgets", logger.Err(err))
 		return nil, fmt.Errorf("%s : %w", op, err)
 	}
-	ws.Logger.Log.Info("searched widgets fetched successfully")
+	log.Log.Info("searched widgets fetched successfully")
 	return widgets, nil
 }
 
 func (ws *widgetServ) Like(ctx context.Context, id string) error {
 	op := "widgetServ.Like"
-	ws.Logger.AddOp(op)
-	ws.Logger.Log.Info("liking widget")
+	log := ws.Logger.AddOp(op)
+	log.Log.Info("liking widget")
 	widget, err := ws.WidgetRepo.Get(ctx, id)
 	if err != nil {
-		ws.Logger.Log.Error("failed to get widget", logger.Err(err))
+		log.Log.Error("failed to get widget", logger.Err(err))
 		return fmt.Errorf("%s : %w", op, err)
 	}
 	updatedLikes := widget.Likes + 1
@@ -97,20 +97,20 @@ func (ws *widgetServ) Like(ctx context.Context, id string) error {
 		"likes": updatedLikes,
 	}
 	if err := ws.WidgetRepo.Update(ctx, update, widget.Id.String()); err != nil {
-		ws.Logger.Log.Error("failed to update widget info", logger.Err(err))
+		log.Log.Error("failed to update widget info", logger.Err(err))
 		return err
 	}
-	ws.Logger.Log.Info("widget liked successfully")
+	log.Log.Info("widget liked successfully")
 	return nil
 }
 
 func (ws *widgetServ) Dislike(ctx context.Context, id string) error {
 	op := "widgetServ.Dislike"
-	ws.Logger.AddOp(op)
-	ws.Logger.Log.Info("disliking widget")
+	log := ws.Logger.AddOp(op)
+	log.Log.Info("disliking widget")
 	widget, err := ws.WidgetRepo.Get(ctx, id)
 	if err != nil {
-		ws.Logger.Log.Error("failed to get widget", logger.Err(err))
+		log.Log.Error("failed to get widget", logger.Err(err))
 		return fmt.Errorf("%s : %w", op, err)
 	}
 	updatedLikes := widget.Likes - 1
@@ -118,9 +118,9 @@ func (ws *widgetServ) Dislike(ctx context.Context, id string) error {
 		"likes": updatedLikes,
 	}
 	if err := ws.WidgetRepo.Update(ctx, update, widget.Id.String()); err != nil {
-		ws.Logger.Log.Error("failed to update widget info", logger.Err(err))
+		log.Log.Error("failed to update widget info", logger.Err(err))
 		return err
 	}
-	ws.Logger.Log.Info("widget disliked successfully")
+	log.Log.Info("widget disliked successfully")
 	return nil
 }

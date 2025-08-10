@@ -3,19 +3,19 @@ package handlers
 import (
 	"readmeow/internal/delivery/dto"
 	"readmeow/internal/domain/services"
+	"readmeow/pkg/validator"
 	"time"
 
-	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 )
 
 type AuthHandl struct {
 	AuthServ  services.AuthServ
 	UserServ  services.UserServ
-	Validator *validator.Validate
+	Validator *validator.Validator
 }
 
-func NewAuthHandle(as services.AuthServ, us services.UserServ, v *validator.Validate) *AuthHandl {
+func NewAuthHandle(as services.AuthServ, us services.UserServ, v *validator.Validator) *AuthHandl {
 	return &AuthHandl{
 		AuthServ:  as,
 		Validator: v,
@@ -31,7 +31,7 @@ func (ah *AuthHandl) Register(c *fiber.Ctx) error {
 			"error": "failed to parse reqeust: " + err.Error(),
 		})
 	}
-	if err := ah.Validator.Struct(req); err != nil {
+	if err := ah.Validator.Validate.Struct(req); err != nil {
 		c.Status(fiber.StatusBadRequest)
 		return c.JSON(fiber.Map{
 			"error": "validation failed: " + err.Error(),
@@ -57,7 +57,7 @@ func (ah *AuthHandl) Login(c *fiber.Ctx) error {
 			"error": "failed to parse reqeust: " + err.Error(),
 		})
 	}
-	if err := ah.Validator.Struct(req); err != nil {
+	if err := ah.Validator.Validate.Struct(req); err != nil {
 		c.Status(fiber.StatusBadRequest)
 		return c.JSON(fiber.Map{
 			"error": "validation failed: " + err.Error(),

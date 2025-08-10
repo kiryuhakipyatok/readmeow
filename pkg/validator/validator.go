@@ -2,7 +2,13 @@ package validator
 
 import "github.com/go-playground/validator/v10"
 
-func NewValidator() *validator.Validate {
+type Validator struct {
+	Validate *validator.Validate
+}
+
+func NewValidator() *Validator {
 	validator := validator.New()
-	return validator
+	return &Validator{
+		Validate: validator,
+	}
 }

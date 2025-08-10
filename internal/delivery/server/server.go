@@ -11,31 +11,31 @@ import (
 )
 
 type Server struct {
-	*fiber.App
+	App *fiber.App
 }
 
-func NewServer(scfg *config.ServerConfig, acfg *config.AuthConfig) *Server {
+func NewServer(scfg config.ServerConfig, acfg config.AuthConfig) *Server {
 	app := fiber.New(fiber.Config{
-		ReadTimeout:  time.Duration(scfg.ReadTimeout),
-		WriteTimeout: time.Duration(scfg.WriteTimeout),
-		IdleTimeout:  time.Duration(scfg.IdleTimeout),
+		ReadTimeout:  time.Duration(int(time.Second) * scfg.ReadTimeout),
+		WriteTimeout: time.Duration(int(time.Second) * scfg.WriteTimeout),
+		IdleTimeout:  time.Duration(int(time.Second) * scfg.IdleTimeout),
 	})
 	app.Use(
 		cors.New(cors.Config{}),
-		AuthMiddleware(acfg),
-		RequestTimeoutMiddleware(time.Duration(scfg.RequestTimeout)),
+		authMiddleware(acfg),
+		requestTimeoutMiddleware(time.Duration(scfg.RequestTimeout*int(time.Second))),
 	)
 
-	return &Server{app}
+	return &Server{App: app}
 }
 
-func (s *Server) Close(ctx context.Context) {
+func (s *Server) MustClose(ctx context.Context) {
 	if err := s.App.ShutdownWithContext(ctx); err != nil {
 		panic(err)
 	}
 }
 
-func AuthMiddleware(acfg *config.AuthConfig) fiber.Handler {
+func authMiddleware(acfg config.AuthConfig) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		if c.Path() == "/api/auth/login" || c.Path() == "/api/auth/register" {
 			return c.Next()
@@ -53,7 +53,7 @@ func AuthMiddleware(acfg *config.AuthConfig) fiber.Handler {
 	}
 }
 
-func RequestTimeoutMiddleware(timeout time.Duration) fiber.Handler {
+func requestTimeoutMiddleware(timeout time.Duration) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		ctx, cancel := context.WithTimeout(c.UserContext(), timeout)
 		defer cancel()

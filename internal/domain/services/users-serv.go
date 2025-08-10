@@ -31,76 +31,76 @@ func NewUserServ(ur repositories.UserRepo, l *logger.Logger) UserServ {
 
 func (us *userServ) Update(ctx context.Context, updates map[string]any, id string) error {
 	op := "userServ.Update"
-	us.Logger.AddOp(op)
-	us.Logger.Log.Info("updating user info")
+	log := us.Logger.AddOp(op)
+	log.Log.Info("updating user info")
 	if err := us.UserRepo.Update(ctx, updates, id); err != nil {
-		us.Logger.Log.Error("failed to update user info", logger.Err(err))
+		log.Log.Error("failed to update user info", logger.Err(err))
 		return fmt.Errorf("%s : %w", op, err)
 	}
-	us.Logger.Log.Info("user info updated successfully")
+	log.Log.Info("user info updated successfully")
 	return nil
 }
 
 func (us *userServ) Delete(ctx context.Context, id, password string) error {
 	op := "userServ.Delete"
-	us.Logger.AddOp(op)
-	us.Logger.Log.Info("deleting user")
+	log := us.Logger.AddOp(op)
+	log.Log.Info("deleting user")
 	userPassword, err := us.UserRepo.GetPassword(ctx, id)
 	if err != nil {
-		us.Logger.Log.Error("failed to get user password", logger.Err(err))
+		log.Log.Error("failed to get user password", logger.Err(err))
 		return fmt.Errorf("%s : %w", op, err)
 	}
 	if err := bcrypt.CompareHashAndPassword(userPassword, []byte(password)); err != nil {
-		us.Logger.Log.Error("user and entered passwords are not equal", logger.Err(err))
+		log.Log.Error("user and entered passwords are not equal", logger.Err(err))
 		return fmt.Errorf("%s : %w", op, err)
 	}
 	if err := us.UserRepo.Delete(ctx, id); err != nil {
-		us.Logger.Log.Error("failed to delete user", logger.Err(err))
+		log.Log.Error("failed to delete user", logger.Err(err))
 		return fmt.Errorf("%s : %w", op, err)
 	}
-	us.Logger.Log.Info("user deleted successfully")
+	log.Log.Info("user deleted successfully")
 	return nil
 }
 
 func (us *userServ) ChangePassword(ctx context.Context, id string, oldPassword, newPasswrod string) error {
 	op := "userServ.UpdatePassword"
-	us.Logger.AddOp(op)
-	us.Logger.Log.Info("changing user password")
+	log := us.Logger.AddOp(op)
+	log.Log.Info("changing user password")
 
 	userPassword, err := us.UserRepo.GetPassword(ctx, id)
 	if err != nil {
-		us.Logger.Log.Error("failed to get user password", logger.Err(err))
+		log.Log.Error("failed to get user password", logger.Err(err))
 		return fmt.Errorf("%s : %w", op, err)
 	}
 
 	if err := bcrypt.CompareHashAndPassword(userPassword, []byte(oldPassword)); err != nil {
-		us.Logger.Log.Error("old and entered passwords are not equal", logger.Err(err))
+		log.Log.Error("old and entered passwords are not equal", logger.Err(err))
 		return fmt.Errorf("%s : %w", op, err)
 	}
 
 	newHashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPasswrod), 14)
 	if err != nil {
-		us.Logger.Log.Error("failed to hash password", logger.Err(err))
+		log.Log.Error("failed to hash password", logger.Err(err))
 		return fmt.Errorf("%s : %w", op, err)
 	}
 
 	if err := us.UserRepo.ChangePassword(ctx, id, newHashedPassword); err != nil {
-		us.Logger.Log.Error("failed to change user password", logger.Err(err))
+		log.Log.Error("failed to change user password", logger.Err(err))
 		return fmt.Errorf("%s : %w", op, err)
 	}
-	us.Logger.Log.Info("user password changed successfully")
+	log.Log.Info("user password changed successfully")
 	return nil
 }
 
 func (us *userServ) Get(ctx context.Context, id string) (*models.User, error) {
 	op := "userServ.Get"
-	us.Logger.AddOp(op)
-	us.Logger.Log.Info("receiving user")
+	log := us.Logger.AddOp(op)
+	log.Log.Info("receiving user")
 	user, err := us.UserRepo.Get(ctx, id)
 	if err != nil {
-		us.Logger.Log.Error("failed to get user", logger.Err(err))
+		log.Log.Error("failed to get user", logger.Err(err))
 		return nil, fmt.Errorf("%s : %w", op, err)
 	}
-	us.Logger.Log.Info("user received successfully")
+	log.Log.Info("user received successfully")
 	return user, nil
 }

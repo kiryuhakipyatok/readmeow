@@ -14,7 +14,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/elastic/go-elasticsearch/v8/esutil"
+	"github.com/elastic/go-elasticsearch/v9/esutil"
 	s "github.com/elastic/go-elasticsearch/v9/typedapi/core/search"
 	"github.com/elastic/go-elasticsearch/v9/typedapi/types"
 )
@@ -26,7 +26,7 @@ type WidgetRepo interface {
 	Search(ctx context.Context, amount, page uint, query string) ([]models.Widget, error)
 	GetByIds(ctx context.Context, ids []string) ([]models.Widget, error)
 	Update(ctx context.Context, updates map[string]any, id string) error
-	MustBulk(cfg *config.SearchConfig)
+	MustBulk(cfg config.SearchConfig)
 }
 
 type widgetRepo struct {
@@ -274,8 +274,8 @@ func (wr *widgetRepo) getAll(ctx context.Context) ([]models.Widget, error) {
 	return widgets, nil
 }
 
-func (wr *widgetRepo) MustBulk(cfg *config.SearchConfig) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(cfg.Timeout))
+func (wr *widgetRepo) MustBulk(cfg config.SearchConfig) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(int(time.Second)*cfg.Timeout))
 	defer cancel()
 	op := "widgetRepo.SearchPreparing.Bulk"
 	widgets, err := wr.getAll(ctx)

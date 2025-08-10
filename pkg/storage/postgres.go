@@ -13,8 +13,8 @@ type Storage struct {
 	Pool *pgxpool.Pool
 }
 
-func MustConnect(cfg *config.StorageConfig) *Storage {
-	dsn := fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=%s&timezone=%s",
+func MustConnect(cfg config.StorageConfig) *Storage {
+	dsn := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=%s&timezone=%s",
 		cfg.User,
 		cfg.Password,
 		cfg.Host,
@@ -23,14 +23,19 @@ func MustConnect(cfg *config.StorageConfig) *Storage {
 		cfg.SSLMode,
 		cfg.Timezone,
 	)
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*time.Duration(cfg.ConnectTimeout))
 	defer cancel()
-	pool, err := pgxpool.New(ctx, dsn)
+	pcfg, err := pgxpool.ParseConfig(dsn)
 	if err != nil {
-		panic("failed to create postgres pool")
+		panic("failed to parse pool config" + err.Error())
+	}
+	pcfg.MaxConns = 10
+	pool, err := pgxpool.NewWithConfig(ctx, pcfg)
+	if err != nil {
+		panic("failed to create postgres pool" + err.Error())
 	}
 	if err := pool.Ping(ctx); err != nil {
-		panic("failed to ping postgres pool")
+		panic("failed to ping postgres pool" + err.Error())
 	}
 	storage := &Storage{
 		Pool: pool,

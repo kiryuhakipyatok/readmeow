@@ -3,18 +3,18 @@ package handlers
 import (
 	"readmeow/internal/delivery/dto"
 	"readmeow/internal/domain/services"
+	"readmeow/pkg/validator"
 
-	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 )
 
 type TemplateHandl struct {
 	TemplateServ services.TemplateServ
-	Validator    *validator.Validate
+	Validator    *validator.Validator
 }
 
-func NewTemplateHandl(ts services.TemplateServ, v *validator.Validate) *TemplateHandl {
+func NewTemplateHandl(ts services.TemplateServ, v *validator.Validator) *TemplateHandl {
 	return &TemplateHandl{
 		TemplateServ: ts,
 		Validator:    v,
@@ -30,7 +30,7 @@ func (th *TemplateHandl) CreateTemplate(c *fiber.Ctx) error {
 			"error": "failed to parse reqeust: " + err.Error(),
 		})
 	}
-	if err := th.Validator.Struct(req); err != nil {
+	if err := th.Validator.Validate.Struct(req); err != nil {
 		c.Status(fiber.StatusBadRequest)
 		return c.JSON(fiber.Map{
 			"error": "validation failed: " + err.Error(),
@@ -56,7 +56,7 @@ func (th *TemplateHandl) UpdateTemplate(c *fiber.Ctx) error {
 			"error": "failed to parse reqeust: " + err.Error(),
 		})
 	}
-	if err := th.Validator.Struct(req); err != nil {
+	if err := th.Validator.Validate.Struct(req); err != nil {
 		c.Status(fiber.StatusBadRequest)
 		return c.JSON(fiber.Map{
 			"error": "validation failed: " + err.Error(),
@@ -121,7 +121,7 @@ func (th *TemplateHandl) FetchTemplates(c *fiber.Ctx) error {
 			"error": "failed to parse reqeust: " + err.Error(),
 		})
 	}
-	if err := th.Validator.Struct(req); err != nil {
+	if err := th.Validator.Validate.Struct(req); err != nil {
 		c.Status(fiber.StatusBadRequest)
 		return c.JSON(fiber.Map{
 			"error": "validation failed: " + err.Error(),
@@ -146,7 +146,7 @@ func (th *TemplateHandl) SortTemplate(c *fiber.Ctx) error {
 			"error": "failed to parse reqeust: " + err.Error(),
 		})
 	}
-	if err := th.Validator.Struct(req); err != nil {
+	if err := th.Validator.Validate.Struct(req); err != nil {
 		c.Status(fiber.StatusBadRequest)
 		return c.JSON(fiber.Map{
 			"error": "validation failed: " + err.Error(),
@@ -171,7 +171,7 @@ func (th *TemplateHandl) SearchTemplate(c *fiber.Ctx) error {
 			"error": "failed to parse reqeust: " + err.Error(),
 		})
 	}
-	if err := th.Validator.Struct(req); err != nil {
+	if err := th.Validator.Validate.Struct(req); err != nil {
 		c.Status(fiber.StatusBadRequest)
 		return c.JSON(fiber.Map{
 			"error": "validation failed: " + err.Error(),

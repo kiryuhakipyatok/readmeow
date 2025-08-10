@@ -33,6 +33,9 @@ func NewLogger(env string) *Logger {
 	return logger
 }
 
-func (l *Logger) AddOp(op string) {
-	l.Log = l.Log.With(slog.String("op", op))
+func (l *Logger) AddOp(op string) *Logger {
+	logger := &Logger{
+		Log: l.Log.With(slog.String("op", op)),
+	}
+	return logger
 }

@@ -1,6 +1,8 @@
 package models
 
 import (
+	"time"
+
 	"github.com/google/uuid"
 )
 
@@ -16,6 +18,6 @@ type Template struct {
 	Likes          uint16
 	NumOfUsers     uint16
 	Order          string
-	CreateTime     int64
-	LastUpdateTime int64
+	CreateTime     time.Time
+	LastUpdateTime time.Time
 }
