@@ -13,7 +13,7 @@ server:
 
 auth:
   secret: "${SECRET}"
-  tokenTTL: 4320
+  tokenTTL: 259200
 
 storage:
   user: "${POSTGRES_USER}"

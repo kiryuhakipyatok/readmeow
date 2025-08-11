@@ -37,7 +37,7 @@ func (rh *ReadmeHandl) CreateReadme(c *fiber.Ctx) error {
 			"error": "validation failed: " + err.Error(),
 		})
 	}
-	if err := rh.ReadmeServ.Create(ctx, req.TemplateId, req.OwnerId, req.Title, req.Order, req.Image, req.Text, req.Links, req.Widgets); err != nil {
+	if err := rh.ReadmeServ.Create(ctx, req.TemplateId, req.OwnerId, req.Title, req.Image, req.Text, req.Links, req.Widgets, req.Order); err != nil {
 		c.Status(fiber.StatusInternalServerError)
 		return c.JSON(fiber.Map{
 			"error": "failed to create readme: " + err.Error(),

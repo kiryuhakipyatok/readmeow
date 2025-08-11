@@ -15,7 +15,7 @@ type Readme struct {
 	Text           []string
 	Links          []string
 	Widgets        []string
-	Order          string
+	Order          []string
 	CreateTime     time.Time
 	LastUpdateTime time.Time
 }

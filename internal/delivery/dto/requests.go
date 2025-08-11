@@ -44,14 +44,14 @@ type ChangePasswordRequest struct {
 }
 
 type CreateTemplateRequest struct {
-	OwnerId     string   `json:"owner_id" validate:"required,uuid"`
-	Title       string   `json:"template_title" validate:"required,max=50"`
-	Image       string   `json:"template_image" validate:"required"`
-	Description string   `json:"template_description" validate:"required,min=1,max=1000"`
-	Order       string   `json:"template_order" validate:"required"`
-	Text        []string `json:"text" validate:"dive,uuid"`
-	Links       []string `json:"links" validate:"dive,uuid"`
-	Widgets     []string `json:"widgets" validate:"dive,uuid"`
+	OwnerId     string            `json:"owner_id" validate:"required,uuid"`
+	Title       string            `json:"template_title" validate:"required,max=50"`
+	Image       string            `json:"template_image" validate:"required"`
+	Description string            `json:"template_description" validate:"required,min=1,max=1000"`
+	Order       []string          `json:"template_order" validate:"required,dive,string"`
+	Text        []string          `json:"text" validate:"dive,uuid"`
+	Links       []string          `json:"links" validate:"dive,uuid"`
+	Widgets     map[string]string `json:"widgets" validate:"keys,dive,uuid,endkeys"`
 }
 
 type UpdateTemplateRequest struct {
@@ -70,7 +70,7 @@ type CreateReadmeRequest struct {
 	OwnerId    string   `json:"owner_id" validate:"required,uuid"`
 	Image      string   `json:"readme_image" validate:"required"`
 	Title      string   `json:"readme_title" validate:"required,max=80"`
-	Order      string   `json:"readme_order" validate:"required"`
+	Order      []string `json:"readme_order" validate:"required,dive,string"`
 	Text       []string `json:"text" validate:"dive,uuid"`
 	Links      []string `json:"links" validate:"dive,uuid"`
 	Widgets    []string `json:"widgets" validate:"dive,uuid"`

@@ -33,7 +33,7 @@ clean:
 	@rm -f main.exe
 
 docker-migrate:
-	@docker-compose -f docker-compose.migrate.yaml run --rm migrate
+	@docker-compose run --rm migrate
 
 create:
 	@goose -dir=$(MIGRATIONS_PATH) create $(NAME) sql

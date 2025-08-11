@@ -42,7 +42,7 @@ func (bc *BootstrapConfig) Bootstrap() {
 	userRepo := repositories.NewUserRepo(bc.Storage)
 	widgetRepo := repositories.NewWidgetRepo(bc.Storage, bc.Cache, bc.SearchClient)
 	readmeRepo := repositories.NewReadmeStorage(bc.Storage)
-	templateRepo := repositories.NewTemplateRepo(bc.Storage, bc.Cache)
+	templateRepo := repositories.NewTemplateRepo(bc.Storage, bc.Cache, bc.SearchClient)
 	transactor := storage.NewTransactor(bc.Storage)
 
 	var wg sync.WaitGroup

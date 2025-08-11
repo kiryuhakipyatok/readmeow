@@ -36,7 +36,7 @@ func (th *TemplateHandl) CreateTemplate(c *fiber.Ctx) error {
 			"error": "validation failed: " + err.Error(),
 		})
 	}
-	if err := th.TemplateServ.Create(ctx, req.OwnerId, req.Title, req.Image, req.Description, req.Order, req.Text, req.Links, req.Widgets); err != nil {
+	if err := th.TemplateServ.Create(ctx, req.OwnerId, req.Title, req.Image, req.Description, req.Text, req.Links, req.Order, req.Widgets); err != nil {
 		c.Status(fiber.StatusInternalServerError)
 		return c.JSON(fiber.Map{
 			"error": "failed to create template: " + err.Error(),

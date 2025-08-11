@@ -14,7 +14,7 @@ import (
 )
 
 type ReadmeServ interface {
-	Create(ctx context.Context, tid, oid, title, order, image string, text, links, widgets []string) error
+	Create(ctx context.Context, tid, oid, title, image string, text, links, widgets, order []string) error
 	Delete(ctx context.Context, id, uid string) error
 	Update(ctx context.Context, updates map[string]any, id string) error
 	Get(ctx context.Context, id string) (*models.Readme, error)
@@ -40,7 +40,7 @@ func NewReadmeServ(rr repositories.ReadmeRepo, ur repositories.UserRepo, tr repo
 	}
 }
 
-func (rs *readmeServ) Create(ctx context.Context, oid, title, order, tid, image string, text, links, widgets []string) error {
+func (rs *readmeServ) Create(ctx context.Context, oid, title, tid, image string, text, links, widgets, order []string) error {
 	op := "readmeServ.Create"
 	log := rs.Logger.AddOp(op)
 	log.Log.Info("creating readme")

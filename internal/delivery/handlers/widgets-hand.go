@@ -109,7 +109,7 @@ func (wh *WidgetHandl) SearchWidgets(c *fiber.Ctx) error {
 	if err != nil {
 		c.Status(fiber.StatusInternalServerError)
 		return c.JSON(fiber.Map{
-			"error": "failed to fetch sorted widgets: " + err.Error(),
+			"error": "failed to fetch searched widgets: " + err.Error(),
 		})
 	}
 	return c.JSON(widgets)

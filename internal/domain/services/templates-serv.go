@@ -13,7 +13,7 @@ import (
 )
 
 type TemplateServ interface {
-	Create(ctx context.Context, oid, title, image, description, order string, text, links, widgets []string) error
+	Create(ctx context.Context, oid, title, image, description string, text, links, order []string, widgets map[string]string) error
 	Update(ctx context.Context, fields map[string]any, id string) error
 	Delete(ctx context.Context, id string) error
 	Get(ctx context.Context, id string) (*models.Template, error)
@@ -42,7 +42,7 @@ func NewTemplateServ(tr repositories.TemplateRepo, ur repositories.UserRepo, wr 
 	}
 }
 
-func (ts *templateServ) Create(ctx context.Context, oid, title, image, description, order string, text, links, widgets []string) error {
+func (ts *templateServ) Create(ctx context.Context, oid, title, image, description string, text, links, order []string, widgets map[string]string) error {
 	op := "templateServ.Create"
 	log := ts.Logger.AddOp(op)
 	log.Log.Info("creating template")
@@ -67,8 +67,12 @@ func (ts *templateServ) Create(ctx context.Context, oid, title, image, descripti
 			CreateTime:     time.Now(),
 			LastUpdateTime: time.Now(),
 		}
+		keys := make([]string, 0, len(widgets))
+		for k := range widgets {
+			keys = append(keys, k)
+		}
 		if len(widgets) != 0 {
-			widgetsData, err := ts.WidgetRepo.GetByIds(ctx, widgets)
+			widgetsData, err := ts.WidgetRepo.GetByIds(ctx, keys)
 			if err != nil {
 				log.Log.Error("failed to fetch widgets", logger.Err(err))
 				return nil, err

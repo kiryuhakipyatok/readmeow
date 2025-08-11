@@ -36,10 +36,11 @@ type templateRepo struct {
 	SearchClient *search.SearchClient
 }
 
-func NewTemplateRepo(s *storage.Storage, c *cache.Cache) TemplateRepo {
+func NewTemplateRepo(s *storage.Storage, c *cache.Cache, sc *search.SearchClient) TemplateRepo {
 	return &templateRepo{
-		Storage: s,
-		Cache:   c,
+		Storage:      s,
+		Cache:        c,
+		SearchClient: sc,
 	}
 }
 
@@ -296,7 +297,7 @@ func (tr *templateRepo) Search(ctx context.Context, amount, page uint, query str
 	mainQuery := types.Query{
 		MultiMatch: &types.MultiMatchQuery{
 			Query:     query,
-			Fields:    []string{"title^4", "description^3", "num_of_users^2", "likes"},
+			Fields:    []string{"Title^2", "Description"},
 			Fuzziness: "AUTO",
 		},
 	}
@@ -313,7 +314,9 @@ func (tr *templateRepo) Search(ctx context.Context, amount, page uint, query str
 	}
 	ids := []string{}
 	for _, hit := range res.Hits.Hits {
-		ids = append(ids, *hit.Id_)
+		if hit.Id_ != nil {
+			ids = append(ids, *hit.Id_)
+		}
 	}
 	if len(ids) == 0 {
 		return nil, fmt.Errorf("%s : %w", op, errTemplatesNotFound)
@@ -346,12 +349,12 @@ func (tr *templateRepo) getByIds(ctx context.Context, ids []string) ([]models.Te
 			&template.Description,
 			&template.Text,
 			&template.Links,
-			&template.Widgets,
 			&template.Likes,
-			&template.NumOfUsers,
 			&template.Order,
 			&template.CreateTime,
 			&template.LastUpdateTime,
+			&template.NumOfUsers,
+			&template.Widgets,
 		); err != nil {
 			return nil, fmt.Errorf("%s : %w", op, err)
 		}
@@ -370,7 +373,7 @@ func (tr *templateRepo) getByIds(ctx context.Context, ids []string) ([]models.Te
 
 func (tr *templateRepo) getAll(ctx context.Context) ([]models.Template, error) {
 	op := "templateRepo.SearchPreparing.getAll"
-	query := "SELECT id, title, description, likes, num_of_users FROM templates"
+	query := "SELECT id, title, description FROM templates"
 	templates := []models.Template{}
 	rows, err := tr.Storage.Pool.Query(ctx, query)
 	if err != nil {
@@ -384,8 +387,6 @@ func (tr *templateRepo) getAll(ctx context.Context) ([]models.Template, error) {
 			&template.Id,
 			&template.Title,
 			&template.Description,
-			&template.Likes,
-			&template.NumOfUsers,
 		); err != nil {
 			return nil, fmt.Errorf("%s : %w", op, err)
 		}
@@ -416,16 +417,12 @@ func (tr *templateRepo) MustBulk(cfg config.SearchConfig) {
 		Id          string
 		Title       string
 		Description string
-		Likes       uint16
-		NumOfUsers  uint16
 	}
 	for _, t := range templates {
 		d := doc{
 			Id:          t.Id.String(),
 			Title:       t.Title,
 			Description: t.Description,
-			Likes:       t.Likes,
-			NumOfUsers:  t.NumOfUsers,
 		}
 		data, err := json.Marshal(d)
 		if err != nil {

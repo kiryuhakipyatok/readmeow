@@ -181,7 +181,7 @@ func (wr *widgetRepo) Search(ctx context.Context, amount, page uint, query strin
 	mainQuery := types.Query{
 		MultiMatch: &types.MultiMatchQuery{
 			Query:     query,
-			Fields:    []string{"title^5", "type^4", "description^3", "num_of_users^2", "likes"},
+			Fields:    []string{"Title^3", "Type^2", "Description"},
 			Fuzziness: "AUTO",
 		},
 	}
@@ -198,8 +198,11 @@ func (wr *widgetRepo) Search(ctx context.Context, amount, page uint, query strin
 	}
 	ids := []string{}
 	for _, hit := range res.Hits.Hits {
-		ids = append(ids, *hit.Id_)
+		if hit.Id_ != nil {
+			ids = append(ids, *hit.Id_)
+		}
 	}
+	fmt.Println(ids)
 	widgets, err := wr.GetByIds(ctx, ids)
 	if err != nil {
 		return nil, fmt.Errorf("%s : %w", op, err)
@@ -208,7 +211,7 @@ func (wr *widgetRepo) Search(ctx context.Context, amount, page uint, query strin
 }
 
 func (wr *widgetRepo) GetByIds(ctx context.Context, ids []string) ([]models.Widget, error) {
-	op := "widgetRepo.SearchPreparing.getByIds"
+	op := "widgetRepo.SearchPreparing.GetByIds"
 	query := "SELECT * FROM widgets WHERE id = ANY($1)"
 	widgets := make([]models.Widget, 0, len(ids))
 	rows, err := wr.Storage.Pool.Query(ctx, query, ids)
@@ -294,8 +297,6 @@ func (wr *widgetRepo) MustBulk(cfg config.SearchConfig) {
 		Title       string
 		Description string
 		Type        string
-		Likes       uint16
-		NumOfUsers  uint16
 	}
 	for _, w := range widgets {
 		d := doc{
@@ -303,8 +304,6 @@ func (wr *widgetRepo) MustBulk(cfg config.SearchConfig) {
 			Title:       w.Title,
 			Description: w.Description,
 			Type:        w.Type,
-			Likes:       w.Likes,
-			NumOfUsers:  w.NumOfUsers,
 		}
 		data, err := json.Marshal(d)
 		if err != nil {

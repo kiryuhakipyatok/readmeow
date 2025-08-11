@@ -52,10 +52,10 @@ func (rc *RouteConfig) AuthRoutes() {
 func (rc *RouteConfig) WidgetsRoutes() {
 	widgetGroup := rc.App.Group("/api/widgets")
 
-	widgetGroup.Get("/:widget", rc.WidgetHandl.GetWidgetById)
 	widgetGroup.Get("", rc.WidgetHandl.FetchWidgets)
 	widgetGroup.Get("/sort", rc.WidgetHandl.FetchSortedWidgets)
 	widgetGroup.Get("/search", rc.WidgetHandl.SearchWidgets)
+	widgetGroup.Get("/:widget", rc.WidgetHandl.GetWidgetById)
 
 	widgetGroup.Patch("/like/:widget", rc.WidgetHandl.Like)
 	widgetGroup.Patch("/dislike/:widget", rc.WidgetHandl.Dislike)
@@ -68,10 +68,10 @@ func (rc *RouteConfig) TemplatesRoutes() {
 
 	templateGroup.Delete("/:template", rc.TemplateHandl.DeleteTemplate)
 
-	templateGroup.Get("/:id", rc.TemplateHandl.GetTemplate)
 	templateGroup.Get("", rc.TemplateHandl.FetchTemplates)
 	templateGroup.Get("/sort", rc.TemplateHandl.SortTemplate)
 	templateGroup.Get("/search", rc.TemplateHandl.SearchTemplate)
+	templateGroup.Get("/:id", rc.TemplateHandl.GetTemplate)
 
 	templateGroup.Patch("/like/:template", rc.TemplateHandl.Like)
 	templateGroup.Patch("/dislike/:template", rc.TemplateHandl.Dislike)
@@ -80,9 +80,13 @@ func (rc *RouteConfig) TemplatesRoutes() {
 
 func (rc *RouteConfig) ReadmesRoutes() {
 	readmeGroup := rc.App.Group("/api/readmes")
+
 	readmeGroup.Post("", rc.ReadmeHandl.CreateReadme)
+
 	readmeGroup.Delete("/:readme", rc.ReadmeHandl.DeleteReadme)
+
 	readmeGroup.Patch("", rc.ReadmeHandl.UpdateReadme)
-	readmeGroup.Get("/:id", rc.ReadmeHandl.GetReadmeById)
+
 	readmeGroup.Get("", rc.ReadmeHandl.FetchReadmesByUser)
+	readmeGroup.Get("/:id", rc.ReadmeHandl.GetReadmeById)
 }

@@ -14,10 +14,10 @@ type Template struct {
 	Description    string
 	Text           []string
 	Links          []string
-	Widgets        []string
+	Widgets        map[string]string
 	Likes          uint16
 	NumOfUsers     uint16
-	Order          string
+	Order          []string
 	CreateTime     time.Time
 	LastUpdateTime time.Time
 }
