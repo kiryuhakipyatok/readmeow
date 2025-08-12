@@ -1,6 +1,5 @@
 -- +goose Up
 -- +goose StatementBegin
-CREATE EXTENSION IF NOT EXISTS hstore;
 CREATE TABLE IF NOT EXISTS templates(
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     owner_id UUID NOT NULL,
@@ -9,7 +8,7 @@ CREATE TABLE IF NOT EXISTS templates(
     description TEXT NOT NULL UNIQUE,
     text TEXT[] NOT NULL,
     links TEXT[] NOT NULL,
-    widgets HSTORE[] NOT NULL,
+    widgets JSONB[] NOT NULL,
     likes NUMERIC NOT NULL DEFAULT 0,
     render_order TEXT[] NOT NULL,
     create_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,

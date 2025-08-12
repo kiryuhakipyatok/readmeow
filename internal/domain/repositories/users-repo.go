@@ -48,7 +48,7 @@ func (ur *userRepo) Create(ctx context.Context, user *models.User) error {
 
 func (ur *userRepo) Get(ctx context.Context, id string) (*models.User, error) {
 	op := "userRepo.Get"
-	query := "SELECT id, login, email, avatar, time_of_register, num_of_templates FROM users WHERE id = $1"
+	query := "SELECT id, login, email, avatar, time_of_register, num_of_templates, num_of_readmes FROM users WHERE id = $1"
 	user := models.User{}
 	if tx, ok := storage.GetTx(ctx); ok {
 		if err := tx.QueryRow(ctx, query, id).Scan(

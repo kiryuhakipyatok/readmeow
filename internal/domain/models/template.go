@@ -14,9 +14,9 @@ type Template struct {
 	Description    string
 	Text           []string
 	Links          []string
-	Widgets        map[string]string
-	Likes          uint16
-	NumOfUsers     uint16
+	Widgets        []map[string]string
+	Likes          int32
+	NumOfUsers     int32
 	Order          []string
 	CreateTime     time.Time
 	LastUpdateTime time.Time

@@ -18,6 +18,7 @@ type AuthHandl struct {
 func NewAuthHandle(as services.AuthServ, us services.UserServ, v *validator.Validator) *AuthHandl {
 	return &AuthHandl{
 		AuthServ:  as,
+		UserServ:  us,
 		Validator: v,
 	}
 }

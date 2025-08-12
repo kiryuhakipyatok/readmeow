@@ -56,6 +56,7 @@ func (wr *widgetRepo) Get(ctx context.Context, id string) (*models.Widget, error
 		if err := json.Unmarshal([]byte(cachedWidget), widget); err != nil {
 			return nil, fmt.Errorf("%s : %w", op, err)
 		}
+		fmt.Println("widget from redis")
 		return widget, nil
 	}
 	if err == cache.EMPTY {
@@ -70,6 +71,7 @@ func (wr *widgetRepo) Get(ctx context.Context, id string) (*models.Widget, error
 				&widget.Link,
 				&widget.Likes,
 				&widget.NumOfUsers,
+				&widget.Tags,
 			); err != nil {
 				if errors.Is(err, storage.ErrNotFound()) {
 					return nil, fmt.Errorf("%s : %w", op, errWidgetNotFound)
@@ -86,6 +88,7 @@ func (wr *widgetRepo) Get(ctx context.Context, id string) (*models.Widget, error
 				&widget.Link,
 				&widget.Likes,
 				&widget.NumOfUsers,
+				&widget.Tags,
 			); err != nil {
 				if errors.Is(err, storage.ErrNotFound()) {
 					return nil, fmt.Errorf("%s : %w", op, errWidgetNotFound)
@@ -124,6 +127,7 @@ func (wr *widgetRepo) Fetch(ctx context.Context, amount, page uint) ([]models.Wi
 			&widget.Link,
 			&widget.Likes,
 			&widget.NumOfUsers,
+			&widget.Tags,
 		); err != nil {
 			return nil, fmt.Errorf("%s : %w", op, err)
 		}
@@ -136,7 +140,7 @@ func (wr *widgetRepo) Fetch(ctx context.Context, amount, page uint) ([]models.Wi
 }
 
 func (wr *widgetRepo) Sort(ctx context.Context, amount, page uint, field, dest string) ([]models.Widget, error) {
-	op := "widgetRepo.Filter"
+	op := "widgetRepo.Sort"
 	validFields := map[string]bool{
 		"likes":        true,
 		"num_of_users": true,
@@ -147,7 +151,7 @@ func (wr *widgetRepo) Sort(ctx context.Context, amount, page uint, field, dest s
 	if dest != "DESC" && dest != "ASC" {
 		dest = "DESC"
 	}
-	query := fmt.Sprintf("SELECT * FROM widgets ORDER BY %s %s OFFSET $2 LIMIT $3", field, dest)
+	query := fmt.Sprintf("SELECT * FROM widgets ORDER BY %s %s OFFSET $1 LIMIT $2", field, dest)
 	rows, err := wr.Storage.Pool.Query(ctx, query, amount*page-amount, amount)
 	if err != nil {
 		return nil, fmt.Errorf("%s : %w", op, err)
@@ -165,6 +169,7 @@ func (wr *widgetRepo) Sort(ctx context.Context, amount, page uint, field, dest s
 			&widget.Link,
 			&widget.Likes,
 			&widget.NumOfUsers,
+			&widget.Tags,
 		); err != nil {
 			return nil, fmt.Errorf("%s : %w", op, err)
 		}
@@ -202,7 +207,6 @@ func (wr *widgetRepo) Search(ctx context.Context, amount, page uint, query strin
 			ids = append(ids, *hit.Id_)
 		}
 	}
-	fmt.Println(ids)
 	widgets, err := wr.GetByIds(ctx, ids)
 	if err != nil {
 		return nil, fmt.Errorf("%s : %w", op, err)
@@ -231,6 +235,7 @@ func (wr *widgetRepo) GetByIds(ctx context.Context, ids []string) ([]models.Widg
 			&widget.Link,
 			&widget.Likes,
 			&widget.NumOfUsers,
+			&widget.Tags,
 		); err != nil {
 			return nil, fmt.Errorf("%s : %w", op, err)
 		}
@@ -249,7 +254,7 @@ func (wr *widgetRepo) GetByIds(ctx context.Context, ids []string) ([]models.Widg
 
 func (wr *widgetRepo) getAll(ctx context.Context) ([]models.Widget, error) {
 	op := "widgetRepo.SearchPreparing.getAll"
-	query := "SELECT id, title, description, type, likes, num_of_users FROM widgets"
+	query := "SELECT id, title, description, type FROM widgets"
 	widgets := []models.Widget{}
 	rows, err := wr.Storage.Pool.Query(ctx, query)
 	if err != nil {
@@ -264,8 +269,6 @@ func (wr *widgetRepo) getAll(ctx context.Context) ([]models.Widget, error) {
 			&widget.Title,
 			&widget.Description,
 			&widget.Type,
-			&widget.Likes,
-			&widget.NumOfUsers,
 		); err != nil {
 			return nil, fmt.Errorf("%s : %w", op, err)
 		}
@@ -340,7 +343,7 @@ func (wr *widgetRepo) Update(ctx context.Context, updates map[string]any, id str
 		i++
 	}
 	args = append(args, id)
-	query := fmt.Sprintf("UPDATE widgets SET %s WHERE id = $%d", strings.Join(str, ","), i)
+	query := fmt.Sprintf("UPDATE widgets SET%s WHERE id = $%d", strings.Join(str, ","), i)
 	if tx, ok := storage.GetTx(ctx); ok {
 		res, err := tx.Exec(ctx, query, args...)
 		if err != nil {
@@ -358,19 +361,7 @@ func (wr *widgetRepo) Update(ctx context.Context, updates map[string]any, id str
 			return fmt.Errorf("%s : %w", op, errWidgetNotFound)
 		}
 	}
-	widget, err := wr.Get(ctx, id)
-	if err != nil {
-		return fmt.Errorf("%s : %w", op, err)
-	}
-	cache, err := json.Marshal(widget)
-	if err != nil {
-		return fmt.Errorf("%s : %w", op, err)
-	}
-	ttl, err := wr.Cache.Redis.TTL(ctx, widget.Id.String()).Result()
-	if err != nil {
-		return fmt.Errorf("%s : %w", op, err)
-	}
-	if err := wr.Cache.Redis.Set(ctx, widget.Id.String(), cache, ttl).Err(); err != nil {
+	if err := wr.Cache.Redis.Del(ctx, id).Err(); err != nil {
 		return fmt.Errorf("%s : %w", op, err)
 	}
 	return nil

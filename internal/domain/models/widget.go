@@ -8,7 +8,8 @@ type Widget struct {
 	Image       string
 	Description string
 	Type        string
+	Tags        map[string]any
 	Link        string
-	Likes       uint16
-	NumOfUsers  uint16
+	Likes       int32
+	NumOfUsers  int32
 }

@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"readmeow/internal/domain/models"
 	"readmeow/internal/domain/repositories"
@@ -13,7 +14,7 @@ import (
 )
 
 type TemplateServ interface {
-	Create(ctx context.Context, oid, title, image, description string, text, links, order []string, widgets map[string]string) error
+	Create(ctx context.Context, oid, title, image, description string, text, links, order []string, widgets []map[string]string) error
 	Update(ctx context.Context, fields map[string]any, id string) error
 	Delete(ctx context.Context, id string) error
 	Get(ctx context.Context, id string) (*models.Template, error)
@@ -42,7 +43,7 @@ func NewTemplateServ(tr repositories.TemplateRepo, ur repositories.UserRepo, wr 
 	}
 }
 
-func (ts *templateServ) Create(ctx context.Context, oid, title, image, description string, text, links, order []string, widgets map[string]string) error {
+func (ts *templateServ) Create(ctx context.Context, oid, title, image, description string, text, links, order []string, widgets []map[string]string) error {
 	op := "templateServ.Create"
 	log := ts.Logger.AddOp(op)
 	log.Log.Info("creating template")
@@ -68,8 +69,10 @@ func (ts *templateServ) Create(ctx context.Context, oid, title, image, descripti
 			LastUpdateTime: time.Now(),
 		}
 		keys := make([]string, 0, len(widgets))
-		for k := range widgets {
-			keys = append(keys, k)
+		for _, w := range widgets {
+			for k := range w {
+				keys = append(keys, k)
+			}
 		}
 		if len(widgets) != 0 {
 			widgetsData, err := ts.WidgetRepo.GetByIds(ctx, keys)
@@ -213,16 +216,21 @@ func (ts *templateServ) Dislike(ctx context.Context, id string) error {
 	op := "templateServ.Dislike"
 	log := ts.Logger.AddOp(op)
 	log.Log.Info("disliking template")
-	widget, err := ts.TemplateRepo.Get(ctx, id)
+	tempalate, err := ts.TemplateRepo.Get(ctx, id)
 	if err != nil {
 		log.Log.Error("failed to get template", logger.Err(err))
 		return fmt.Errorf("%s : %w", op, err)
 	}
-	updatedLikes := widget.Likes - 1
+	if tempalate.Likes == 0 {
+		log.Log.Error("template likes are equal zero")
+		return fmt.Errorf("%s : %w", op, errors.New("template likes are equal zero"))
+	}
+
+	updatedLikes := tempalate.Likes - 1
 	update := map[string]any{
 		"likes": updatedLikes,
 	}
-	if err := ts.TemplateRepo.Update(ctx, update, widget.Id.String()); err != nil {
+	if err := ts.TemplateRepo.Update(ctx, update, tempalate.Id.String()); err != nil {
 		log.Log.Error("failed to update template info", logger.Err(err))
 		return err
 	}

@@ -69,13 +69,14 @@ services:
     networks:
       - app-network
     stop_grace_period: 5s
+
   migrate:
     build: .
     env_file:
       - .env
-    command: goose -dir ${GOOSE_MIGRATIONS_DIR} up
     volumes:
       - ./internal/migrations:/migrations
+    entrypoint: ["goose", "-dir", "/migrations"]
     networks:
       - app-network
 

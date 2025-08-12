@@ -17,6 +17,7 @@ import (
 	"github.com/elastic/go-elasticsearch/v9/esutil"
 	s "github.com/elastic/go-elasticsearch/v9/typedapi/core/search"
 	"github.com/elastic/go-elasticsearch/v9/typedapi/types"
+	"github.com/google/uuid"
 )
 
 type TemplateRepo interface {
@@ -104,19 +105,7 @@ func (tr *templateRepo) Update(ctx context.Context, updates map[string]any, id s
 			return fmt.Errorf("%s : %w", op, errTemplateNotFound)
 		}
 	}
-	template, err := tr.Get(ctx, id)
-	if err != nil {
-		return fmt.Errorf("%s : %w", op, err)
-	}
-	cache, err := json.Marshal(template)
-	if err != nil {
-		return fmt.Errorf("%s : %w", op, err)
-	}
-	ttl, err := tr.Cache.Redis.TTL(ctx, template.Id.String()).Result()
-	if err != nil {
-		return fmt.Errorf("%s : %w", op, err)
-	}
-	if err := tr.Cache.Redis.Set(ctx, template.Id.String(), cache, ttl).Err(); err != nil {
+	if err := tr.Cache.Redis.Del(ctx, id).Err(); err != nil {
 		return fmt.Errorf("%s : %w", op, err)
 	}
 	return nil
@@ -195,13 +184,14 @@ func (tr *templateRepo) Get(ctx context.Context, id string) (*models.Template, e
 		}
 
 	}
-
-	cache, err := json.Marshal(template)
-	if err != nil {
-		return nil, fmt.Errorf("%s : %w", op, err)
-	}
-	if err := tr.Cache.Redis.Set(ctx, template.Id.String(), cache, time.Hour*24).Err(); err != nil {
-		return nil, fmt.Errorf("%s : %w", op, err)
+	if (template.NumOfUsers >= 20) || template.OwnerId == uuid.Nil {
+		cache, err := json.Marshal(template)
+		if err != nil {
+			return nil, fmt.Errorf("%s : %w", op, err)
+		}
+		if err := tr.Cache.Redis.Set(ctx, template.Id.String(), cache, time.Hour*24).Err(); err != nil {
+			return nil, fmt.Errorf("%s : %w", op, err)
+		}
 	}
 	return template, nil
 }

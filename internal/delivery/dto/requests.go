@@ -19,7 +19,7 @@ type PaginationRequest struct {
 type SortWidgetsRequest struct {
 	PaginationRequest
 	Field       string `json:"widget_field" validate:"required,oneof=likes num_of_users"`
-	Destination string `json:"sort_destination" validate:"oneof=DESC ASC"`
+	Destination string `json:"sort_destination" validate:"oneof=desc asc"`
 }
 
 type SearchRequest struct {
@@ -44,14 +44,14 @@ type ChangePasswordRequest struct {
 }
 
 type CreateTemplateRequest struct {
-	OwnerId     string            `json:"owner_id" validate:"required,uuid"`
-	Title       string            `json:"template_title" validate:"required,max=50"`
-	Image       string            `json:"template_image" validate:"required"`
-	Description string            `json:"template_description" validate:"required,min=1,max=1000"`
-	Order       []string          `json:"template_order" validate:"required,dive,string"`
-	Text        []string          `json:"text" validate:"dive,uuid"`
-	Links       []string          `json:"links" validate:"dive,uuid"`
-	Widgets     map[string]string `json:"widgets" validate:"keys,dive,uuid,endkeys"`
+	OwnerId     string              `json:"owner_id" validate:"required,uuid"`
+	Title       string              `json:"template_title" validate:"required,max=50"`
+	Image       string              `json:"template_image" validate:"required"`
+	Description string              `json:"template_description" validate:"required,min=1,max=1000"`
+	Order       []string            `json:"template_order" validate:"required,dive,string"`
+	Text        []string            `json:"text" validate:"dive,uuid"`
+	Links       []string            `json:"links" validate:"dive,uuid"`
+	Widgets     []map[string]string `json:"widgets" validate:"dive,keys,uuid,endkeys,string,required"`
 }
 
 type UpdateTemplateRequest struct {

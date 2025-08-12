@@ -32,8 +32,12 @@ clean:
 	@echo "Cleaning..."
 	@rm -f main.exe
 
-docker-migrate:
-	@docker-compose run --rm migrate
+docker-migrate-up:
+	@docker-compose run --rm migrate up
+
+docker-migrate-down:
+	@docker-compose run --rm migrate down
+
 
 create:
 	@goose -dir=$(MIGRATIONS_PATH) create $(NAME) sql

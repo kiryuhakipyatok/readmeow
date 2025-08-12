@@ -18,6 +18,7 @@ type ReadmeHandl struct {
 func NewReadmeHandl(rs services.ReadmeServ, as services.AuthServ, v *validator.Validator) *ReadmeHandl {
 	return &ReadmeHandl{
 		ReadmeServ: rs,
+		AuthServ:   as,
 		Validator:  v,
 	}
 }

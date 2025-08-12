@@ -4,6 +4,7 @@ import (
 	"readmeow/internal/delivery/dto"
 	"readmeow/internal/domain/services"
 	"readmeow/pkg/validator"
+	"strings"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
@@ -80,7 +81,7 @@ func (wh *WidgetHandl) FetchSortedWidgets(c *fiber.Ctx) error {
 			"error": "validation failed: " + err.Error(),
 		})
 	}
-	widgets, err := wh.WidgetServ.Sort(ctx, req.Amount, req.Page, req.Field, req.Destination)
+	widgets, err := wh.WidgetServ.Sort(ctx, req.Amount, req.Page, req.Field, strings.ToUpper(req.Destination))
 	if err != nil {
 		c.Status(fiber.StatusInternalServerError)
 		return c.JSON(fiber.Map{
