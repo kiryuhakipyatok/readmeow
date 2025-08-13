@@ -16,7 +16,7 @@ import (
 
 type AuthServ interface {
 	Register(ctx context.Context, login, email, password string) error
-	Login(ctx context.Context, login, password string) (string, *time.Time, error)
+	Login(ctx context.Context, login, password string) (*loginResponce, error)
 	GetId(ctx context.Context, cookie string) (string, error)
 }
 
@@ -67,18 +67,25 @@ func (as *authServ) Register(ctx context.Context, login, email, password string)
 	return nil
 }
 
-func (as *authServ) Login(ctx context.Context, login, password string) (string, *time.Time, error) {
+type loginResponce struct {
+	Login  string
+	Avatar string
+	JWT    string
+	TTL    time.Time
+}
+
+func (as *authServ) Login(ctx context.Context, login, password string) (*loginResponce, error) {
 	op := "authServ.Login"
 	log := as.Logger.AddOp(op)
 	log.Log.Info("logining user")
 	user, err := as.UserRepo.GetByLogin(ctx, login)
 	if err != nil {
 		log.Log.Error("failed to get user by login")
-		return "", nil, fmt.Errorf("%s : %w", op, err)
+		return nil, fmt.Errorf("%s : %w", op, err)
 	}
 	if err := bcrypt.CompareHashAndPassword(user.Password, []byte(password)); err != nil {
 		log.Log.Info("invalid credentials", logger.Err(err))
-		return "", nil, fmt.Errorf("%s : %w", op, err)
+		return nil, fmt.Errorf("%s : %w", op, err)
 	}
 	t := time.Now().Add(time.Second * time.Duration(as.AuthConfig.TokenTTL))
 	ttl := jwt.NewNumericDate(t)
@@ -90,10 +97,16 @@ func (as *authServ) Login(ctx context.Context, login, password string) (string, 
 	jwt, err := token.SignedString([]byte(as.AuthConfig.Secret))
 	if err != nil {
 		log.Log.Error("failed to sign token", logger.Err(err))
-		return "", nil, fmt.Errorf("%s : %w", op, err)
+		return nil, fmt.Errorf("%s : %w", op, err)
 	}
-	log.Log.Info("tokin generated successfully")
-	return jwt, &t, nil
+	loginResponce := &loginResponce{
+		Login:  user.Login,
+		Avatar: user.Avatar,
+		JWT:    jwt,
+		TTL:    t,
+	}
+	log.Log.Info("token generated successfully")
+	return loginResponce, nil
 }
 
 func (as *authServ) GetId(ctx context.Context, cookie string) (string, error) {

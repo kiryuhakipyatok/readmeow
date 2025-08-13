@@ -3,13 +3,13 @@ package models
 import "github.com/google/uuid"
 
 type Widget struct {
-	Id          uuid.UUID
-	Title       string
-	Image       string
-	Description string
-	Type        string
-	Tags        map[string]any
-	Link        string
-	Likes       int32
-	NumOfUsers  int32
+	Id          uuid.UUID      `json:"id"`
+	Title       string         `json:"title"`
+	Image       string         `json:"image"`
+	Description string         `json:"description"`
+	Type        string         `json:"type"`
+	Tags        map[string]any `json:"tags"`
+	Link        string         `json:"link"`
+	Likes       int32          `json:"likes"`
+	NumOfUsers  int32          `json:"num_of_users"`
 }

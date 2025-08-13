@@ -12,12 +12,14 @@ import (
 
 type WidgetHandl struct {
 	WidgetServ services.WidgetServ
+	AuthServ   services.AuthServ
 	Validator  *validator.Validator
 }
 
-func NewWidgetHandl(ws services.WidgetServ, v *validator.Validator) *WidgetHandl {
+func NewWidgetHandl(ws services.WidgetServ, as services.AuthServ, v *validator.Validator) *WidgetHandl {
 	return &WidgetHandl{
 		WidgetServ: ws,
+		AuthServ:   as,
 		Validator:  v,
 	}
 }
@@ -113,6 +115,7 @@ func (wh *WidgetHandl) SearchWidgets(c *fiber.Ctx) error {
 			"error": "failed to fetch searched widgets: " + err.Error(),
 		})
 	}
+
 	return c.JSON(widgets)
 }
 
@@ -125,7 +128,15 @@ func (wh *WidgetHandl) Like(c *fiber.Ctx) error {
 			"error": "invalid id: " + err.Error(),
 		})
 	}
-	if err := wh.WidgetServ.Like(ctx, id); err != nil {
+	cookie := c.Cookies("jwt")
+	uid, err := wh.AuthServ.GetId(ctx, cookie)
+	if err != nil {
+		c.Status(fiber.StatusInternalServerError)
+		return c.JSON(fiber.Map{
+			"error": "failed to get user id: " + err.Error(),
+		})
+	}
+	if err := wh.WidgetServ.Like(ctx, id, uid); err != nil {
 		c.Status(fiber.StatusInternalServerError)
 		return c.JSON(fiber.Map{
 			"error": "failed to like widget: " + err.Error(),
@@ -145,7 +156,15 @@ func (wh *WidgetHandl) Dislike(c *fiber.Ctx) error {
 			"error": "invalid id: " + err.Error(),
 		})
 	}
-	if err := wh.WidgetServ.Dislike(ctx, id); err != nil {
+	cookie := c.Cookies("jwt")
+	uid, err := wh.AuthServ.GetId(ctx, cookie)
+	if err != nil {
+		c.Status(fiber.StatusInternalServerError)
+		return c.JSON(fiber.Map{
+			"error": "failed to get user id: " + err.Error(),
+		})
+	}
+	if err := wh.WidgetServ.Dislike(ctx, id, uid); err != nil {
 		c.Status(fiber.StatusInternalServerError)
 		return c.JSON(fiber.Map{
 			"error": "failed to dislike widget: " + err.Error(),
@@ -154,4 +173,24 @@ func (wh *WidgetHandl) Dislike(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{
 		"message": "success",
 	})
+}
+
+func (wh *WidgetHandl) FetchFavoriteWidgets(c *fiber.Ctx) error {
+	ctx := c.UserContext()
+	cookie := c.Cookies("jwt")
+	id, err := wh.AuthServ.GetId(ctx, cookie)
+	if err != nil {
+		c.Status(fiber.StatusInternalServerError)
+		return c.JSON(fiber.Map{
+			"error": "failed to get user id: " + err.Error(),
+		})
+	}
+	widgets, err := wh.WidgetServ.FetchFavorite(ctx, id)
+	if err != nil {
+		c.Status(fiber.StatusInternalServerError)
+		return c.JSON(fiber.Map{
+			"error": "failed to fetch favorite widgets: " + err.Error(),
+		})
+	}
+	return c.JSON(widgets)
 }

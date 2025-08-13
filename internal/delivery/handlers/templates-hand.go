@@ -11,12 +11,14 @@ import (
 
 type TemplateHandl struct {
 	TemplateServ services.TemplateServ
+	AuthServ     services.AuthServ
 	Validator    *validator.Validator
 }
 
-func NewTemplateHandl(ts services.TemplateServ, v *validator.Validator) *TemplateHandl {
+func NewTemplateHandl(ts services.TemplateServ, as services.AuthServ, v *validator.Validator) *TemplateHandl {
 	return &TemplateHandl{
 		TemplateServ: ts,
+		AuthServ:     as,
 		Validator:    v,
 	}
 }
@@ -134,6 +136,7 @@ func (th *TemplateHandl) FetchTemplates(c *fiber.Ctx) error {
 			"error": "failed to fetch templates: " + err.Error(),
 		})
 	}
+
 	return c.JSON(templates)
 }
 
@@ -189,14 +192,22 @@ func (th *TemplateHandl) SearchTemplate(c *fiber.Ctx) error {
 
 func (th *TemplateHandl) Like(c *fiber.Ctx) error {
 	ctx := c.UserContext()
-	id := c.Params("widget")
+	id := c.Params("template")
 	if err := uuid.Validate(id); err != nil {
 		c.Status(fiber.StatusBadRequest)
 		return c.JSON(fiber.Map{
 			"error": "invalid id: " + err.Error(),
 		})
 	}
-	if err := th.TemplateServ.Like(ctx, id); err != nil {
+	cookie := c.Cookies("jwt")
+	uid, err := th.AuthServ.GetId(ctx, cookie)
+	if err != nil {
+		c.Status(fiber.StatusInternalServerError)
+		return c.JSON(fiber.Map{
+			"error": "failed to get user id: " + err.Error(),
+		})
+	}
+	if err := th.TemplateServ.Like(ctx, id, uid); err != nil {
 		c.Status(fiber.StatusInternalServerError)
 		return c.JSON(fiber.Map{
 			"error": "failed to like template: " + err.Error(),
@@ -209,14 +220,22 @@ func (th *TemplateHandl) Like(c *fiber.Ctx) error {
 
 func (th *TemplateHandl) Dislike(c *fiber.Ctx) error {
 	ctx := c.UserContext()
-	id := c.Params("widget")
+	id := c.Params("template")
 	if err := uuid.Validate(id); err != nil {
 		c.Status(fiber.StatusBadRequest)
 		return c.JSON(fiber.Map{
 			"error": "invalid id: " + err.Error(),
 		})
 	}
-	if err := th.TemplateServ.Dislike(ctx, id); err != nil {
+	cookie := c.Cookies("jwt")
+	uid, err := th.AuthServ.GetId(ctx, cookie)
+	if err != nil {
+		c.Status(fiber.StatusInternalServerError)
+		return c.JSON(fiber.Map{
+			"error": "failed to get user id: " + err.Error(),
+		})
+	}
+	if err := th.TemplateServ.Dislike(ctx, id, uid); err != nil {
 		c.Status(fiber.StatusInternalServerError)
 		return c.JSON(fiber.Map{
 			"error": "failed to dislike template: " + err.Error(),
@@ -225,4 +244,24 @@ func (th *TemplateHandl) Dislike(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{
 		"message": "success",
 	})
+}
+
+func (th *TemplateHandl) FetchFavoriteTemplates(c *fiber.Ctx) error {
+	ctx := c.UserContext()
+	cookie := c.Cookies("jwt")
+	id, err := th.AuthServ.GetId(ctx, cookie)
+	if err != nil {
+		c.Status(fiber.StatusInternalServerError)
+		return c.JSON(fiber.Map{
+			"error": "failed to get user id: " + err.Error(),
+		})
+	}
+	templates, err := th.TemplateServ.FetchFavorite(ctx, id)
+	if err != nil {
+		c.Status(fiber.StatusInternalServerError)
+		return c.JSON(fiber.Map{
+			"error": "failed to fetch favorite templates: " + err.Error(),
+		})
+	}
+	return c.JSON(templates)
 }

@@ -26,7 +26,11 @@ type TemplateRepo interface {
 	Delete(ctx context.Context, id string) error
 	Get(ctx context.Context, id string) (*models.Template, error)
 	Fetch(ctx context.Context, amount, page uint) ([]models.Template, error)
+	Like(ctx context.Context, id, uid string) error
+	Dislike(ctx context.Context, id, uid string) error
+	FetchFavorite(ctx context.Context, id string) ([]string, error)
 	Sort(ctx context.Context, amount, page uint, dest, field string) ([]models.Template, error)
+	GetByIds(ctx context.Context, ids []string) ([]models.Template, error)
 	Search(ctx context.Context, amount, page uint, query string) ([]models.Template, error)
 	MustBulk(cfg config.SearchConfig)
 }
@@ -53,8 +57,8 @@ var (
 
 func (tr *templateRepo) Create(ctx context.Context, template *models.Template) error {
 	op := "templateRepo.Create"
-	query := "INSERT INTO templates (id, owner_id, title, image,description, text, links, widgets, renderorder, create_time) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)"
-	if _, err := tr.Storage.Pool.Exec(ctx, query, template.Id, template.OwnerId, template.Title, template.Image, template.Description, template.Text, template.Links, template.Widgets, template.Order, template.CreateTime); err != nil {
+	query := "INSERT INTO templates (id, owner_id, title, image,description, text, links, widgets,num_of_users, render_order, create_time, last_update_time) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)"
+	if _, err := tr.Storage.Pool.Exec(ctx, query, template.Id, template.OwnerId, template.Title, template.Image, template.Description, template.Text, template.Links, template.Widgets, template.NumOfUsers, template.Order, template.CreateTime, template.LastUpdateTime); err != nil {
 		if storage.ErrorAlreadyExists(err) {
 			return fmt.Errorf("%s : %w", op, errTemplateAlreadyExists)
 		}
@@ -71,7 +75,6 @@ func (tr *templateRepo) Update(ctx context.Context, updates map[string]any, id s
 		"links":            true,
 		"widgets":          true,
 		"order":            true,
-		"likes":            true,
 		"num_of_users":     true,
 		"last_update_time": true,
 	}
@@ -111,6 +114,52 @@ func (tr *templateRepo) Update(ctx context.Context, updates map[string]any, id s
 	return nil
 }
 
+func (tr *templateRepo) Like(ctx context.Context, id, uid string) error {
+	op := "templateRepo.Like"
+	query := "INSERT INTO favorite_templates (template_id, user_id) VALUES ($1,$2)"
+	if tx, ok := storage.GetTx(ctx); ok {
+		res, err := tx.Exec(ctx, query, id, uid)
+		if err != nil {
+			return fmt.Errorf("%s : %w", op, err)
+		}
+		if res.RowsAffected() == 0 {
+			return fmt.Errorf("%s : %w", op, errTemplateNotFound)
+		}
+		return nil
+	}
+	res, err := tr.Storage.Pool.Exec(ctx, query, id, uid)
+	if err != nil {
+		return fmt.Errorf("%s : %w", op, err)
+	}
+	if res.RowsAffected() == 0 {
+		return fmt.Errorf("%s : %w", op, errTemplateNotFound)
+	}
+	return nil
+}
+
+func (tr *templateRepo) Dislike(ctx context.Context, id, uid string) error {
+	op := "templateRepo.Dislike"
+	query := "DELETE FROM favorite_templates WHERE (template_id, user_id) = ($1,$2)"
+	if tx, ok := storage.GetTx(ctx); ok {
+		res, err := tx.Exec(ctx, query, id, uid)
+		if err != nil {
+			return fmt.Errorf("%s : %w", op, err)
+		}
+		if res.RowsAffected() == 0 {
+			return fmt.Errorf("%s : %w", op, errTemplateNotFound)
+		}
+		return nil
+	}
+	res, err := tr.Storage.Pool.Exec(ctx, query, id, uid)
+	if err != nil {
+		return fmt.Errorf("%s : %w", op, err)
+	}
+	if res.RowsAffected() == 0 {
+		return fmt.Errorf("%s : %w", op, errTemplateNotFound)
+	}
+	return nil
+}
+
 func (tr *templateRepo) Delete(ctx context.Context, id string) error {
 	op := "templateRepo.Delete"
 	query := "DELETE FROM templates WHERE id = $1"
@@ -138,7 +187,7 @@ func (tr *templateRepo) Get(ctx context.Context, id string) (*models.Template, e
 		return template, nil
 	}
 	if err == cache.EMPTY {
-		query := "SELECT * FROM templates WHERE id = $1"
+		query := "SELECT t.*, COUNT(ft.tempalate_id) FROM templates t LEFT JOIN favorite_templates ft ON ft.template_id=t.id WHERE id = $1 GROUP BY t.id"
 		if tx, ok := storage.GetTx(ctx); ok {
 			if err := tx.QueryRow(ctx, query, id).Scan(
 				&template.Id,
@@ -149,11 +198,11 @@ func (tr *templateRepo) Get(ctx context.Context, id string) (*models.Template, e
 				&template.Text,
 				&template.Links,
 				&template.Widgets,
-				&template.Likes,
 				&template.NumOfUsers,
 				&template.Order,
 				&template.CreateTime,
 				&template.LastUpdateTime,
+				&template.Likes,
 			); err != nil {
 				if errors.Is(err, storage.ErrNotFound()) {
 					return nil, fmt.Errorf("%s : %w", op, errTemplateNotFound)
@@ -170,11 +219,11 @@ func (tr *templateRepo) Get(ctx context.Context, id string) (*models.Template, e
 				&template.Text,
 				&template.Links,
 				&template.Widgets,
-				&template.Likes,
 				&template.NumOfUsers,
 				&template.Order,
 				&template.CreateTime,
 				&template.LastUpdateTime,
+				&template.Likes,
 			); err != nil {
 				if errors.Is(err, storage.ErrNotFound()) {
 					return nil, fmt.Errorf("%s : %w", op, errTemplateNotFound)
@@ -196,9 +245,31 @@ func (tr *templateRepo) Get(ctx context.Context, id string) (*models.Template, e
 	return template, nil
 }
 
+func (tr *templateRepo) FetchFavorite(ctx context.Context, id string) ([]string, error) {
+	op := "templateRepo.FetchFavorite"
+	query := "SELECT template_id FROM favorite_templates WHERE user_id=$1"
+	tids := []string{}
+	rows, err := tr.Storage.Pool.Query(ctx, query, id)
+	if err != nil {
+		return nil, fmt.Errorf("%s : %w", op, err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var tid string
+		if err := rows.Scan(&tid); err != nil {
+			return nil, fmt.Errorf("%s : %w", op, err)
+		}
+		tids = append(tids, tid)
+	}
+	if len(tids) == 0 {
+		return nil, fmt.Errorf("%s : %w", op, errTemplatesNotFound)
+	}
+	return tids, nil
+}
+
 func (tr *templateRepo) Fetch(ctx context.Context, amount, page uint) ([]models.Template, error) {
 	op := "templateRepo.Fetch"
-	query := "SELECT * FROM templates ORDER BY likes DESC OFFSET $1 LIMIT $2"
+	query := "SELECT t.*, COUNT(ft.tempalate_id) FROM templates t LEFT JOIN favorite_templates ft ON ft.template_id=t.id WHERE id = $1 GROUP BY t.id ORDER BY likes DESC OFFSET $1 LIMIT $2"
 	templates := []models.Template{}
 	rows, err := tr.Storage.Pool.Query(ctx, query, amount*page-amount, amount)
 	if err != nil {
@@ -216,11 +287,11 @@ func (tr *templateRepo) Fetch(ctx context.Context, amount, page uint) ([]models.
 			&template.Text,
 			&template.Links,
 			&template.Widgets,
-			&template.Likes,
 			&template.NumOfUsers,
 			&template.Order,
 			&template.CreateTime,
 			&template.LastUpdateTime,
+			&template.Likes,
 		); err != nil {
 			return nil, fmt.Errorf("%s : %w", op, err)
 		}
@@ -236,7 +307,6 @@ func (tr *templateRepo) Sort(ctx context.Context, amount, page uint, dest, field
 	op := "templateRepo.Sort"
 	validFields := map[string]bool{
 		"num_of_users": true,
-		"likes":        true,
 		"create_time":  true,
 	}
 	if !validFields[field] {
@@ -246,7 +316,7 @@ func (tr *templateRepo) Sort(ctx context.Context, amount, page uint, dest, field
 		dest = "DESC"
 	}
 	templates := []models.Template{}
-	query := fmt.Sprintf("SELECT * FROM templates ORDER BY %s %s OFFSET $1 LIMIT $2", field, dest)
+	query := fmt.Sprintf("SELECT t.*, COUNT(ft.tempalate_id) FROM templates t LEFT JOIN favorite_templates ft ON ft.template_id=t.id WHERE id = $1 GROUP BY t.id ORDER BY %s %s OFFSET $1 LIMIT $2", field, dest)
 	rows, err := tr.Storage.Pool.Query(ctx, query, field, dest, amount*page-amount, amount)
 	if err != nil {
 		return nil, fmt.Errorf("%s : %w", op, err)
@@ -263,11 +333,11 @@ func (tr *templateRepo) Sort(ctx context.Context, amount, page uint, dest, field
 			&template.Text,
 			&template.Links,
 			&template.Widgets,
-			&template.Likes,
 			&template.NumOfUsers,
 			&template.Order,
 			&template.CreateTime,
 			&template.LastUpdateTime,
+			&template.Likes,
 		); err != nil {
 			return nil, fmt.Errorf("%s : %w", op, err)
 		}
@@ -311,7 +381,7 @@ func (tr *templateRepo) Search(ctx context.Context, amount, page uint, query str
 	if len(ids) == 0 {
 		return nil, fmt.Errorf("%s : %w", op, errTemplatesNotFound)
 	}
-	templates, err := tr.getByIds(ctx, ids)
+	templates, err := tr.GetByIds(ctx, ids)
 	if err != nil {
 		return nil, fmt.Errorf("%s : %w", op, err)
 	}
@@ -319,9 +389,10 @@ func (tr *templateRepo) Search(ctx context.Context, amount, page uint, query str
 	return templates, nil
 }
 
-func (tr *templateRepo) getByIds(ctx context.Context, ids []string) ([]models.Template, error) {
-	op := "templateRepo.SearchPreparing.getByIds"
-	query := "SELECT * FROM templates WHERE id = ANY($1)"
+func (tr *templateRepo) GetByIds(ctx context.Context, ids []string) ([]models.Template, error) {
+	fmt.Println(ids)
+	op := "templateRepo.SearchPreparing.GetByIds"
+	query := "SELECT t.*, COUNT(ft.template_id) FROM templates t LEFT JOIN favorite_templates ft ON ft.template_id=t.id WHERE ft.template_id = ANY($1) GROUP BY t.id"
 	templates := make([]models.Template, 0, len(ids))
 	rows, err := tr.Storage.Pool.Query(ctx, query, ids)
 	if err != nil {
@@ -339,12 +410,12 @@ func (tr *templateRepo) getByIds(ctx context.Context, ids []string) ([]models.Te
 			&template.Description,
 			&template.Text,
 			&template.Links,
-			&template.Likes,
 			&template.Order,
 			&template.CreateTime,
 			&template.LastUpdateTime,
 			&template.NumOfUsers,
 			&template.Widgets,
+			&template.Likes,
 		); err != nil {
 			return nil, fmt.Errorf("%s : %w", op, err)
 		}

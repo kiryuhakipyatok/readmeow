@@ -64,7 +64,7 @@ func (ah *AuthHandl) Login(c *fiber.Ctx) error {
 			"error": "validation failed: " + err.Error(),
 		})
 	}
-	jwt, ttl, err := ah.AuthServ.Login(ctx, req.Login, req.Password)
+	loginResponce, err := ah.AuthServ.Login(ctx, req.Login, req.Password)
 	if err != nil {
 		c.Status(fiber.StatusInternalServerError)
 		return c.JSON(fiber.Map{
@@ -73,16 +73,18 @@ func (ah *AuthHandl) Login(c *fiber.Ctx) error {
 	}
 	cookie := &fiber.Cookie{
 		Name:     "jwt",
-		Value:    jwt,
+		Value:    loginResponce.JWT,
 		HTTPOnly: true,
-		Expires:  *ttl,
-		MaxAge:   int(time.Until(*ttl).Seconds()),
+		Expires:  loginResponce.TTL,
+		MaxAge:   int(time.Until(loginResponce.TTL).Seconds()),
 		SameSite: "Lax",
 	}
 	c.Cookie(cookie)
-	return c.JSON(fiber.Map{
-		"message": "success",
-	})
+	responce := dto.LoginResponse{
+		Login:  loginResponce.Login,
+		Avatar: loginResponce.Avatar,
+	}
+	return c.JSON(responce)
 }
 
 func (ah *AuthHandl) Logout(c *fiber.Ctx) error {

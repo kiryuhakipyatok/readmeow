@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"readmeow/internal/delivery/dto"
 	"readmeow/internal/domain/models"
 	"readmeow/internal/domain/repositories"
 	"readmeow/pkg/logger"
@@ -14,11 +15,11 @@ import (
 )
 
 type ReadmeServ interface {
-	Create(ctx context.Context, tid, oid, title, image string, text, links, widgets, order []string) error
+	Create(ctx context.Context, tid, oid, title, image string, text, links, order []string, widgets []map[string]string) error
 	Delete(ctx context.Context, id, uid string) error
 	Update(ctx context.Context, updates map[string]any, id string) error
 	Get(ctx context.Context, id string) (*models.Readme, error)
-	FetchByUser(ctx context.Context, amount, page uint, uid string) ([]models.Readme, error)
+	FetchByUser(ctx context.Context, amount, page uint, uid string) ([]dto.ReadmeResponse, error)
 }
 
 type readmeServ struct {
@@ -40,7 +41,7 @@ func NewReadmeServ(rr repositories.ReadmeRepo, ur repositories.UserRepo, tr repo
 	}
 }
 
-func (rs *readmeServ) Create(ctx context.Context, oid, title, tid, image string, text, links, widgets, order []string) error {
+func (rs *readmeServ) Create(ctx context.Context, tid, oid, title, image string, text, links, order []string, widgets []map[string]string) error {
 	op := "readmeServ.Create"
 	log := rs.Logger.AddOp(op)
 	log.Log.Info("creating readme")
@@ -88,7 +89,13 @@ func (rs *readmeServ) Create(ctx context.Context, oid, title, tid, image string,
 			return nil, err
 		}
 		if len(widgets) != 0 {
-			widgetsData, err := rs.WidgetRepo.GetByIds(ctx, widgets)
+			keys := make([]string, 0, len(widgets))
+			for _, w := range widgets {
+				for k := range w {
+					keys = append(keys, k)
+				}
+			}
+			widgetsData, err := rs.WidgetRepo.GetByIds(ctx, keys)
 			if err != nil {
 				log.Log.Error("failed to fetch widgets", logger.Err(err))
 				return nil, err
@@ -176,14 +183,25 @@ func (rs *readmeServ) Get(ctx context.Context, id string) (*models.Readme, error
 	return readme, nil
 }
 
-func (rs *readmeServ) FetchByUser(ctx context.Context, amount, page uint, uid string) ([]models.Readme, error) {
+func (rs *readmeServ) FetchByUser(ctx context.Context, amount, page uint, uid string) ([]dto.ReadmeResponse, error) {
 	op := "readmeServ.FetchByUser"
 	log := rs.Logger.AddOp(op)
 	log.Log.Info("receiving readmes by user")
-	readmes, err := rs.ReadmeRepo.FetchByUser(ctx, amount, page, uid)
+	rdms, err := rs.ReadmeRepo.FetchByUser(ctx, amount, page, uid)
 	if err != nil {
 		log.Log.Error("failed to receive readmes", logger.Err(err))
 		return nil, fmt.Errorf("%s : %w", op, err)
+	}
+	readmes := make([]dto.ReadmeResponse, 0, len(rdms))
+	for _, r := range rdms {
+		readme := dto.ReadmeResponse{
+			Id:             r.Id.String(),
+			Title:          r.Title,
+			Image:          r.Image,
+			LastUpdateTime: r.LastUpdateTime,
+			CreateTime:     r.CreateTime,
+		}
+		readmes = append(readmes, readme)
 	}
 	log.Log.Info("readmes received successfully")
 	return readmes, nil

@@ -2,8 +2,8 @@ package services
 
 import (
 	"context"
-	"errors"
 	"fmt"
+	"readmeow/internal/delivery/dto"
 	"readmeow/internal/domain/models"
 	"readmeow/internal/domain/repositories"
 	"readmeow/pkg/logger"
@@ -18,11 +18,12 @@ type TemplateServ interface {
 	Update(ctx context.Context, fields map[string]any, id string) error
 	Delete(ctx context.Context, id string) error
 	Get(ctx context.Context, id string) (*models.Template, error)
-	Fetch(ctx context.Context, amount, page uint) ([]models.Template, error)
-	Sort(ctx context.Context, amount, page uint, dest, field string) ([]models.Template, error)
-	Search(ctx context.Context, amount, page uint, query string) ([]models.Template, error)
-	Like(ctx context.Context, id string) error
-	Dislike(ctx context.Context, id string) error
+	Fetch(ctx context.Context, amount, page uint) ([]dto.TemplateResponse, error)
+	FetchFavorite(ctx context.Context, id string) ([]dto.TemplateResponse, error)
+	Sort(ctx context.Context, amount, page uint, dest, field string) ([]dto.TemplateResponse, error)
+	Search(ctx context.Context, amount, page uint, query string) ([]dto.TemplateResponse, error)
+	Like(ctx context.Context, id, uid string) error
+	Dislike(ctx context.Context, id, uid string) error
 }
 
 type templateServ struct {
@@ -37,8 +38,8 @@ func NewTemplateServ(tr repositories.TemplateRepo, ur repositories.UserRepo, wr 
 	return &templateServ{
 		TemplateRepo: tr,
 		UserRepo:     ur,
-		Transactor:   t,
 		WidgetRepo:   wr,
+		Transactor:   t,
 		Logger:       l,
 	}
 }
@@ -152,88 +153,159 @@ func (ts *templateServ) Get(ctx context.Context, id string) (*models.Template, e
 	return template, nil
 }
 
-func (ts *templateServ) Fetch(ctx context.Context, amount, page uint) ([]models.Template, error) {
+func (ts *templateServ) FetchFavorite(ctx context.Context, id string) ([]dto.TemplateResponse, error) {
+	op := "templateServ.FetchFavorite"
+	log := ts.Logger.AddOp(op)
+	log.Log.Info("fetching favorite templates")
+	fid, err := ts.TemplateRepo.FetchFavorite(ctx, id)
+	if err != nil {
+		log.Log.Error("failed to fetch favorite templates ids", logger.Err(err))
+		return nil, fmt.Errorf("%s : %w", op, err)
+	}
+	templs, err := ts.TemplateRepo.GetByIds(ctx, fid)
+	if err != nil {
+		log.Log.Error("failed to fetch favorite tempaltes", logger.Err(err))
+		return nil, fmt.Errorf("%s : %w", op, err)
+	}
+	templates := make([]dto.TemplateResponse, 0, len(templs))
+	for _, t := range templs {
+		user, err := ts.UserRepo.Get(ctx, t.Id.String())
+		if err != nil {
+			log.Log.Error("failed to get template owner", logger.Err(err))
+			return nil, fmt.Errorf("%s : %w", op, err)
+		}
+		template := dto.TemplateResponse{
+			Id:             t.Id.String(),
+			Title:          t.Title,
+			Image:          t.Image,
+			LastUpdateTime: t.LastUpdateTime,
+			NumOfUsers:     t.NumOfUsers,
+			Likes:          t.Likes,
+			OwnerId:        user.Id,
+			OwnerAvatar:    user.Avatar,
+		}
+		templates = append(templates, template)
+	}
+	log.Log.Info("templates fetched successfully")
+	return templates, nil
+}
+
+func (ts *templateServ) Fetch(ctx context.Context, amount, page uint) ([]dto.TemplateResponse, error) {
 	op := "templateServ.Fetch"
 	log := ts.Logger.AddOp(op)
 	log.Log.Info("fetching templates")
-	templates, err := ts.TemplateRepo.Fetch(ctx, amount, page)
+	templs, err := ts.TemplateRepo.Fetch(ctx, amount, page)
 	if err != nil {
 		log.Log.Error("failed to fetch templates", logger.Err(err))
 		return nil, fmt.Errorf("%s : %w", op, err)
+	}
+	templates := make([]dto.TemplateResponse, 0, len(templs))
+	for _, t := range templs {
+		user, err := ts.UserRepo.Get(ctx, t.Id.String())
+		if err != nil {
+			log.Log.Error("failed to get template owner", logger.Err(err))
+			return nil, fmt.Errorf("%s : %w", op, err)
+		}
+		template := dto.TemplateResponse{
+			Id:             t.Id.String(),
+			Title:          t.Title,
+			Image:          t.Image,
+			LastUpdateTime: t.LastUpdateTime,
+			NumOfUsers:     t.NumOfUsers,
+			Likes:          t.Likes,
+			OwnerId:        user.Id,
+			OwnerAvatar:    user.Avatar,
+		}
+		templates = append(templates, template)
 	}
 	log.Log.Info("template fetched successfully")
 	return templates, nil
 }
 
-func (ts *templateServ) Sort(ctx context.Context, amount, page uint, dest, field string) ([]models.Template, error) {
+func (ts *templateServ) Sort(ctx context.Context, amount, page uint, dest, field string) ([]dto.TemplateResponse, error) {
 	op := "templateServ.Sort"
 	log := ts.Logger.AddOp(op)
 	log.Log.Info("fetching sorted templates")
-	templates, err := ts.TemplateRepo.Sort(ctx, amount, page, dest, field)
+	templs, err := ts.TemplateRepo.Sort(ctx, amount, page, dest, field)
 	if err != nil {
 		log.Log.Error("failed to fetch sorted templates", logger.Err(err))
 		return nil, fmt.Errorf("%s : %w", op, err)
+	}
+	templates := make([]dto.TemplateResponse, 0, len(templs))
+	for _, t := range templs {
+		user, err := ts.UserRepo.Get(ctx, t.Id.String())
+		if err != nil {
+			log.Log.Error("failed to get template owner", logger.Err(err))
+			return nil, fmt.Errorf("%s : %w", op, err)
+		}
+		template := dto.TemplateResponse{
+			Id:             t.Id.String(),
+			Title:          t.Title,
+			Image:          t.Image,
+			LastUpdateTime: t.LastUpdateTime,
+			NumOfUsers:     t.NumOfUsers,
+			Likes:          t.Likes,
+			OwnerId:        user.Id,
+			OwnerAvatar:    user.Avatar,
+		}
+		templates = append(templates, template)
 	}
 	log.Log.Info("sorted templates fetched successfully")
 	return templates, nil
 }
 
-func (ts *templateServ) Search(ctx context.Context, amount, page uint, query string) ([]models.Template, error) {
+func (ts *templateServ) Search(ctx context.Context, amount, page uint, query string) ([]dto.TemplateResponse, error) {
 	op := "templateServ.Search"
 	log := ts.Logger.AddOp(op)
 	log.Log.Info("fetchin searched templates")
-	templates, err := ts.TemplateRepo.Search(ctx, amount, page, query)
+	templs, err := ts.TemplateRepo.Search(ctx, amount, page, query)
 	if err != nil {
 		log.Log.Error("failed to fetch searched templates", logger.Err(err))
 		return nil, fmt.Errorf("%s : %w", op, err)
+	}
+	templates := make([]dto.TemplateResponse, 0, len(templs))
+	for _, t := range templs {
+		user, err := ts.UserRepo.Get(ctx, t.Id.String())
+		if err != nil {
+			log.Log.Error("failed to get template owner", logger.Err(err))
+			return nil, fmt.Errorf("%s : %w", op, err)
+		}
+		template := dto.TemplateResponse{
+			Id:             t.Id.String(),
+			Title:          t.Title,
+			Image:          t.Image,
+			LastUpdateTime: t.LastUpdateTime,
+			NumOfUsers:     t.NumOfUsers,
+			Likes:          t.Likes,
+			OwnerId:        user.Id,
+			OwnerAvatar:    user.Avatar,
+		}
+		templates = append(templates, template)
 	}
 	log.Log.Info("searched templates fetched successfully")
 	return templates, nil
 }
 
-func (ts *templateServ) Like(ctx context.Context, id string) error {
+func (ts *templateServ) Like(ctx context.Context, id, uid string) error {
 	op := "templateServ.Like"
 	log := ts.Logger.AddOp(op)
 	log.Log.Info("liking template")
-	template, err := ts.TemplateRepo.Get(ctx, id)
-	if err != nil {
-		log.Log.Error("failed to get widget", logger.Err(err))
+	if err := ts.TemplateRepo.Like(ctx, id, uid); err != nil {
+		log.Log.Error("failed to like template", logger.Err(err))
 		return fmt.Errorf("%s : %w", op, err)
 	}
-	updatedLikes := template.Likes + 1
-	update := map[string]any{
-		"likes": updatedLikes,
-	}
-	if err := ts.TemplateRepo.Update(ctx, update, template.Id.String()); err != nil {
-		log.Log.Error("failed to update template info", logger.Err(err))
-		return err
-	}
-	log.Log.Info("template liked successfully")
+	log.Log.Info("widget liked successfully")
 	return nil
 }
 
-func (ts *templateServ) Dislike(ctx context.Context, id string) error {
+func (ts *templateServ) Dislike(ctx context.Context, id, uid string) error {
 	op := "templateServ.Dislike"
 	log := ts.Logger.AddOp(op)
 	log.Log.Info("disliking template")
-	tempalate, err := ts.TemplateRepo.Get(ctx, id)
-	if err != nil {
-		log.Log.Error("failed to get template", logger.Err(err))
+	if err := ts.TemplateRepo.Dislike(ctx, id, uid); err != nil {
+		log.Log.Error("failed to dislike template", logger.Err(err))
 		return fmt.Errorf("%s : %w", op, err)
 	}
-	if tempalate.Likes == 0 {
-		log.Log.Error("template likes are equal zero")
-		return fmt.Errorf("%s : %w", op, errors.New("template likes are equal zero"))
-	}
-
-	updatedLikes := tempalate.Likes - 1
-	update := map[string]any{
-		"likes": updatedLikes,
-	}
-	if err := ts.TemplateRepo.Update(ctx, update, tempalate.Id.String()); err != nil {
-		log.Log.Error("failed to update template info", logger.Err(err))
-		return err
-	}
-	log.Log.Info("template disliked successfully")
+	log.Log.Info("widget disliked successfully")
 	return nil
 }

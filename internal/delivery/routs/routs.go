@@ -36,6 +36,7 @@ func (rc *RouteConfig) SetupRoutes() {
 
 func (rc *RouteConfig) UsersRoutes() {
 	userGroup := rc.App.Group("/api/users")
+	userGroup.Get("/:user", rc.UserHandl.GetUser)
 	userGroup.Patch("/password", rc.UserHandl.ChangeUserPassword)
 	userGroup.Patch("", rc.UserHandl.Update)
 	userGroup.Delete("", rc.UserHandl.Delete)
@@ -55,6 +56,7 @@ func (rc *RouteConfig) WidgetsRoutes() {
 	widgetGroup.Get("", rc.WidgetHandl.FetchWidgets)
 	widgetGroup.Get("/sort", rc.WidgetHandl.FetchSortedWidgets)
 	widgetGroup.Get("/search", rc.WidgetHandl.SearchWidgets)
+	widgetGroup.Get("/favorite", rc.WidgetHandl.FetchFavoriteWidgets)
 	widgetGroup.Get("/:widget", rc.WidgetHandl.GetWidgetById)
 
 	widgetGroup.Patch("/like/:widget", rc.WidgetHandl.Like)
@@ -71,7 +73,8 @@ func (rc *RouteConfig) TemplatesRoutes() {
 	templateGroup.Get("", rc.TemplateHandl.FetchTemplates)
 	templateGroup.Get("/sort", rc.TemplateHandl.SortTemplate)
 	templateGroup.Get("/search", rc.TemplateHandl.SearchTemplate)
-	templateGroup.Get("/:id", rc.TemplateHandl.GetTemplate)
+	templateGroup.Get("/favorite", rc.TemplateHandl.FetchFavoriteTemplates)
+	templateGroup.Get("/:template", rc.TemplateHandl.GetTemplate)
 
 	templateGroup.Patch("/like/:template", rc.TemplateHandl.Like)
 	templateGroup.Patch("/dislike/:template", rc.TemplateHandl.Dislike)

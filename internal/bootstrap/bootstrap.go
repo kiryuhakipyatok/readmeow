@@ -65,8 +65,8 @@ func (bc *BootstrapConfig) Bootstrap() {
 
 	authHandl := handlers.NewAuthHandle(authServ, userServ, bc.Validator)
 	readmeHandl := handlers.NewReadmeHandl(readmeServ, authServ, bc.Validator)
-	widgetHandl := handlers.NewWidgetHandl(widgetServ, bc.Validator)
-	templateHandl := handlers.NewTemplateHandl(templateServ, bc.Validator)
+	widgetHandl := handlers.NewWidgetHandl(widgetServ, authServ, bc.Validator)
+	templateHandl := handlers.NewTemplateHandl(templateServ, authServ, bc.Validator)
 	userHandl := handlers.NewUserHandl(userServ, bc.Validator)
 
 	routConfig := routs.NewRoutConfig(bc.App, userHandl, authHandl, templateHandl, readmeHandl, widgetHandl)

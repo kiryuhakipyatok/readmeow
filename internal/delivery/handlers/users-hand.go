@@ -6,6 +6,7 @@ import (
 	"readmeow/pkg/validator"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 )
 
 type UserHandl struct {
@@ -18,6 +19,25 @@ func NewUserHandl(us services.UserServ, v *validator.Validator) *UserHandl {
 		UserServ:  us,
 		Validator: v,
 	}
+}
+
+func (uh *UserHandl) GetUser(c *fiber.Ctx) error {
+	ctx := c.UserContext()
+	id := c.Params("user")
+	if err := uuid.Validate(id); err != nil {
+		c.Status(fiber.StatusBadRequest)
+		return c.JSON(fiber.Map{
+			"error": "invalid id: " + err.Error(),
+		})
+	}
+	user, err := uh.UserServ.Get(ctx, id)
+	if err != nil {
+		c.Status(fiber.StatusInternalServerError)
+		return c.JSON(fiber.Map{
+			"error": "failed to update user: " + err.Error(),
+		})
+	}
+	return c.JSON(user)
 }
 
 func (uh *UserHandl) Update(c *fiber.Ctx) error {
