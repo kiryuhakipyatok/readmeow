@@ -169,7 +169,7 @@ func (ts *templateServ) FetchFavorite(ctx context.Context, id string) ([]dto.Tem
 	}
 	templates := make([]dto.TemplateResponse, 0, len(templs))
 	for _, t := range templs {
-		user, err := ts.UserRepo.Get(ctx, t.Id.String())
+		user, err := ts.UserRepo.Get(ctx, t.OwnerId.String())
 		if err != nil {
 			log.Log.Error("failed to get template owner", logger.Err(err))
 			return nil, fmt.Errorf("%s : %w", op, err)
@@ -201,7 +201,7 @@ func (ts *templateServ) Fetch(ctx context.Context, amount, page uint) ([]dto.Tem
 	}
 	templates := make([]dto.TemplateResponse, 0, len(templs))
 	for _, t := range templs {
-		user, err := ts.UserRepo.Get(ctx, t.Id.String())
+		user, err := ts.UserRepo.Get(ctx, t.OwnerId.String())
 		if err != nil {
 			log.Log.Error("failed to get template owner", logger.Err(err))
 			return nil, fmt.Errorf("%s : %w", op, err)
@@ -233,7 +233,7 @@ func (ts *templateServ) Sort(ctx context.Context, amount, page uint, dest, field
 	}
 	templates := make([]dto.TemplateResponse, 0, len(templs))
 	for _, t := range templs {
-		user, err := ts.UserRepo.Get(ctx, t.Id.String())
+		user, err := ts.UserRepo.Get(ctx, t.OwnerId.String())
 		if err != nil {
 			log.Log.Error("failed to get template owner", logger.Err(err))
 			return nil, fmt.Errorf("%s : %w", op, err)
@@ -265,7 +265,7 @@ func (ts *templateServ) Search(ctx context.Context, amount, page uint, query str
 	}
 	templates := make([]dto.TemplateResponse, 0, len(templs))
 	for _, t := range templs {
-		user, err := ts.UserRepo.Get(ctx, t.Id.String())
+		user, err := ts.UserRepo.Get(ctx, t.OwnerId.String())
 		if err != nil {
 			log.Log.Error("failed to get template owner", logger.Err(err))
 			return nil, fmt.Errorf("%s : %w", op, err)

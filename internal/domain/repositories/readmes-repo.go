@@ -43,7 +43,7 @@ func (rr *readmeRepo) Create(ctx context.Context, readme *models.Readme) error {
 	} else {
 		tId = readme.TemplateId
 	}
-	query := "INSERT INTO readmes (id, owner_id, template_id, title, image, text, links, widgets, render_order, create_time, last_update_time) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)"
+	query := "INSERT INTO readmes (id, owner_id, template_id, image, title, text, links, widgets, render_order, create_time, last_update_time) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)"
 	if _, err := rr.Storage.Pool.Exec(ctx, query, readme.Id, readme.OwnerId, tId, readme.Title, readme.Image, readme.Text, readme.Links, readme.Widgets, readme.Order, readme.CreateTime, readme.LastUpdateTime); err != nil {
 		if storage.ErrorAlreadyExists(err) {
 			return fmt.Errorf("%s : %w", op, errReadmeAlreadyExists)
@@ -73,12 +73,12 @@ func (rr *readmeRepo) Update(ctx context.Context, updates map[string]any, id str
 		"text":             true,
 		"links":            true,
 		"widgets":          true,
-		"order":            true,
+		"render_order":     true,
 		"last_update_time": true,
 	}
 	str := []string{}
 	args := []any{}
-	i := 0
+	i := 1
 	for k, v := range updates {
 		if !validFields[k] {
 			return fmt.Errorf("%s : %w", op, errors.New("not valid fields to update"))
@@ -115,13 +115,14 @@ func (rr *readmeRepo) Get(ctx context.Context, id string) (*models.Readme, error
 		&readme.Id,
 		&readme.OwnerId,
 		&readme.TemplateId,
+		&readme.Image,
 		&readme.Title,
 		&readme.Text,
 		&readme.Links,
-		&readme.Widgets,
 		&readme.Order,
 		&readme.CreateTime,
 		&readme.LastUpdateTime,
+		&readme.Widgets,
 	); err != nil {
 		if errors.Is(err, storage.ErrNotFound()) {
 			return nil, fmt.Errorf("%s : %w", op, errReadmeNotFound)
@@ -133,8 +134,8 @@ func (rr *readmeRepo) Get(ctx context.Context, id string) (*models.Readme, error
 
 func (rr *readmeRepo) FetchByUser(ctx context.Context, amount, page uint, uid string) ([]models.Readme, error) {
 	op := "readmeRepo.FetchByUser"
-	query := "SELECT * FROM readmes OFFSET $1 LIMIT $2 WHERE owner_id = $3"
-	rows, err := rr.Storage.Pool.Query(ctx, query, amount*page-amount, amount, uid)
+	query := "SELECT * FROM readmes WHERE owner_id = $1 OFFSET $2 LIMIT $3"
+	rows, err := rr.Storage.Pool.Query(ctx, query, uid, amount*page-amount, amount)
 	if err != nil {
 		return nil, fmt.Errorf("%s : %w", op, err)
 	}
@@ -146,13 +147,14 @@ func (rr *readmeRepo) FetchByUser(ctx context.Context, amount, page uint, uid st
 			&readme.Id,
 			&readme.OwnerId,
 			&readme.TemplateId,
+			&readme.Image,
 			&readme.Title,
 			&readme.Text,
 			&readme.Links,
-			&readme.Widgets,
 			&readme.Order,
 			&readme.CreateTime,
 			&readme.LastUpdateTime,
+			&readme.Widgets,
 		); err != nil {
 			return nil, fmt.Errorf("%s : %w", op, err)
 		}

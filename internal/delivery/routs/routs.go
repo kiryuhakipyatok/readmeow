@@ -91,5 +91,5 @@ func (rc *RouteConfig) ReadmesRoutes() {
 	readmeGroup.Patch("", rc.ReadmeHandl.UpdateReadme)
 
 	readmeGroup.Get("", rc.ReadmeHandl.FetchReadmesByUser)
-	readmeGroup.Get("/:id", rc.ReadmeHandl.GetReadmeById)
+	readmeGroup.Get("/:readme", rc.ReadmeHandl.GetReadmeById)
 }

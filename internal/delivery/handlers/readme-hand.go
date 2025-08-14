@@ -38,7 +38,15 @@ func (rh *ReadmeHandl) CreateReadme(c *fiber.Ctx) error {
 			"error": "validation failed: " + err.Error(),
 		})
 	}
-	if err := rh.ReadmeServ.Create(ctx, req.TemplateId, req.OwnerId, req.Title, req.Image, req.Text, req.Links, req.Order, req.Widgets); err != nil {
+	cookie := c.Cookies("jwt")
+	uid, err := rh.AuthServ.GetId(ctx, cookie)
+	if err != nil {
+		c.Status(fiber.StatusInternalServerError)
+		return c.JSON(fiber.Map{
+			"error": "failed to get user: " + err.Error(),
+		})
+	}
+	if err := rh.ReadmeServ.Create(ctx, req.TemplateId, uid, req.Title, req.Image, req.Text, req.Links, req.Order, req.Widgets); err != nil {
 		c.Status(fiber.StatusInternalServerError)
 		return c.JSON(fiber.Map{
 			"error": "failed to create readme: " + err.Error(),

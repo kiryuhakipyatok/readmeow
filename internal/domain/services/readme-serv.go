@@ -31,13 +31,14 @@ type readmeServ struct {
 	Logger       *logger.Logger
 }
 
-func NewReadmeServ(rr repositories.ReadmeRepo, ur repositories.UserRepo, tr repositories.TemplateRepo, wr repositories.WidgetRepo, l *logger.Logger) ReadmeServ {
+func NewReadmeServ(rr repositories.ReadmeRepo, ur repositories.UserRepo, tr repositories.TemplateRepo, wr repositories.WidgetRepo, t storage.Transactor, l *logger.Logger) ReadmeServ {
 	return &readmeServ{
 		ReadmeRepo:   rr,
 		UserRepo:     ur,
 		TemplateRepo: tr,
 		WidgetRepo:   wr,
 		Logger:       l,
+		Transactor:   t,
 	}
 }
 
@@ -131,7 +132,7 @@ func (rs *readmeServ) Create(ctx context.Context, tid, oid, title, image string,
 	return nil
 }
 
-func (rs *readmeServ) Delete(ctx context.Context, uid, id string) error {
+func (rs *readmeServ) Delete(ctx context.Context, id, uid string) error {
 	op := "readmeServ"
 	log := rs.Logger.AddOp(op)
 	log.Log.Info("deleting readme")
@@ -142,7 +143,7 @@ func (rs *readmeServ) Delete(ctx context.Context, uid, id string) error {
 	}
 	readme, err := rs.ReadmeRepo.Get(ctx, id)
 	if err != nil {
-		log.Log.Error("failed to get user", logger.Err(err))
+		log.Log.Error("failed to get readme", logger.Err(err))
 		return fmt.Errorf("%s : %w", op, err)
 	}
 	if readme.OwnerId != user.Id {
@@ -161,7 +162,7 @@ func (rs *readmeServ) Update(ctx context.Context, updates map[string]any, id str
 	op := "readmeServ.Update"
 	log := rs.Logger.AddOp(op)
 	log.Log.Info("updating readme")
-	updates["last_update_time"] = time.Now().Unix()
+	updates["last_update_time"] = time.Now()
 	if err := rs.ReadmeRepo.Update(ctx, updates, id); err != nil {
 		log.Log.Error("failed to update readme", logger.Err(err))
 		return fmt.Errorf("%s : %w", op, err)

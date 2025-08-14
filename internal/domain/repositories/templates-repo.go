@@ -187,7 +187,7 @@ func (tr *templateRepo) Get(ctx context.Context, id string) (*models.Template, e
 		return template, nil
 	}
 	if err == cache.EMPTY {
-		query := "SELECT t.*, COUNT(ft.tempalate_id) FROM templates t LEFT JOIN favorite_templates ft ON ft.template_id=t.id WHERE id = $1 GROUP BY t.id"
+		query := "SELECT t.*, COUNT(ft.template_id) AS likes FROM templates t LEFT JOIN favorite_templates ft ON ft.template_id=t.id WHERE id = $1 GROUP BY t.id"
 		if tx, ok := storage.GetTx(ctx); ok {
 			if err := tx.QueryRow(ctx, query, id).Scan(
 				&template.Id,
@@ -197,11 +197,11 @@ func (tr *templateRepo) Get(ctx context.Context, id string) (*models.Template, e
 				&template.Description,
 				&template.Text,
 				&template.Links,
-				&template.Widgets,
-				&template.NumOfUsers,
 				&template.Order,
 				&template.CreateTime,
 				&template.LastUpdateTime,
+				&template.NumOfUsers,
+				&template.Widgets,
 				&template.Likes,
 			); err != nil {
 				if errors.Is(err, storage.ErrNotFound()) {
@@ -218,11 +218,11 @@ func (tr *templateRepo) Get(ctx context.Context, id string) (*models.Template, e
 				&template.Description,
 				&template.Text,
 				&template.Links,
-				&template.Widgets,
-				&template.NumOfUsers,
 				&template.Order,
 				&template.CreateTime,
 				&template.LastUpdateTime,
+				&template.NumOfUsers,
+				&template.Widgets,
 				&template.Likes,
 			); err != nil {
 				if errors.Is(err, storage.ErrNotFound()) {
@@ -269,7 +269,7 @@ func (tr *templateRepo) FetchFavorite(ctx context.Context, id string) ([]string,
 
 func (tr *templateRepo) Fetch(ctx context.Context, amount, page uint) ([]models.Template, error) {
 	op := "templateRepo.Fetch"
-	query := "SELECT t.*, COUNT(ft.tempalate_id) FROM templates t LEFT JOIN favorite_templates ft ON ft.template_id=t.id WHERE id = $1 GROUP BY t.id ORDER BY likes DESC OFFSET $1 LIMIT $2"
+	query := "SELECT t.*, COUNT(ft.template_id) AS likes FROM templates t LEFT JOIN favorite_templates ft ON ft.template_id=t.id GROUP BY t.id ORDER BY likes DESC OFFSET $1 LIMIT $2"
 	templates := []models.Template{}
 	rows, err := tr.Storage.Pool.Query(ctx, query, amount*page-amount, amount)
 	if err != nil {
@@ -286,11 +286,11 @@ func (tr *templateRepo) Fetch(ctx context.Context, amount, page uint) ([]models.
 			&template.Description,
 			&template.Text,
 			&template.Links,
-			&template.Widgets,
-			&template.NumOfUsers,
 			&template.Order,
 			&template.CreateTime,
 			&template.LastUpdateTime,
+			&template.NumOfUsers,
+			&template.Widgets,
 			&template.Likes,
 		); err != nil {
 			return nil, fmt.Errorf("%s : %w", op, err)
@@ -316,8 +316,8 @@ func (tr *templateRepo) Sort(ctx context.Context, amount, page uint, dest, field
 		dest = "DESC"
 	}
 	templates := []models.Template{}
-	query := fmt.Sprintf("SELECT t.*, COUNT(ft.tempalate_id) FROM templates t LEFT JOIN favorite_templates ft ON ft.template_id=t.id WHERE id = $1 GROUP BY t.id ORDER BY %s %s OFFSET $1 LIMIT $2", field, dest)
-	rows, err := tr.Storage.Pool.Query(ctx, query, field, dest, amount*page-amount, amount)
+	query := fmt.Sprintf("SELECT t.*, COUNT(ft.template_id) AS likes FROM templates t LEFT JOIN favorite_templates ft ON ft.template_id=t.id GROUP BY t.id ORDER BY %s %s OFFSET $1 LIMIT $2", field, dest)
+	rows, err := tr.Storage.Pool.Query(ctx, query, amount*page-amount, amount)
 	if err != nil {
 		return nil, fmt.Errorf("%s : %w", op, err)
 	}
@@ -332,11 +332,11 @@ func (tr *templateRepo) Sort(ctx context.Context, amount, page uint, dest, field
 			&template.Description,
 			&template.Text,
 			&template.Links,
-			&template.Widgets,
-			&template.NumOfUsers,
 			&template.Order,
 			&template.CreateTime,
 			&template.LastUpdateTime,
+			&template.NumOfUsers,
+			&template.Widgets,
 			&template.Likes,
 		); err != nil {
 			return nil, fmt.Errorf("%s : %w", op, err)
@@ -392,7 +392,7 @@ func (tr *templateRepo) Search(ctx context.Context, amount, page uint, query str
 func (tr *templateRepo) GetByIds(ctx context.Context, ids []string) ([]models.Template, error) {
 	fmt.Println(ids)
 	op := "templateRepo.SearchPreparing.GetByIds"
-	query := "SELECT t.*, COUNT(ft.template_id) FROM templates t LEFT JOIN favorite_templates ft ON ft.template_id=t.id WHERE ft.template_id = ANY($1) GROUP BY t.id"
+	query := "SELECT t.*, COUNT(ft.template_id) AS likes FROM templates t LEFT JOIN favorite_templates ft ON ft.template_id=t.id WHERE ft.template_id = ANY($1) GROUP BY t.id"
 	templates := make([]models.Template, 0, len(ids))
 	rows, err := tr.Storage.Pool.Query(ctx, query, ids)
 	if err != nil {

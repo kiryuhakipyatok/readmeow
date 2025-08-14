@@ -4,6 +4,7 @@ import (
 	"readmeow/internal/delivery/dto"
 	"readmeow/internal/domain/services"
 	"readmeow/pkg/validator"
+	"strings"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
@@ -155,7 +156,7 @@ func (th *TemplateHandl) SortTemplate(c *fiber.Ctx) error {
 			"error": "validation failed: " + err.Error(),
 		})
 	}
-	templates, err := th.TemplateServ.Sort(ctx, req.Amount, req.Page, req.Destination, req.Field)
+	templates, err := th.TemplateServ.Sort(ctx, req.Amount, req.Page, strings.ToUpper(req.Destination), req.Field)
 	if err != nil {
 		c.Status(fiber.StatusInternalServerError)
 		return c.JSON(fiber.Map{

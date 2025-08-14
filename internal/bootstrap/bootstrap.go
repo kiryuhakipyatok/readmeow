@@ -58,7 +58,7 @@ func (bc *BootstrapConfig) Bootstrap() {
 	}()
 
 	authServ := services.NewAuthServ(userRepo, bc.Logger, bc.Config.Auth)
-	readmeServ := services.NewReadmeServ(readmeRepo, userRepo, templateRepo, widgetRepo, bc.Logger)
+	readmeServ := services.NewReadmeServ(readmeRepo, userRepo, templateRepo, widgetRepo, transactor, bc.Logger)
 	widgetServ := services.NewWidgetServ(widgetRepo, userRepo, bc.Logger)
 	templateServ := services.NewTemplateServ(templateRepo, userRepo, widgetRepo, transactor, bc.Logger)
 	userServ := services.NewUserServ(userRepo, bc.Logger)
