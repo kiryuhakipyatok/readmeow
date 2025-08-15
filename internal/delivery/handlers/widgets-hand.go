@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/google/uuid"
 )
 
 type WidgetHandl struct {
@@ -27,11 +26,8 @@ func NewWidgetHandl(ws services.WidgetServ, as services.AuthServ, v *validator.V
 func (wh *WidgetHandl) GetWidgetById(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	id := c.Params("widget")
-	if err := uuid.Validate(id); err != nil {
-		c.Status(fiber.StatusBadRequest)
-		return c.JSON(fiber.Map{
-			"error": "invalid id: " + err.Error(),
-		})
+	if err := ValidateId(c, id); err != nil {
+		return err
 	}
 	widget, err := wh.WidgetServ.Get(ctx, id)
 	if err != nil {
@@ -46,17 +42,8 @@ func (wh *WidgetHandl) GetWidgetById(c *fiber.Ctx) error {
 func (wh *WidgetHandl) FetchWidgets(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	req := dto.PaginationRequest{}
-	if err := c.QueryParser(&req); err != nil {
-		c.Status(fiber.StatusUnprocessableEntity)
-		return c.JSON(fiber.Map{
-			"error": "failed to parse reqeust: " + err.Error(),
-		})
-	}
-	if err := wh.Validator.Validate.Struct(req); err != nil {
-		c.Status(fiber.StatusBadRequest)
-		return c.JSON(fiber.Map{
-			"error": "validation failed: " + err.Error(),
-		})
+	if err := ParseAndValidateRequest(c, &req, Query{}, wh.Validator); err != nil {
+		return err
 	}
 	widgets, err := wh.WidgetServ.Fetch(ctx, req.Amount, req.Page)
 	if err != nil {
@@ -71,17 +58,8 @@ func (wh *WidgetHandl) FetchWidgets(c *fiber.Ctx) error {
 func (wh *WidgetHandl) FetchSortedWidgets(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	req := dto.SortWidgetsRequest{}
-	if err := c.QueryParser(&req); err != nil {
-		c.Status(fiber.StatusUnprocessableEntity)
-		return c.JSON(fiber.Map{
-			"error": "failed to parse reqeust: " + err.Error(),
-		})
-	}
-	if err := wh.Validator.Validate.Struct(req); err != nil {
-		c.Status(fiber.StatusBadRequest)
-		return c.JSON(fiber.Map{
-			"error": "validation failed: " + err.Error(),
-		})
+	if err := ParseAndValidateRequest(c, &req, Query{}, wh.Validator); err != nil {
+		return err
 	}
 	widgets, err := wh.WidgetServ.Sort(ctx, req.Amount, req.Page, req.Field, strings.ToUpper(req.Destination))
 	if err != nil {
@@ -96,17 +74,8 @@ func (wh *WidgetHandl) FetchSortedWidgets(c *fiber.Ctx) error {
 func (wh *WidgetHandl) SearchWidgets(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	req := dto.SearchRequest{}
-	if err := c.QueryParser(&req); err != nil {
-		c.Status(fiber.StatusUnprocessableEntity)
-		return c.JSON(fiber.Map{
-			"error": "failed to parse reqeust: " + err.Error(),
-		})
-	}
-	if err := wh.Validator.Validate.Struct(req); err != nil {
-		c.Status(fiber.StatusBadRequest)
-		return c.JSON(fiber.Map{
-			"error": "validation failed: " + err.Error(),
-		})
+	if err := ParseAndValidateRequest(c, &req, Query{}, wh.Validator); err != nil {
+		return err
 	}
 	widgets, err := wh.WidgetServ.Search(ctx, req.Amount, req.Page, req.Query)
 	if err != nil {
@@ -122,11 +91,8 @@ func (wh *WidgetHandl) SearchWidgets(c *fiber.Ctx) error {
 func (wh *WidgetHandl) Like(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	id := c.Params("widget")
-	if err := uuid.Validate(id); err != nil {
-		c.Status(fiber.StatusBadRequest)
-		return c.JSON(fiber.Map{
-			"error": "invalid id: " + err.Error(),
-		})
+	if err := ValidateId(c, id); err != nil {
+		return err
 	}
 	cookie := c.Cookies("jwt")
 	uid, err := wh.AuthServ.GetId(ctx, cookie)
@@ -142,19 +108,14 @@ func (wh *WidgetHandl) Like(c *fiber.Ctx) error {
 			"error": "failed to like widget: " + err.Error(),
 		})
 	}
-	return c.JSON(fiber.Map{
-		"message": "success",
-	})
+	return SuccessResponse(c)
 }
 
 func (wh *WidgetHandl) Dislike(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	id := c.Params("widget")
-	if err := uuid.Validate(id); err != nil {
-		c.Status(fiber.StatusBadRequest)
-		return c.JSON(fiber.Map{
-			"error": "invalid id: " + err.Error(),
-		})
+	if err := ValidateId(c, id); err != nil {
+		return err
 	}
 	cookie := c.Cookies("jwt")
 	uid, err := wh.AuthServ.GetId(ctx, cookie)
@@ -170,9 +131,7 @@ func (wh *WidgetHandl) Dislike(c *fiber.Ctx) error {
 			"error": "failed to dislike widget: " + err.Error(),
 		})
 	}
-	return c.JSON(fiber.Map{
-		"message": "success",
-	})
+	return SuccessResponse(c)
 }
 
 func (wh *WidgetHandl) FetchFavoriteWidgets(c *fiber.Ctx) error {

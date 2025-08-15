@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/google/uuid"
 )
 
 type TemplateHandl struct {
@@ -27,17 +26,8 @@ func NewTemplateHandl(ts services.TemplateServ, as services.AuthServ, v *validat
 func (th *TemplateHandl) CreateTemplate(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	req := dto.CreateTemplateRequest{}
-	if err := c.BodyParser(&req); err != nil {
-		c.Status(fiber.StatusUnprocessableEntity)
-		return c.JSON(fiber.Map{
-			"error": "failed to parse reqeust: " + err.Error(),
-		})
-	}
-	if err := th.Validator.Validate.Struct(req); err != nil {
-		c.Status(fiber.StatusBadRequest)
-		return c.JSON(fiber.Map{
-			"error": "validation failed: " + err.Error(),
-		})
+	if err := ParseAndValidateRequest(c, &req, Body{}, th.Validator); err != nil {
+		return err
 	}
 	cookie := c.Cookies("jwt")
 	oid, err := th.AuthServ.GetId(ctx, cookie)
@@ -53,25 +43,14 @@ func (th *TemplateHandl) CreateTemplate(c *fiber.Ctx) error {
 			"error": "failed to create template: " + err.Error(),
 		})
 	}
-	return c.JSON(fiber.Map{
-		"message": "success",
-	})
+	return SuccessResponse(c)
 }
 
 func (th *TemplateHandl) UpdateTemplate(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	req := dto.UpdateTemplateRequest{}
-	if err := c.BodyParser(&req); err != nil {
-		c.Status(fiber.StatusUnprocessableEntity)
-		return c.JSON(fiber.Map{
-			"error": "failed to parse reqeust: " + err.Error(),
-		})
-	}
-	if err := th.Validator.Validate.Struct(req); err != nil {
-		c.Status(fiber.StatusBadRequest)
-		return c.JSON(fiber.Map{
-			"error": "validation failed: " + err.Error(),
-		})
+	if err := ParseAndValidateRequest(c, &req, Body{}, th.Validator); err != nil {
+		return err
 	}
 	if err := th.TemplateServ.Update(ctx, req.Updates, req.Id); err != nil {
 		c.Status(fiber.StatusInternalServerError)
@@ -79,19 +58,14 @@ func (th *TemplateHandl) UpdateTemplate(c *fiber.Ctx) error {
 			"error": "failed to update template: " + err.Error(),
 		})
 	}
-	return c.JSON(fiber.Map{
-		"message": "success",
-	})
+	return SuccessResponse(c)
 }
 
 func (th *TemplateHandl) DeleteTemplate(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	id := c.Params("template")
-	if err := uuid.Validate(id); err != nil {
-		c.Status(fiber.StatusBadRequest)
-		return c.JSON(fiber.Map{
-			"error": "invalid id: " + err.Error(),
-		})
+	if err := ValidateId(c, id); err != nil {
+		return err
 	}
 	if err := th.TemplateServ.Delete(ctx, id); err != nil {
 		c.Status(fiber.StatusInternalServerError)
@@ -99,19 +73,14 @@ func (th *TemplateHandl) DeleteTemplate(c *fiber.Ctx) error {
 			"error": "failed to delete template: " + err.Error(),
 		})
 	}
-	return c.JSON(fiber.Map{
-		"message": "success",
-	})
+	return SuccessResponse(c)
 }
 
 func (th *TemplateHandl) GetTemplate(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	id := c.Params("template")
-	if err := uuid.Validate(id); err != nil {
-		c.Status(fiber.StatusBadRequest)
-		return c.JSON(fiber.Map{
-			"error": "invalid id: " + err.Error(),
-		})
+	if err := ValidateId(c, id); err != nil {
+		return err
 	}
 	template, err := th.TemplateServ.Get(ctx, id)
 	if err != nil {
@@ -126,17 +95,8 @@ func (th *TemplateHandl) GetTemplate(c *fiber.Ctx) error {
 func (th *TemplateHandl) FetchTemplates(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	req := dto.PaginationRequest{}
-	if err := c.QueryParser(&req); err != nil {
-		c.Status(fiber.StatusUnprocessableEntity)
-		return c.JSON(fiber.Map{
-			"error": "failed to parse reqeust: " + err.Error(),
-		})
-	}
-	if err := th.Validator.Validate.Struct(req); err != nil {
-		c.Status(fiber.StatusBadRequest)
-		return c.JSON(fiber.Map{
-			"error": "validation failed: " + err.Error(),
-		})
+	if err := ParseAndValidateRequest(c, &req, Query{}, th.Validator); err != nil {
+		return err
 	}
 	templates, err := th.TemplateServ.Fetch(ctx, req.Amount, req.Page)
 	if err != nil {
@@ -145,24 +105,14 @@ func (th *TemplateHandl) FetchTemplates(c *fiber.Ctx) error {
 			"error": "failed to fetch templates: " + err.Error(),
 		})
 	}
-
 	return c.JSON(templates)
 }
 
 func (th *TemplateHandl) SortTemplate(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	req := dto.SortTemplatesRequest{}
-	if err := c.QueryParser(&req); err != nil {
-		c.Status(fiber.StatusUnprocessableEntity)
-		return c.JSON(fiber.Map{
-			"error": "failed to parse reqeust: " + err.Error(),
-		})
-	}
-	if err := th.Validator.Validate.Struct(req); err != nil {
-		c.Status(fiber.StatusBadRequest)
-		return c.JSON(fiber.Map{
-			"error": "validation failed: " + err.Error(),
-		})
+	if err := ParseAndValidateRequest(c, &req, Query{}, th.Validator); err != nil {
+		return err
 	}
 	templates, err := th.TemplateServ.Sort(ctx, req.Amount, req.Page, strings.ToUpper(req.Destination), req.Field)
 	if err != nil {
@@ -177,17 +127,8 @@ func (th *TemplateHandl) SortTemplate(c *fiber.Ctx) error {
 func (th *TemplateHandl) SearchTemplate(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	req := dto.SearchRequest{}
-	if err := c.QueryParser(&req); err != nil {
-		c.Status(fiber.StatusUnprocessableEntity)
-		return c.JSON(fiber.Map{
-			"error": "failed to parse reqeust: " + err.Error(),
-		})
-	}
-	if err := th.Validator.Validate.Struct(req); err != nil {
-		c.Status(fiber.StatusBadRequest)
-		return c.JSON(fiber.Map{
-			"error": "validation failed: " + err.Error(),
-		})
+	if err := ParseAndValidateRequest(c, &req, Query{}, th.Validator); err != nil {
+		return err
 	}
 	templates, err := th.TemplateServ.Search(ctx, req.Amount, req.Page, req.Query)
 	if err != nil {
@@ -202,11 +143,8 @@ func (th *TemplateHandl) SearchTemplate(c *fiber.Ctx) error {
 func (th *TemplateHandl) Like(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	id := c.Params("template")
-	if err := uuid.Validate(id); err != nil {
-		c.Status(fiber.StatusBadRequest)
-		return c.JSON(fiber.Map{
-			"error": "invalid id: " + err.Error(),
-		})
+	if err := ValidateId(c, id); err != nil {
+		return err
 	}
 	cookie := c.Cookies("jwt")
 	uid, err := th.AuthServ.GetId(ctx, cookie)
@@ -222,19 +160,14 @@ func (th *TemplateHandl) Like(c *fiber.Ctx) error {
 			"error": "failed to like template: " + err.Error(),
 		})
 	}
-	return c.JSON(fiber.Map{
-		"message": "success",
-	})
+	return SuccessResponse(c)
 }
 
 func (th *TemplateHandl) Dislike(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	id := c.Params("template")
-	if err := uuid.Validate(id); err != nil {
-		c.Status(fiber.StatusBadRequest)
-		return c.JSON(fiber.Map{
-			"error": "invalid id: " + err.Error(),
-		})
+	if err := ValidateId(c, id); err != nil {
+		return err
 	}
 	cookie := c.Cookies("jwt")
 	uid, err := th.AuthServ.GetId(ctx, cookie)
@@ -250,9 +183,7 @@ func (th *TemplateHandl) Dislike(c *fiber.Ctx) error {
 			"error": "failed to dislike template: " + err.Error(),
 		})
 	}
-	return c.JSON(fiber.Map{
-		"message": "success",
-	})
+	return SuccessResponse(c)
 }
 
 func (th *TemplateHandl) FetchFavoriteTemplates(c *fiber.Ctx) error {

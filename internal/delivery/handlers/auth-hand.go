@@ -26,17 +26,8 @@ func NewAuthHandle(as services.AuthServ, us services.UserServ, v *validator.Vali
 func (ah *AuthHandl) Register(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	req := dto.RegisterRequest{}
-	if err := c.BodyParser(&req); err != nil {
-		c.Status(fiber.StatusUnprocessableEntity)
-		return c.JSON(fiber.Map{
-			"error": "failed to parse reqeust: " + err.Error(),
-		})
-	}
-	if err := ah.Validator.Validate.Struct(req); err != nil {
-		c.Status(fiber.StatusBadRequest)
-		return c.JSON(fiber.Map{
-			"error": "validation failed: " + err.Error(),
-		})
+	if err := ParseAndValidateRequest(c, &req, Body{}, ah.Validator); err != nil {
+		return err
 	}
 	if err := ah.AuthServ.Register(ctx, req.Email, req.Code); err != nil {
 		c.Status(fiber.StatusInternalServerError)
@@ -44,25 +35,14 @@ func (ah *AuthHandl) Register(c *fiber.Ctx) error {
 			"error": "failed to register user: " + err.Error(),
 		})
 	}
-	return c.JSON(fiber.Map{
-		"message": "success",
-	})
+	return SuccessResponse(c)
 }
 
 func (ah *AuthHandl) VerifyEmail(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	req := dto.VerifyRequest{}
-	if err := c.BodyParser(&req); err != nil {
-		c.Status(fiber.StatusUnprocessableEntity)
-		return c.JSON(fiber.Map{
-			"error": "failed to parse reqeust: " + err.Error(),
-		})
-	}
-	if err := ah.Validator.Validate.Struct(req); err != nil {
-		c.Status(fiber.StatusBadRequest)
-		return c.JSON(fiber.Map{
-			"error": "validation failed: " + err.Error(),
-		})
+	if err := ParseAndValidateRequest(c, &req, Body{}, ah.Validator); err != nil {
+		return err
 	}
 	if err := ah.AuthServ.SendVerifyCode(ctx, req.Email, req.Login, req.Nickname, req.Password); err != nil {
 		c.Status(fiber.StatusInternalServerError)
@@ -70,25 +50,14 @@ func (ah *AuthHandl) VerifyEmail(c *fiber.Ctx) error {
 			"error": "failed to send verification code: " + err.Error(),
 		})
 	}
-	return c.JSON(fiber.Map{
-		"message": "success",
-	})
+	return SuccessResponse(c)
 }
 
 func (ah *AuthHandl) Login(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	req := dto.LoginRequest{}
-	if err := c.BodyParser(&req); err != nil {
-		c.Status(fiber.StatusUnprocessableEntity)
-		return c.JSON(fiber.Map{
-			"error": "failed to parse reqeust: " + err.Error(),
-		})
-	}
-	if err := ah.Validator.Validate.Struct(req); err != nil {
-		c.Status(fiber.StatusBadRequest)
-		return c.JSON(fiber.Map{
-			"error": "validation failed: " + err.Error(),
-		})
+	if err := ParseAndValidateRequest(c, &req, Body{}, ah.Validator); err != nil {
+		return err
 	}
 	loginResponce, err := ah.AuthServ.Login(ctx, req.Login, req.Password)
 	if err != nil {
@@ -125,9 +94,7 @@ func (ah *AuthHandl) Logout(c *fiber.Ctx) error {
 		SameSite: "Lax",
 	}
 	c.Cookie(cookie)
-	return c.JSON(fiber.Map{
-		"message": "succes",
-	})
+	return SuccessResponse(c)
 }
 
 func (ah *AuthHandl) Profile(c *fiber.Ctx) error {
@@ -153,17 +120,8 @@ func (ah *AuthHandl) Profile(c *fiber.Ctx) error {
 func (ah *AuthHandl) SendNewCode(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	req := dto.SendNewCodeRequest{}
-	if err := c.BodyParser(&req); err != nil {
-		c.Status(fiber.StatusUnprocessableEntity)
-		return c.JSON(fiber.Map{
-			"error": "failed to parse reqeust: " + err.Error(),
-		})
-	}
-	if err := ah.Validator.Validate.Struct(req); err != nil {
-		c.Status(fiber.StatusBadRequest)
-		return c.JSON(fiber.Map{
-			"error": "validation failed: " + err.Error(),
-		})
+	if err := ParseAndValidateRequest(c, &req, Body{}, ah.Validator); err != nil {
+		return err
 	}
 	if err := ah.AuthServ.SendNewCode(ctx, req.Email); err != nil {
 		c.Status(fiber.StatusInternalServerError)
@@ -171,7 +129,5 @@ func (ah *AuthHandl) SendNewCode(c *fiber.Ctx) error {
 			"error": "failed to send new code: " + err.Error(),
 		})
 	}
-	return c.JSON(fiber.Map{
-		"message": "success",
-	})
+	return SuccessResponse(c)
 }
