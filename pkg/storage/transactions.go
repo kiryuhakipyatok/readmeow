@@ -2,7 +2,6 @@ package storage
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -46,12 +45,12 @@ func (t *transactor) WithinTransaction(ctx context.Context, tFunc func(c context
 	res, err := tFunc(injectTx(ctxTime, tx))
 	if err != nil {
 		if err := tx.Rollback(ctxTime); err != nil {
-			return nil, fmt.Errorf("failed to rollback transaction: %w", err)
+			return nil, err
 		}
 		return nil, err
 	}
 	if err := tx.Commit(ctxTime); err != nil {
-		return nil, fmt.Errorf("failed to commit transaction: %w", err)
+		return nil, err
 	}
 	return res, nil
 }
