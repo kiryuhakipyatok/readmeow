@@ -37,7 +37,12 @@ func (s *Server) MustClose(ctx context.Context) {
 
 func authMiddleware(acfg config.AuthConfig) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		if c.Path() == "/api/auth/login" || c.Path() == "/api/auth/register" {
+		validPaths := map[string]bool{
+			"/api/auth/login":    true,
+			"/api/auth/register": true,
+			"/api/auth/verify":   true,
+		}
+		if validPaths[c.Path()] {
 			return c.Next()
 		}
 		return jwtware.New(jwtware.Config{

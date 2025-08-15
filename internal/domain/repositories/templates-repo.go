@@ -32,7 +32,7 @@ type TemplateRepo interface {
 	Sort(ctx context.Context, amount, page uint, dest, field string) ([]models.Template, error)
 	GetByIds(ctx context.Context, ids []string) ([]models.Template, error)
 	Search(ctx context.Context, amount, page uint, query string) ([]models.Template, error)
-	MustBulk(cfg config.SearchConfig)
+	MustBulk(ctx context.Context, cfg config.SearchConfig) error
 }
 
 type templateRepo struct {
@@ -58,6 +58,15 @@ var (
 func (tr *templateRepo) Create(ctx context.Context, template *models.Template) error {
 	op := "templateRepo.Create"
 	query := "INSERT INTO templates (id, owner_id, title, image,description, text, links, widgets,num_of_users, render_order, create_time, last_update_time) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)"
+	if tx, ok := storage.GetTx(ctx); ok {
+		if _, err := tx.Exec(ctx, query, template.Id, template.OwnerId, template.Title, template.Image, template.Description, template.Text, template.Links, template.Widgets, template.NumOfUsers, template.Order, template.CreateTime, template.LastUpdateTime); err != nil {
+			if storage.ErrorAlreadyExists(err) {
+				return fmt.Errorf("%s : %w", op, errTemplateAlreadyExists)
+			}
+			return fmt.Errorf("%s : %w", op, err)
+		}
+		return nil
+	}
 	if _, err := tr.Storage.Pool.Exec(ctx, query, template.Id, template.OwnerId, template.Title, template.Image, template.Description, template.Text, template.Links, template.Widgets, template.NumOfUsers, template.Order, template.CreateTime, template.LastUpdateTime); err != nil {
 		if storage.ErrorAlreadyExists(err) {
 			return fmt.Errorf("%s : %w", op, errTemplateAlreadyExists)
@@ -99,14 +108,17 @@ func (tr *templateRepo) Update(ctx context.Context, updates map[string]any, id s
 		if res.RowsAffected() == 0 {
 			return fmt.Errorf("%s : %w", op, errTemplateNotFound)
 		}
-	} else {
-		res, err := tr.Storage.Pool.Exec(ctx, query, args...)
-		if err != nil {
+		if err := tr.Cache.Redis.Del(ctx, id).Err(); err != nil {
 			return fmt.Errorf("%s : %w", op, err)
 		}
-		if res.RowsAffected() == 0 {
-			return fmt.Errorf("%s : %w", op, errTemplateNotFound)
-		}
+		return nil
+	}
+	res, err := tr.Storage.Pool.Exec(ctx, query, args...)
+	if err != nil {
+		return fmt.Errorf("%s : %w", op, err)
+	}
+	if res.RowsAffected() == 0 {
+		return fmt.Errorf("%s : %w", op, errTemplateNotFound)
 	}
 	if err := tr.Cache.Redis.Del(ctx, id).Err(); err != nil {
 		return fmt.Errorf("%s : %w", op, err)
@@ -392,7 +404,7 @@ func (tr *templateRepo) Search(ctx context.Context, amount, page uint, query str
 func (tr *templateRepo) GetByIds(ctx context.Context, ids []string) ([]models.Template, error) {
 	fmt.Println(ids)
 	op := "templateRepo.SearchPreparing.GetByIds"
-	query := "SELECT t.*, COUNT(ft.template_id) AS likes FROM templates t LEFT JOIN favorite_templates ft ON ft.template_id=t.id WHERE ft.template_id = ANY($1) GROUP BY t.id"
+	query := "SELECT t.*, COUNT(ft.template_id) AS likes FROM templates t LEFT JOIN favorite_templates ft ON ft.template_id=t.id WHERE t.id = ANY($1) GROUP BY t.id"
 	templates := make([]models.Template, 0, len(ids))
 	rows, err := tr.Storage.Pool.Query(ctx, query, ids)
 	if err != nil {
@@ -459,20 +471,19 @@ func (tr *templateRepo) getAll(ctx context.Context) ([]models.Template, error) {
 	return templates, nil
 }
 
-func (tr *templateRepo) MustBulk(cfg config.SearchConfig) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(int(time.Second)*cfg.Timeout))
-	defer cancel()
+func (tr *templateRepo) MustBulk(ctx context.Context, cfg config.SearchConfig) error {
 	op := "templateRepo.SearchPreparing.Bulk"
 	templates, err := tr.getAll(ctx)
 	if err != nil {
-		panic(fmt.Errorf("%s : %w", op, err))
+		return fmt.Errorf("%s : %w", op, err)
 	}
 	bi, err := esutil.NewBulkIndexer(esutil.BulkIndexerConfig{
 		Client: tr.SearchClient.Client,
 		Index:  "templates",
 	})
 	if err != nil {
-		panic(fmt.Errorf("%s : %w", op, err))
+		return fmt.Errorf("%s : %w", op, err)
+
 	}
 	type doc struct {
 		Id          string
@@ -487,17 +498,18 @@ func (tr *templateRepo) MustBulk(cfg config.SearchConfig) {
 		}
 		data, err := json.Marshal(d)
 		if err != nil {
-			panic(fmt.Errorf("%s : %w", op, err))
+			return fmt.Errorf("%s : %w", op, err)
 		}
 		if err := bi.Add(ctx, esutil.BulkIndexerItem{
 			Action:     "index",
 			DocumentID: t.Id.String(),
 			Body:       bytes.NewReader(data),
 		}); err != nil {
-			panic(fmt.Errorf("%s : %w", op, err))
+			return fmt.Errorf("%s : %w", op, err)
 		}
 	}
 	if err := bi.Close(ctx); err != nil {
-		panic(fmt.Errorf("%s : %w\n stats: flushed - %d, failed - %d", op, err, bi.Stats().NumFlushed, bi.Stats().NumFailed))
+		return fmt.Errorf("%s : %w\n stats: flushed - %d, failed - %d", op, err, bi.Stats().NumFlushed, bi.Stats().NumFailed)
 	}
+	return nil
 }

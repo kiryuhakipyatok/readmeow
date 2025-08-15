@@ -13,6 +13,8 @@ server:
 
 auth:
   secret: "${SECRET}"
+  codeTTL: 300
+  codeAttempts: 5
   tokenTTL: 259200
 
 storage:
@@ -20,10 +22,10 @@ storage:
   password: "${POSTGRES_PASSWORD}"
   database: "${POSTGRES_DB}"
   timezone: "Europe/Moscow"
-  host: "${POSTGRES_HOST}"
+  host: "postgres"
   port: "${POSTGRES_PORT}"
   sslMode: "${SSL_MODE}"
-  connectTimeout: 5
+  connectTimeout: 10
 
 cache:
   host: "redis"
@@ -38,3 +40,18 @@ search:
   password: "${ELASTICSEARCH_PASSWORD}"
   timeout: 60
   pingTimeout: 5
+
+email:
+  name: "Readmeow Register System"
+  address: "kiryuhakipyatok@gmail.com"
+  password: "${EMAIL_PASSWORD}"
+  smtpAddress: "smtp.gmail.com"
+  smtpServerAddress: "smtp.gmail.com:587"
+
+sheduler:
+  widgetBulkTime: 4
+  widgetBulkTimeout: 5 
+  templateBulkTime: 2
+  templateBulkTimeout: 5
+  cleanCodesTime: 1
+  cleanCodesTimeout: 5

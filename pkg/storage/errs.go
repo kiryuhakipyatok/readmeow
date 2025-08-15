@@ -12,6 +12,13 @@ func ErrorAlreadyExists(err error) bool {
 	return false
 }
 
+func CheckErr(err error) bool {
+	if pgErr, ok := err.(*pgconn.PgError); ok {
+		return pgErr.Code == "23514"
+	}
+	return false
+}
+
 func ErrNotFound() error {
 	return pgx.ErrNoRows
 }

@@ -15,6 +15,7 @@ type UserRepo interface {
 	GetByLogin(ctx context.Context, login string) (*models.User, error)
 	Update(ctx context.Context, updates map[string]any, id string) error
 	Delete(ctx context.Context, id string) error
+	ExistanceCheck(ctx context.Context, login, email, nickname string) (bool, error)
 	ChangePassword(ctx context.Context, id string, password []byte) error
 	GetPassword(ctx context.Context, id string) ([]byte, error)
 }
@@ -36,13 +37,23 @@ var (
 
 func (ur *userRepo) Create(ctx context.Context, user *models.User) error {
 	op := "userRepo.Create"
-	query := "INSERT INTO users (id, login, email, avatar, password, time_of_register, num_of_templates, num_of_readmes) VALUES($1, $2, $3, $4, $5, $6, $7, $8)"
-	if _, err := ur.Storage.Pool.Exec(ctx, query, user.Id, user.Login, user.Email, user.Avatar, user.Password, user.TimeOfRegister, user.NumOfTemplates, user.NumOfReadmes); err != nil {
+	query := "INSERT INTO users (id, nickname, login, email, avatar, password, time_of_register, num_of_templates, num_of_readmes) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9)"
+	if tx, ok := storage.GetTx(ctx); ok {
+		if _, err := tx.Exec(ctx, query, user.Id, user.Nickname, user.Login, user.Email, user.Avatar, user.Password, user.TimeOfRegister, user.NumOfTemplates, user.NumOfReadmes); err != nil {
+			if storage.ErrorAlreadyExists(err) {
+				return fmt.Errorf("%s : %w", op, errUserAlreadyExists)
+			}
+			return fmt.Errorf("%s : %w", op, err)
+		}
+		return nil
+	}
+	if _, err := ur.Storage.Pool.Exec(ctx, query, user.Id, user.Nickname, user.Login, user.Email, user.Avatar, user.Password, user.TimeOfRegister, user.NumOfTemplates, user.NumOfReadmes); err != nil {
 		if storage.ErrorAlreadyExists(err) {
 			return fmt.Errorf("%s : %w", op, errUserAlreadyExists)
 		}
 		return fmt.Errorf("%s : %w", op, err)
 	}
+
 	return nil
 }
 
@@ -65,21 +76,22 @@ func (ur *userRepo) Get(ctx context.Context, id string) (*models.User, error) {
 			}
 			return nil, fmt.Errorf("%s : %w", op, err)
 		}
-	} else {
-		if err := ur.Storage.Pool.QueryRow(ctx, query, id).Scan(
-			&user.Id,
-			&user.Login,
-			&user.Email,
-			&user.Avatar,
-			&user.TimeOfRegister,
-			&user.NumOfTemplates,
-			&user.NumOfReadmes,
-		); err != nil {
-			if errors.Is(err, storage.ErrNotFound()) {
-				return nil, fmt.Errorf("%s : %w", op, errUserNotFound)
-			}
-			return nil, fmt.Errorf("%s : %w", op, err)
+		return &user, nil
+	}
+
+	if err := ur.Storage.Pool.QueryRow(ctx, query, id).Scan(
+		&user.Id,
+		&user.Login,
+		&user.Email,
+		&user.Avatar,
+		&user.TimeOfRegister,
+		&user.NumOfTemplates,
+		&user.NumOfReadmes,
+	); err != nil {
+		if errors.Is(err, storage.ErrNotFound()) {
+			return nil, fmt.Errorf("%s : %w", op, errUserNotFound)
 		}
+		return nil, fmt.Errorf("%s : %w", op, err)
 	}
 	return &user, nil
 }
@@ -104,6 +116,19 @@ func (ur *userRepo) GetByLogin(ctx context.Context, login string) (*models.User,
 		return nil, fmt.Errorf("%s : %w", op, err)
 	}
 	return &user, nil
+}
+
+func (ur *userRepo) ExistanceCheck(ctx context.Context, login, email, nickname string) (bool, error) {
+	op := "userRepo.ExistanceCheck"
+	query := "SELECT 1 FROM users WHERE login = $1 OR email = $2 OR nickname = $3"
+	var res int
+	if err := ur.Storage.Pool.QueryRow(ctx, query, login, email, nickname).Scan(&res); err != nil {
+		if errors.Is(err, storage.ErrNotFound()) {
+			return false, nil
+		}
+		return false, fmt.Errorf("%s : %w", op, err)
+	}
+	return res == 1, nil
 }
 
 func (ur *userRepo) Delete(ctx context.Context, id string) error {
@@ -148,14 +173,15 @@ func (ur *userRepo) Update(ctx context.Context, updates map[string]any, id strin
 			}
 			return fmt.Errorf("%s : %w", op, err)
 		}
-	} else {
-		if _, err := ur.Storage.Pool.Exec(ctx, query, args...); err != nil {
-			if errors.Is(err, storage.ErrNotFound()) {
-				return fmt.Errorf("%s : %w", op, errUserNotFound)
-			}
-			return fmt.Errorf("%s : %w", op, err)
-		}
+		return nil
 	}
+	if _, err := ur.Storage.Pool.Exec(ctx, query, args...); err != nil {
+		if errors.Is(err, storage.ErrNotFound()) {
+			return fmt.Errorf("%s : %w", op, errUserNotFound)
+		}
+		return fmt.Errorf("%s : %w", op, err)
+	}
+
 	return nil
 }
 

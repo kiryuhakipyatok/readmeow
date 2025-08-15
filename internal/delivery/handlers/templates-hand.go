@@ -39,7 +39,15 @@ func (th *TemplateHandl) CreateTemplate(c *fiber.Ctx) error {
 			"error": "validation failed: " + err.Error(),
 		})
 	}
-	if err := th.TemplateServ.Create(ctx, req.OwnerId, req.Title, req.Image, req.Description, req.Text, req.Links, req.Order, req.Widgets); err != nil {
+	cookie := c.Cookies("jwt")
+	oid, err := th.AuthServ.GetId(ctx, cookie)
+	if err != nil {
+		c.Status(fiber.StatusInternalServerError)
+		return c.JSON(fiber.Map{
+			"error": "failed to get user id: " + err.Error(),
+		})
+	}
+	if err := th.TemplateServ.Create(ctx, oid, req.Title, req.Image, req.Description, req.Text, req.Links, req.Order, req.Widgets); err != nil {
 		c.Status(fiber.StatusInternalServerError)
 		return c.JSON(fiber.Map{
 			"error": "failed to create template: " + err.Error(),

@@ -44,6 +44,15 @@ func (rr *readmeRepo) Create(ctx context.Context, readme *models.Readme) error {
 		tId = readme.TemplateId
 	}
 	query := "INSERT INTO readmes (id, owner_id, template_id, image, title, text, links, widgets, render_order, create_time, last_update_time) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)"
+	if tx, ok := storage.GetTx(ctx); ok {
+		if _, err := tx.Exec(ctx, query, readme.Id, readme.OwnerId, tId, readme.Title, readme.Image, readme.Text, readme.Links, readme.Widgets, readme.Order, readme.CreateTime, readme.LastUpdateTime); err != nil {
+			if storage.ErrorAlreadyExists(err) {
+				return fmt.Errorf("%s : %w", op, errReadmeAlreadyExists)
+			}
+			return fmt.Errorf("%s : %w", op, err)
+		}
+		return nil
+	}
 	if _, err := rr.Storage.Pool.Exec(ctx, query, readme.Id, readme.OwnerId, tId, readme.Title, readme.Image, readme.Text, readme.Links, readme.Widgets, readme.Order, readme.CreateTime, readme.LastUpdateTime); err != nil {
 		if storage.ErrorAlreadyExists(err) {
 			return fmt.Errorf("%s : %w", op, errReadmeAlreadyExists)
@@ -96,14 +105,15 @@ func (rr *readmeRepo) Update(ctx context.Context, updates map[string]any, id str
 			}
 			return fmt.Errorf("%s : %w", op, err)
 		}
-	} else {
-		if _, err := rr.Storage.Pool.Exec(ctx, query, args...); err != nil {
-			if errors.Is(err, storage.ErrNotFound()) {
-				return fmt.Errorf("%s : %w", op, errReadmeNotFound)
-			}
-			return fmt.Errorf("%s : %w", op, err)
-		}
+		return nil
 	}
+	if _, err := rr.Storage.Pool.Exec(ctx, query, args...); err != nil {
+		if errors.Is(err, storage.ErrNotFound()) {
+			return fmt.Errorf("%s : %w", op, errReadmeNotFound)
+		}
+		return fmt.Errorf("%s : %w", op, err)
+	}
+
 	return nil
 }
 

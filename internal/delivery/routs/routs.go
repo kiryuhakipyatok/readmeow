@@ -45,6 +45,7 @@ func (rc *RouteConfig) UsersRoutes() {
 func (rc *RouteConfig) AuthRoutes() {
 	authGroup := rc.App.Group("/api/auth")
 	authGroup.Post("/register", rc.AuthHandl.Register)
+	authGroup.Post("/verify", rc.AuthHandl.VerifyEmail)
 	authGroup.Get("/login", rc.AuthHandl.Login)
 	authGroup.Get("/logout", rc.AuthHandl.Logout)
 	authGroup.Get("/profile", rc.AuthHandl.Profile)

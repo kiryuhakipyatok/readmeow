@@ -2,11 +2,16 @@ package services
 
 import (
 	"context"
+	"crypto/sha256"
+	"errors"
 	"fmt"
+	"math/rand"
 	"readmeow/internal/config"
 	"readmeow/internal/domain/models"
 	"readmeow/internal/domain/repositories"
+	"readmeow/internal/email"
 	"readmeow/pkg/logger"
+	"readmeow/pkg/storage"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -15,50 +20,77 @@ import (
 )
 
 type AuthServ interface {
-	Register(ctx context.Context, login, email, password string) error
+	Register(ctx context.Context, email, code string) error
 	Login(ctx context.Context, login, password string) (*loginResponce, error)
 	GetId(ctx context.Context, cookie string) (string, error)
+	SendVerifyCode(ctx context.Context, email, login, nickname, password string) error
+	SendNewCode(ctx context.Context, email string) error
 }
 
 type authServ struct {
-	UserRepo   repositories.UserRepo
-	AuthConfig config.AuthConfig
-	Logger     *logger.Logger
+	UserRepo         repositories.UserRepo
+	VerificationRepo repositories.VerificationRepo
+	Transactor       storage.Transactor
+	AuthConfig       config.AuthConfig
+	EmailSender      email.EmailSender
+	Logger           *logger.Logger
 }
 
-func NewAuthServ(ur repositories.UserRepo, l *logger.Logger, cfg config.AuthConfig) AuthServ {
+func NewAuthServ(ur repositories.UserRepo, vr repositories.VerificationRepo, t storage.Transactor, es email.EmailSender, l *logger.Logger, cfg config.AuthConfig) AuthServ {
 	return &authServ{
-		UserRepo:   ur,
-		Logger:     l,
-		AuthConfig: cfg,
+		UserRepo:         ur,
+		VerificationRepo: vr,
+		Transactor:       t,
+		Logger:           l,
+		EmailSender:      es,
+		AuthConfig:       cfg,
 	}
 }
 
-func (as *authServ) Register(ctx context.Context, login, email, password string) error {
+func (as *authServ) Register(ctx context.Context, email, code string) error {
 	op := "authServ.Register"
-
 	log := as.Logger.AddOp(op)
-
 	log.Log.Info("registering user")
+	if _, err := as.Transactor.WithinTransaction(ctx, func(c context.Context) (any, error) {
+		codeHash := sha256.Sum256([]byte(code))
+		res, err := as.VerificationRepo.CodeCheck(c, email, codeHash[:])
+		if err != nil {
+			log.Log.Error("failed to check code", logger.Err(err))
+			return nil, fmt.Errorf("%s : %w", op, err)
+		}
+		if !res {
+			log.Log.Info("invalid code")
+			return nil, fmt.Errorf("%s : %w", op, errors.New("invalid code"))
+		}
+		credentials, err := as.VerificationRepo.FetchCredentials(c, email)
+		if err != nil {
+			log.Log.Error("failed to get user credentials", logger.Err(err))
+			return nil, fmt.Errorf("%s : %w", op, err)
+		}
+		user := models.User{
+			Id:             uuid.New(),
+			Nickname:       credentials.Nickname,
+			Login:          credentials.Login,
+			Email:          credentials.Email,
+			Avatar:         "empty",
+			Password:       credentials.Password,
+			TimeOfRegister: time.Now(),
+			NumOfTemplates: 0,
+			NumOfReadmes:   0,
+		}
 
-	userPassword, err := bcrypt.GenerateFromPassword([]byte(password), 10)
-	if err != nil {
-		log.Log.Info("failed to generate password hash", logger.Err(err))
-		return fmt.Errorf("%s : %w", op, err)
-	}
-	user := models.User{
-		Id:             uuid.New(),
-		Login:          login,
-		Email:          email,
-		Avatar:         "empty",
-		Password:       userPassword,
-		TimeOfRegister: time.Now(),
-		NumOfTemplates: 0,
-		NumOfReadmes:   0,
-	}
+		if err := as.UserRepo.Create(c, &user); err != nil {
+			log.Log.Error("failed to create user", logger.Err(err))
+			return nil, fmt.Errorf("%s : %w", op, err)
+		}
 
-	if err := as.UserRepo.Create(ctx, &user); err != nil {
-		log.Log.Error("failed to create user", logger.Err(err))
+		if err := as.VerificationRepo.Delete(c, user.Email); err != nil {
+			log.Log.Error("failed to delete data from verifications", logger.Err(err))
+			return nil, fmt.Errorf("%s : %w", op, err)
+		}
+		return nil, nil
+	}); err != nil {
+		log.Log.Error("failed to register user", logger.Err(err))
 		return fmt.Errorf("%s : %w", op, err)
 	}
 
@@ -68,6 +100,7 @@ func (as *authServ) Register(ctx context.Context, login, email, password string)
 }
 
 type loginResponce struct {
+	Id     uuid.UUID
 	Login  string
 	Avatar string
 	JWT    string
@@ -80,7 +113,7 @@ func (as *authServ) Login(ctx context.Context, login, password string) (*loginRe
 	log.Log.Info("logining user")
 	user, err := as.UserRepo.GetByLogin(ctx, login)
 	if err != nil {
-		log.Log.Error("failed to get user by login")
+		log.Log.Error("failed to get user by login", logger.Err(err))
 		return nil, fmt.Errorf("%s : %w", op, err)
 	}
 	if err := bcrypt.CompareHashAndPassword(user.Password, []byte(password)); err != nil {
@@ -100,6 +133,7 @@ func (as *authServ) Login(ctx context.Context, login, password string) (*loginRe
 		return nil, fmt.Errorf("%s : %w", op, err)
 	}
 	loginResponce := &loginResponce{
+		Id:     user.Id,
 		Login:  user.Login,
 		Avatar: user.Avatar,
 		JWT:    jwt,
@@ -122,5 +156,100 @@ func (as *authServ) GetId(ctx context.Context, cookie string) (string, error) {
 	}
 	claims := token.Claims.(*jwt.RegisteredClaims)
 	id := claims.Subject
+	log.Log.Info("id received successfully")
 	return id, nil
+}
+
+func (as *authServ) SendVerifyCode(ctx context.Context, email, login, nickname, password string) error {
+	op := "authServ.SenvVerifyCode"
+	log := as.Logger.AddOp(op)
+	log.Log.Info("sending verify code")
+	if _, err := as.Transactor.WithinTransaction(ctx, func(c context.Context) (any, error) {
+		exist, err := as.UserRepo.ExistanceCheck(c, login, email, nickname)
+		if err != nil {
+			log.Log.Error("failed to check existance", logger.Err(err))
+			return nil, fmt.Errorf("%s : %w", op, err)
+		}
+		if exist {
+			return nil, fmt.Errorf("%s : %w", op, errors.New("user with same credentials already exists"))
+		}
+		r := rand.New(rand.NewSource(time.Now().UnixNano()))
+		code := fmt.Sprintf("%06d", r.Intn(1000000))
+		codeHash := sha256.Sum256([]byte(code))
+		passwordHash, err := bcrypt.GenerateFromPassword([]byte(password), 10)
+		if err != nil {
+			log.Log.Info("failed to generate password hash", logger.Err(err))
+			return nil, fmt.Errorf("%s : %w", op, err)
+		}
+		codeTTL := time.Now().Add(time.Second * time.Duration(as.AuthConfig.CodeTTL))
+		if err := as.VerificationRepo.AddCode(c, email, login, nickname, passwordHash, codeHash[:], codeTTL, as.AuthConfig.CodeAttempts); err != nil {
+			log.Log.Info("failed to add code", logger.Err(err))
+			return nil, fmt.Errorf("%s : %w", op, err)
+		}
+		subject := "Email Verifying"
+		content := fmt.Sprintf(`
+	<html>
+		<body>
+			<h1 style="color:rgb(204, 0, 58);">Verify your email address</h1>
+			<p>To finish setting up your Readmeow account, we just need to make sure this email address is yours.</p>
+			<p>To verify your email address use this security code: <b>%s</b></p>
+			<p>If you didn't request this code, you can safely ignore this email. Someone else might have typed your email address by mistake.</p>
+			<p>Thanks,<br>The Readmeow account team</p>
+			<a style="text-decoration: none;" href="https://r.mtdv.me/articles/r-oCWb54yR">Privacy Statement</a>
+			<p>Readmeow Corporation, One Readmeow Way, Horki, BY 525252</p>
+		</body>
+	</html>
+	`, code)
+		if err := as.EmailSender.SendMessage(c, subject, []byte(content), []string{email}, nil); err != nil {
+			log.Log.Error("failed to send verify code", logger.Err(err))
+			return nil, fmt.Errorf("%s : %w", op, err)
+		}
+		return nil, nil
+	}); err != nil {
+		log.Log.Error("failed to send verify code", logger.Err(err))
+		return fmt.Errorf("%s : %w", op, err)
+	}
+	log.Log.Info("code sended successfully")
+	return nil
+}
+
+func (as *authServ) SendNewCode(ctx context.Context, email string) error {
+	op := "authServ.SenvVerifyCode"
+	log := as.Logger.AddOp(op)
+	log.Log.Info("sending new verify code")
+	if _, err := as.Transactor.WithinTransaction(ctx, func(c context.Context) (any, error) {
+		r := rand.New(rand.NewSource(time.Now().UnixNano()))
+		code := fmt.Sprintf("%06d", r.Intn(1000000))
+		codeHash := sha256.Sum256([]byte(code))
+		codeTTL := time.Now().Add(time.Second * time.Duration(as.AuthConfig.CodeTTL))
+		if err := as.VerificationRepo.SendNewCode(c, email, codeHash[:], codeTTL, as.AuthConfig.CodeAttempts); err != nil {
+			log.Log.Info("failed to send new code", logger.Err(err))
+			return nil, fmt.Errorf("%s : %w", op, err)
+		}
+		subject := "Email Verifying"
+		content := fmt.Sprintf(`
+	<html>
+		<body>
+			<h1 style="color:rgb(204, 0, 58);">Verify your email address</h1>
+			<p>To finish setting up your Readmeow account, we just need to make sure this email address is yours.</p>
+			<p>To verify your email address use this security code: <b>%s</b></p>
+			<p>If you didn't request this code, you can safely ignore this email. Someone else might have typed your email address by mistake.</p>
+			<p>Thanks,<br>The Readmeow account team</p>
+			<a style="text-decoration: none;" href="https://r.mtdv.me/articles/r-oCWb54yR">Privacy Statement</a>
+			<p>Readmeow Corporation, One Readmeow Way, Horki, BY 525252</p>
+		</body>
+	</html>
+	`, code)
+		if err := as.EmailSender.SendMessage(c, subject, []byte(content), []string{email}, nil); err != nil {
+			log.Log.Error("failed to send new verify code", logger.Err(err))
+			return nil, fmt.Errorf("%s : %w", op, err)
+		}
+		return nil, nil
+	}); err != nil {
+		log.Log.Error("failed to send new verify code", logger.Err(err))
+		return fmt.Errorf("%s : %w", op, err)
+	}
+
+	log.Log.Info("new code sended successfully")
+	return nil
 }

@@ -75,6 +75,7 @@ func (ts *templateServ) Create(ctx context.Context, oid, title, image, descripti
 				keys = append(keys, k)
 			}
 		}
+		fmt.Println(keys)
 		if len(widgets) != 0 {
 			widgetsData, err := ts.WidgetRepo.GetByIds(ctx, keys)
 			if err != nil {

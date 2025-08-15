@@ -1,9 +1,15 @@
 package dto
 
-type RegisterRequest struct {
+type VerifyRequest struct {
+	Nickname string `json:"nickname" validate:"required,max=80"`
 	Login    string `json:"login" validate:"required,max=80"`
 	Email    string `json:"email" validate:"required,email"`
 	Password string `json:"password" validate:"required,min=12"`
+}
+
+type RegisterRequest struct {
+	Email string `json:"email" validate:"required,email"`
+	Code  string `json:"code" validate:"required"`
 }
 
 type LoginRequest struct {
@@ -44,7 +50,6 @@ type ChangePasswordRequest struct {
 }
 
 type CreateTemplateRequest struct {
-	OwnerId     string              `json:"owner_id" validate:"required,uuid"`
 	Title       string              `json:"title" validate:"required,max=50"`
 	Image       string              `json:"image" validate:"required"`
 	Description string              `json:"description" validate:"required,min=1,max=1000"`
@@ -78,4 +83,8 @@ type CreateReadmeRequest struct {
 type UpdateReadmeRequest struct {
 	Id      string         `json:"id" validate:"required,uuid"`
 	Updates map[string]any `json:"updates" validate:"required,dive,keys,oneof=title text links widgets render_order,endkeys,required"`
+}
+
+type SendNewCodeRequest struct {
+	Email string `json:"email" validate:"requared,email"`
 }

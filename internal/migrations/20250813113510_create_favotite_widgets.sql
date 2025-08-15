@@ -1,6 +1,6 @@
 -- +goose Up
 -- +goose StatementBegin
-CREATE TABLE IF NOT EXISTS widgets_likes(
+CREATE TABLE IF NOT EXISTS favorite_widgets(
     widget_id UUID NOT NULL,
     user_id UUID NOT NULL,
     PRIMARY KEY (widget_id, user_id),
@@ -11,5 +11,5 @@ CREATE TABLE IF NOT EXISTS widgets_likes(
 
 -- +goose Down
 -- +goose StatementBegin
-DROP TABLE IF EXISTS widgets_likes
+DROP TABLE IF EXISTS favorite_widgets
 -- +goose StatementEnd

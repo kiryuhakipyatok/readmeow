@@ -9,12 +9,14 @@ import (
 )
 
 type Config struct {
-	App     AppConfig     `mapstructure:"app"`
-	Server  ServerConfig  `mapstructure:"server"`
-	Auth    AuthConfig    `mapstructure:"auth"`
-	Storage StorageConfig `mapstructure:"storage"`
-	Cache   CacheConfig   `mapstructure:"cache"`
-	Search  SearchConfig  `mapstructure:"search"`
+	App      AppConfig      `mapstructure:"app"`
+	Server   ServerConfig   `mapstructure:"server"`
+	Auth     AuthConfig     `mapstructure:"auth"`
+	Storage  StorageConfig  `mapstructure:"storage"`
+	Cache    CacheConfig    `mapstructure:"cache"`
+	Search   SearchConfig   `mapstructure:"search"`
+	Email    EmailConfig    `mapstructure:"email"`
+	Sheduler ShedulerConfig `mapstructure:"sheduler"`
 }
 
 type AppConfig struct {
@@ -33,8 +35,10 @@ type ServerConfig struct {
 }
 
 type AuthConfig struct {
-	Secret   string `mapstructure:"secret"`
-	TokenTTL int    `mapstructure:"tokenTTL"`
+	Secret       string `mapstructure:"secret"`
+	CodeTTL      int    `mapstructure:"codeTTL"`
+	CodeAttempts int    `mapstructure:"codeAttempts"`
+	TokenTTL     int    `mapstructure:"tokenTTL"`
 }
 
 type StorageConfig struct {
@@ -62,6 +66,23 @@ type SearchConfig struct {
 	Password    string `mapstructure:"password"`
 	Timeout     int    `mapstructure:"timeout"`
 	PingTimeout int    `mapstructure:"pingTimeout"`
+}
+
+type EmailConfig struct {
+	Name              string `mapstructure:"name"`
+	Password          string `mapstructure:"password"`
+	Address           string `mapstructure:"address"`
+	SmtpAddress       string `mapstructure:"smtpAddress"`
+	SmtpServerAddress string `mapstructure:"smtpServerAddress"`
+}
+
+type ShedulerConfig struct {
+	WidgetBulkTime      int `mapstructure:"widgetBulkTime"`
+	WidgetBulkTimeout   int `mapstructure:"widgetBulkTimeout"`
+	TemplateBulkTime    int `mapstructure:"templateBulkTime"`
+	TemplateBulkTimeout int `mapstructure:"templateBulkTimeout"`
+	CleanCodesTime      int `mapstructure:"cleanCodesTime"`
+	CleanCodesTimeout   int `mapstructure:"cleanCodesTimeout"`
 }
 
 func LoadConfig(path string) *Config {

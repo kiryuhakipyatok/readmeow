@@ -29,7 +29,7 @@ type WidgetRepo interface {
 	FetchFavorite(ctx context.Context, id string) ([]string, error)
 	GetByIds(ctx context.Context, ids []string) ([]models.Widget, error)
 	Update(ctx context.Context, updates map[string]any, id string) error
-	MustBulk(cfg config.SearchConfig)
+	MustBulk(ctx context.Context, cfg config.SearchConfig) error
 }
 
 type widgetRepo struct {
@@ -287,32 +287,57 @@ func (wr *widgetRepo) Search(ctx context.Context, amount, page uint, query strin
 
 func (wr *widgetRepo) GetByIds(ctx context.Context, ids []string) ([]models.Widget, error) {
 	op := "widgetRepo.SearchPreparing.GetByIds"
-	query := "SELECT w.*, COUNT(fw.widget_id) as likes FROM widgets w LEFT JOIN favorite_widgets fw ON w.id=fw.widget_id WHERE fw.widget_id = ANY($1) GROUP BY w.id"
+	query := "SELECT w.*, COUNT(fw.widget_id) as likes FROM widgets w LEFT JOIN favorite_widgets fw ON w.id=fw.widget_id WHERE w.id = ANY($1) GROUP BY w.id"
 	widgets := make([]models.Widget, 0, len(ids))
-	rows, err := wr.Storage.Pool.Query(ctx, query, ids)
-	if err != nil {
-		return nil, fmt.Errorf("%s : %w", op, err)
-	}
-	defer rows.Close()
 	byId := map[string]models.Widget{}
-	for rows.Next() {
-		widget := models.Widget{}
-		if err := rows.Scan(
-			&widget.Id,
-			&widget.Title,
-			&widget.Image,
-			&widget.Description,
-			&widget.Type,
-			&widget.Link,
-			&widget.NumOfUsers,
-			&widget.Tags,
-			&widget.Likes,
-		); err != nil {
+	if tx, ok := storage.GetTx(ctx); ok {
+		rows, err := tx.Query(ctx, query, ids)
+		if err != nil {
 			return nil, fmt.Errorf("%s : %w", op, err)
 		}
-		byId[widget.Id.String()] = widget
-	}
+		defer rows.Close()
+		for rows.Next() {
+			widget := models.Widget{}
+			if err := rows.Scan(
+				&widget.Id,
+				&widget.Title,
+				&widget.Image,
+				&widget.Description,
+				&widget.Type,
+				&widget.Link,
+				&widget.NumOfUsers,
+				&widget.Tags,
+				&widget.Likes,
+			); err != nil {
+				return nil, fmt.Errorf("%s : %w", op, err)
+			}
+			byId[widget.Id.String()] = widget
+		}
+	} else {
+		rows, err := wr.Storage.Pool.Query(ctx, query, ids)
+		if err != nil {
+			return nil, fmt.Errorf("%s : %w", op, err)
+		}
+		defer rows.Close()
 
+		for rows.Next() {
+			widget := models.Widget{}
+			if err := rows.Scan(
+				&widget.Id,
+				&widget.Title,
+				&widget.Image,
+				&widget.Description,
+				&widget.Type,
+				&widget.Link,
+				&widget.NumOfUsers,
+				&widget.Tags,
+				&widget.Likes,
+			); err != nil {
+				return nil, fmt.Errorf("%s : %w", op, err)
+			}
+			byId[widget.Id.String()] = widget
+		}
+	}
 	for _, id := range ids {
 		if w, ok := byId[id]; ok {
 			widgets = append(widgets, w)
@@ -352,20 +377,18 @@ func (wr *widgetRepo) getAll(ctx context.Context) ([]models.Widget, error) {
 	return widgets, nil
 }
 
-func (wr *widgetRepo) MustBulk(cfg config.SearchConfig) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(int(time.Second)*cfg.Timeout))
-	defer cancel()
+func (wr *widgetRepo) MustBulk(ctx context.Context, cfg config.SearchConfig) error {
 	op := "widgetRepo.SearchPreparing.Bulk"
 	widgets, err := wr.getAll(ctx)
 	if err != nil {
-		panic(fmt.Errorf("%s : %w", op, err))
+		return fmt.Errorf("%s : %w", op, err)
 	}
 	bi, err := esutil.NewBulkIndexer(esutil.BulkIndexerConfig{
 		Client: wr.SearchClient.Client,
 		Index:  "widgets",
 	})
 	if err != nil {
-		panic(fmt.Errorf("%s : %w", op, err))
+		return fmt.Errorf("%s : %w", op, err)
 	}
 	type doc struct {
 		Id          string
@@ -382,19 +405,20 @@ func (wr *widgetRepo) MustBulk(cfg config.SearchConfig) {
 		}
 		data, err := json.Marshal(d)
 		if err != nil {
-			panic(fmt.Errorf("%s : %w", op, err))
+			return fmt.Errorf("%s : %w", op, err)
 		}
 		if err := bi.Add(ctx, esutil.BulkIndexerItem{
 			Action:     "index",
 			DocumentID: w.Id.String(),
 			Body:       bytes.NewReader(data),
 		}); err != nil {
-			panic(fmt.Errorf("%s : %w", op, err))
+			return fmt.Errorf("%s : %w", op, err)
 		}
 	}
 	if err := bi.Close(ctx); err != nil {
-		panic(fmt.Errorf("%s : %w\n stats: flushed - %d, failed - %d", op, err, bi.Stats().NumFlushed, bi.Stats().NumFailed))
+		return fmt.Errorf("%s : %w\n stats: flushed - %d, failed - %d", op, err, bi.Stats().NumFlushed, bi.Stats().NumFailed)
 	}
+	return nil
 }
 
 func (wr *widgetRepo) Update(ctx context.Context, updates map[string]any, id string) error {

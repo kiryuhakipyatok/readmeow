@@ -38,10 +38,36 @@ func (ah *AuthHandl) Register(c *fiber.Ctx) error {
 			"error": "validation failed: " + err.Error(),
 		})
 	}
-	if err := ah.AuthServ.Register(ctx, req.Login, req.Email, req.Password); err != nil {
+	if err := ah.AuthServ.Register(ctx, req.Email, req.Code); err != nil {
 		c.Status(fiber.StatusInternalServerError)
 		return c.JSON(fiber.Map{
 			"error": "failed to register user: " + err.Error(),
+		})
+	}
+	return c.JSON(fiber.Map{
+		"message": "success",
+	})
+}
+
+func (ah *AuthHandl) VerifyEmail(c *fiber.Ctx) error {
+	ctx := c.UserContext()
+	req := dto.VerifyRequest{}
+	if err := c.BodyParser(&req); err != nil {
+		c.Status(fiber.StatusUnprocessableEntity)
+		return c.JSON(fiber.Map{
+			"error": "failed to parse reqeust: " + err.Error(),
+		})
+	}
+	if err := ah.Validator.Validate.Struct(req); err != nil {
+		c.Status(fiber.StatusBadRequest)
+		return c.JSON(fiber.Map{
+			"error": "validation failed: " + err.Error(),
+		})
+	}
+	if err := ah.AuthServ.SendVerifyCode(ctx, req.Email, req.Login, req.Nickname, req.Password); err != nil {
+		c.Status(fiber.StatusInternalServerError)
+		return c.JSON(fiber.Map{
+			"error": "failed to send verification code: " + err.Error(),
 		})
 	}
 	return c.JSON(fiber.Map{
@@ -81,6 +107,7 @@ func (ah *AuthHandl) Login(c *fiber.Ctx) error {
 	}
 	c.Cookie(cookie)
 	responce := dto.LoginResponse{
+		Id:     loginResponce.Id.String(),
 		Login:  loginResponce.Login,
 		Avatar: loginResponce.Avatar,
 	}
@@ -121,4 +148,30 @@ func (ah *AuthHandl) Profile(c *fiber.Ctx) error {
 		})
 	}
 	return c.JSON(user)
+}
+
+func (ah *AuthHandl) SendNewCode(c *fiber.Ctx) error {
+	ctx := c.UserContext()
+	req := dto.SendNewCodeRequest{}
+	if err := c.BodyParser(&req); err != nil {
+		c.Status(fiber.StatusUnprocessableEntity)
+		return c.JSON(fiber.Map{
+			"error": "failed to parse reqeust: " + err.Error(),
+		})
+	}
+	if err := ah.Validator.Validate.Struct(req); err != nil {
+		c.Status(fiber.StatusBadRequest)
+		return c.JSON(fiber.Map{
+			"error": "validation failed: " + err.Error(),
+		})
+	}
+	if err := ah.AuthServ.SendNewCode(ctx, req.Email); err != nil {
+		c.Status(fiber.StatusInternalServerError)
+		return c.JSON(fiber.Map{
+			"error": "failed to send new code: " + err.Error(),
+		})
+	}
+	return c.JSON(fiber.Map{
+		"message": "success",
+	})
 }
