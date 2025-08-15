@@ -9,7 +9,7 @@ import (
 	"readmeow/internal/config"
 	"readmeow/internal/domain/models"
 	"readmeow/internal/domain/repositories"
-	"readmeow/internal/email"
+	em "readmeow/internal/email"
 	"readmeow/pkg/logger"
 	"readmeow/pkg/storage"
 	"time"
@@ -32,11 +32,11 @@ type authServ struct {
 	VerificationRepo repositories.VerificationRepo
 	Transactor       storage.Transactor
 	AuthConfig       config.AuthConfig
-	EmailSender      email.EmailSender
+	EmailSender      em.EmailSender
 	Logger           *logger.Logger
 }
 
-func NewAuthServ(ur repositories.UserRepo, vr repositories.VerificationRepo, t storage.Transactor, es email.EmailSender, l *logger.Logger, cfg config.AuthConfig) AuthServ {
+func NewAuthServ(ur repositories.UserRepo, vr repositories.VerificationRepo, t storage.Transactor, es em.EmailSender, l *logger.Logger, cfg config.AuthConfig) AuthServ {
 	return &authServ{
 		UserRepo:         ur,
 		VerificationRepo: vr,
@@ -187,19 +187,11 @@ func (as *authServ) SendVerifyCode(ctx context.Context, email, login, nickname, 
 			return nil, fmt.Errorf("%s : %w", op, err)
 		}
 		subject := "Email Verifying"
-		content := fmt.Sprintf(`
-	<html>
-		<body>
-			<h1 style="color:rgb(204, 0, 58);">Verify your email address</h1>
-			<p>To finish setting up your Readmeow account, we just need to make sure this email address is yours.</p>
-			<p>To verify your email address use this security code: <b>%s</b></p>
-			<p>If you didn't request this code, you can safely ignore this email. Someone else might have typed your email address by mistake.</p>
-			<p>Thanks,<br>The Readmeow account team</p>
-			<a style="text-decoration: none;" href="https://r.mtdv.me/articles/r-oCWb54yR">Privacy Statement</a>
-			<p>Readmeow Corporation, One Readmeow Way, Horki, BY 525252</p>
-		</body>
-	</html>
-	`, code)
+		content, err := em.BuildEmailLetter(code)
+		if err != nil {
+			log.Log.Error("failed to build email letter", logger.Err(err))
+			return nil, fmt.Errorf("%s : %w", op, err)
+		}
 		if err := as.EmailSender.SendMessage(c, subject, []byte(content), []string{email}, nil); err != nil {
 			log.Log.Error("failed to send verify code", logger.Err(err))
 			return nil, fmt.Errorf("%s : %w", op, err)
@@ -227,19 +219,11 @@ func (as *authServ) SendNewCode(ctx context.Context, email string) error {
 			return nil, fmt.Errorf("%s : %w", op, err)
 		}
 		subject := "Email Verifying"
-		content := fmt.Sprintf(`
-	<html>
-		<body>
-			<h1 style="color:rgb(204, 0, 58);">Verify your email address</h1>
-			<p>To finish setting up your Readmeow account, we just need to make sure this email address is yours.</p>
-			<p>To verify your email address use this security code: <b>%s</b></p>
-			<p>If you didn't request this code, you can safely ignore this email. Someone else might have typed your email address by mistake.</p>
-			<p>Thanks,<br>The Readmeow account team</p>
-			<a style="text-decoration: none;" href="https://r.mtdv.me/articles/r-oCWb54yR">Privacy Statement</a>
-			<p>Readmeow Corporation, One Readmeow Way, Horki, BY 525252</p>
-		</body>
-	</html>
-	`, code)
+		content, err := em.BuildEmailLetter(code)
+		if err != nil {
+			log.Log.Error("failed to build email letter", logger.Err(err))
+			return nil, fmt.Errorf("%s : %w", op, err)
+		}
 		if err := as.EmailSender.SendMessage(c, subject, []byte(content), []string{email}, nil); err != nil {
 			log.Log.Error("failed to send new verify code", logger.Err(err))
 			return nil, fmt.Errorf("%s : %w", op, err)
