@@ -2,10 +2,10 @@ package services
 
 import (
 	"context"
-	"fmt"
 	"readmeow/internal/delivery/dto"
 	"readmeow/internal/domain/models"
 	"readmeow/internal/domain/repositories"
+	"readmeow/pkg/errs"
 	"readmeow/pkg/logger"
 )
 
@@ -40,7 +40,7 @@ func (ws *widgetServ) Get(ctx context.Context, id string) (*models.Widget, error
 	widget, err := ws.WidgetRepo.Get(ctx, id)
 	if err != nil {
 		log.Log.Error("failed to get widget", logger.Err(err))
-		return nil, fmt.Errorf("%s : %w", op, err)
+		return nil, errs.NewAppError(op, err)
 	}
 	log.Log.Info("widget received successfully")
 	return widget, nil
@@ -53,7 +53,7 @@ func (ws *widgetServ) Fetch(ctx context.Context, amount, page uint) ([]dto.Widge
 	wids, err := ws.WidgetRepo.Fetch(ctx, amount, page)
 	if err != nil {
 		log.Log.Error("failed to fetch widgets", logger.Err(err))
-		return nil, fmt.Errorf("%s : %w", op, err)
+		return nil, errs.NewAppError(op, err)
 	}
 	widgets := make([]dto.WidgetResponse, 0, len(wids))
 	for _, w := range wids {
@@ -78,7 +78,7 @@ func (ws *widgetServ) Sort(ctx context.Context, amount, page uint, field, dest s
 	wids, err := ws.WidgetRepo.Sort(ctx, amount, page, field, dest)
 	if err != nil {
 		log.Log.Error("failed to fetch sorted widgets", logger.Err(err))
-		return nil, fmt.Errorf("%s : %w", op, err)
+		return nil, errs.NewAppError(op, err)
 	}
 	widgets := make([]dto.WidgetResponse, 0, len(wids))
 	for _, w := range wids {
@@ -103,7 +103,7 @@ func (ws *widgetServ) Search(ctx context.Context, amount, page uint, query strin
 	wids, err := ws.WidgetRepo.Search(ctx, amount, page, query)
 	if err != nil {
 		log.Log.Error("failed to fetch searched widgets", logger.Err(err))
-		return nil, fmt.Errorf("%s : %w", op, err)
+		return nil, errs.NewAppError(op, err)
 	}
 	widgets := make([]dto.WidgetResponse, 0, len(wids))
 	for _, w := range wids {
@@ -127,7 +127,7 @@ func (ws *widgetServ) Like(ctx context.Context, id, uid string) error {
 	log.Log.Info("liking widget")
 	if err := ws.WidgetRepo.Like(ctx, uid, id); err != nil {
 		log.Log.Error("failed to like widget", logger.Err(err))
-		return fmt.Errorf("%s : %w", op, err)
+		return errs.NewAppError(op, err)
 	}
 	log.Log.Info("widget liked successfully")
 	return nil
@@ -139,7 +139,7 @@ func (ws *widgetServ) Dislike(ctx context.Context, id, uid string) error {
 	log.Log.Info("disliking widget")
 	if err := ws.WidgetRepo.Dislike(ctx, uid, id); err != nil {
 		log.Log.Error("failed to dislike widget", logger.Err(err))
-		return fmt.Errorf("%s : %w", op, err)
+		return errs.NewAppError(op, err)
 	}
 	log.Log.Info("widget disliked successfully")
 	return nil
@@ -152,12 +152,12 @@ func (ws *widgetServ) FetchFavorite(ctx context.Context, id string) ([]dto.Widge
 	fid, err := ws.WidgetRepo.FetchFavorite(ctx, id)
 	if err != nil {
 		log.Log.Error("failed to fetch favorite widgets ids", logger.Err(err))
-		return nil, fmt.Errorf("%s : %w", op, err)
+		return nil, errs.NewAppError(op, err)
 	}
 	wids, err := ws.WidgetRepo.GetByIds(ctx, fid)
 	if err != nil {
 		log.Log.Error("failed to fetch favorite widgets", logger.Err(err))
-		return nil, fmt.Errorf("%s : %w", op, err)
+		return nil, errs.NewAppError(op, err)
 	}
 	widgets := make([]dto.WidgetResponse, 0, len(wids))
 	for _, w := range wids {

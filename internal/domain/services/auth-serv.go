@@ -10,6 +10,7 @@ import (
 	"readmeow/internal/domain/models"
 	"readmeow/internal/domain/repositories"
 	em "readmeow/internal/email"
+	"readmeow/pkg/errs"
 	"readmeow/pkg/logger"
 	"readmeow/pkg/storage"
 	"time"
@@ -56,16 +57,16 @@ func (as *authServ) Register(ctx context.Context, email, code string) error {
 		res, err := as.VerificationRepo.CodeCheck(c, email, codeHash[:])
 		if err != nil {
 			log.Log.Error("failed to check code", logger.Err(err))
-			return nil, fmt.Errorf("%s : %w", op, err)
+			return nil, errs.NewAppError(op, err)
 		}
 		if !res {
 			log.Log.Info("invalid code")
-			return nil, fmt.Errorf("%s : %w", op, errors.New("invalid code"))
+			return nil, errs.NewAppError(op, errors.New("invalid code"))
 		}
 		credentials, err := as.VerificationRepo.FetchCredentials(c, email)
 		if err != nil {
 			log.Log.Error("failed to get user credentials", logger.Err(err))
-			return nil, fmt.Errorf("%s : %w", op, err)
+			return nil, errs.NewAppError(op, err)
 		}
 		user := models.User{
 			Id:             uuid.New(),
@@ -81,17 +82,17 @@ func (as *authServ) Register(ctx context.Context, email, code string) error {
 
 		if err := as.UserRepo.Create(c, &user); err != nil {
 			log.Log.Error("failed to create user", logger.Err(err))
-			return nil, fmt.Errorf("%s : %w", op, err)
+			return nil, errs.NewAppError(op, err)
 		}
 
 		if err := as.VerificationRepo.Delete(c, user.Email); err != nil {
 			log.Log.Error("failed to delete data from verifications", logger.Err(err))
-			return nil, fmt.Errorf("%s : %w", op, err)
+			return nil, errs.NewAppError(op, err)
 		}
 		return nil, nil
 	}); err != nil {
 		log.Log.Error("failed to register user", logger.Err(err))
-		return fmt.Errorf("%s : %w", op, err)
+		return errs.NewAppError(op, err)
 	}
 
 	log.Log.Info("user registered successfully")
@@ -114,11 +115,11 @@ func (as *authServ) Login(ctx context.Context, login, password string) (*loginRe
 	user, err := as.UserRepo.GetByLogin(ctx, login)
 	if err != nil {
 		log.Log.Error("failed to get user by login", logger.Err(err))
-		return nil, fmt.Errorf("%s : %w", op, err)
+		return nil, errs.NewAppError(op, err)
 	}
 	if err := bcrypt.CompareHashAndPassword(user.Password, []byte(password)); err != nil {
 		log.Log.Info("invalid credentials", logger.Err(err))
-		return nil, fmt.Errorf("%s : %w", op, err)
+		return nil, errs.NewAppError(op, err)
 	}
 	t := time.Now().Add(time.Second * time.Duration(as.AuthConfig.TokenTTL))
 	ttl := jwt.NewNumericDate(t)
@@ -130,7 +131,7 @@ func (as *authServ) Login(ctx context.Context, login, password string) (*loginRe
 	jwt, err := token.SignedString([]byte(as.AuthConfig.Secret))
 	if err != nil {
 		log.Log.Error("failed to sign token", logger.Err(err))
-		return nil, fmt.Errorf("%s : %w", op, err)
+		return nil, errs.NewAppError(op, err)
 	}
 	loginResponce := &loginResponce{
 		Id:     user.Id,
@@ -152,7 +153,7 @@ func (as *authServ) GetId(ctx context.Context, cookie string) (string, error) {
 	})
 	if err != nil {
 		log.Log.Error("failed to parse cookie", logger.Err(err))
-		return "", fmt.Errorf("%s : %w", op, err)
+		return "", errs.NewAppError(op, err)
 	}
 	claims := token.Claims.(*jwt.RegisteredClaims)
 	id := claims.Subject
@@ -168,7 +169,7 @@ func (as *authServ) SendVerifyCode(ctx context.Context, email, login, nickname, 
 		exist, err := as.UserRepo.ExistanceCheck(c, login, email, nickname)
 		if err != nil {
 			log.Log.Error("failed to check existance", logger.Err(err))
-			return nil, fmt.Errorf("%s : %w", op, err)
+			return nil, errs.NewAppError(op, err)
 		}
 		if exist {
 			return nil, fmt.Errorf("%s : %w", op, errors.New("user with same credentials already exists"))
@@ -179,27 +180,27 @@ func (as *authServ) SendVerifyCode(ctx context.Context, email, login, nickname, 
 		passwordHash, err := bcrypt.GenerateFromPassword([]byte(password), 10)
 		if err != nil {
 			log.Log.Info("failed to generate password hash", logger.Err(err))
-			return nil, fmt.Errorf("%s : %w", op, err)
+			return nil, errs.NewAppError(op, err)
 		}
 		codeTTL := time.Now().Add(time.Second * time.Duration(as.AuthConfig.CodeTTL))
 		if err := as.VerificationRepo.AddCode(c, email, login, nickname, passwordHash, codeHash[:], codeTTL, as.AuthConfig.CodeAttempts); err != nil {
 			log.Log.Info("failed to add code", logger.Err(err))
-			return nil, fmt.Errorf("%s : %w", op, err)
+			return nil, errs.NewAppError(op, err)
 		}
 		subject := "Email Verifying"
 		content, err := em.BuildEmailLetter(code)
 		if err != nil {
 			log.Log.Error("failed to build email letter", logger.Err(err))
-			return nil, fmt.Errorf("%s : %w", op, err)
+			return nil, errs.NewAppError(op, err)
 		}
 		if err := as.EmailSender.SendMessage(c, subject, []byte(content), []string{email}, nil); err != nil {
 			log.Log.Error("failed to send verify code", logger.Err(err))
-			return nil, fmt.Errorf("%s : %w", op, err)
+			return nil, errs.NewAppError(op, err)
 		}
 		return nil, nil
 	}); err != nil {
 		log.Log.Error("failed to send verify code", logger.Err(err))
-		return fmt.Errorf("%s : %w", op, err)
+		return errs.NewAppError(op, err)
 	}
 	log.Log.Info("code sended successfully")
 	return nil
@@ -216,22 +217,22 @@ func (as *authServ) SendNewCode(ctx context.Context, email string) error {
 		codeTTL := time.Now().Add(time.Second * time.Duration(as.AuthConfig.CodeTTL))
 		if err := as.VerificationRepo.SendNewCode(c, email, codeHash[:], codeTTL, as.AuthConfig.CodeAttempts); err != nil {
 			log.Log.Info("failed to send new code", logger.Err(err))
-			return nil, fmt.Errorf("%s : %w", op, err)
+			return nil, errs.NewAppError(op, err)
 		}
 		subject := "Email Verifying"
 		content, err := em.BuildEmailLetter(code)
 		if err != nil {
 			log.Log.Error("failed to build email letter", logger.Err(err))
-			return nil, fmt.Errorf("%s : %w", op, err)
+			return nil, errs.NewAppError(op, err)
 		}
 		if err := as.EmailSender.SendMessage(c, subject, []byte(content), []string{email}, nil); err != nil {
 			log.Log.Error("failed to send new verify code", logger.Err(err))
-			return nil, fmt.Errorf("%s : %w", op, err)
+			return nil, errs.NewAppError(op, err)
 		}
 		return nil, nil
 	}); err != nil {
 		log.Log.Error("failed to send new verify code", logger.Err(err))
-		return fmt.Errorf("%s : %w", op, err)
+		return errs.NewAppError(op, err)
 	}
 
 	log.Log.Info("new code sended successfully")

@@ -31,10 +31,7 @@ func (wh *WidgetHandl) GetWidgetById(c *fiber.Ctx) error {
 	}
 	widget, err := wh.WidgetServ.Get(ctx, id)
 	if err != nil {
-		c.Status(fiber.StatusInternalServerError)
-		return c.JSON(fiber.Map{
-			"error": "failed to get widget: " + err.Error(),
-		})
+		return ToApiError(err)
 	}
 	return c.JSON(widget)
 }
@@ -47,10 +44,7 @@ func (wh *WidgetHandl) FetchWidgets(c *fiber.Ctx) error {
 	}
 	widgets, err := wh.WidgetServ.Fetch(ctx, req.Amount, req.Page)
 	if err != nil {
-		c.Status(fiber.StatusInternalServerError)
-		return c.JSON(fiber.Map{
-			"error": "failed to fetch widgets: " + err.Error(),
-		})
+		return ToApiError(err)
 	}
 	return c.JSON(widgets)
 }
@@ -63,10 +57,7 @@ func (wh *WidgetHandl) FetchSortedWidgets(c *fiber.Ctx) error {
 	}
 	widgets, err := wh.WidgetServ.Sort(ctx, req.Amount, req.Page, req.Field, strings.ToUpper(req.Destination))
 	if err != nil {
-		c.Status(fiber.StatusInternalServerError)
-		return c.JSON(fiber.Map{
-			"error": "failed to fetch sorted widgets: " + err.Error(),
-		})
+		return ToApiError(err)
 	}
 	return c.JSON(widgets)
 }
@@ -79,10 +70,7 @@ func (wh *WidgetHandl) SearchWidgets(c *fiber.Ctx) error {
 	}
 	widgets, err := wh.WidgetServ.Search(ctx, req.Amount, req.Page, req.Query)
 	if err != nil {
-		c.Status(fiber.StatusInternalServerError)
-		return c.JSON(fiber.Map{
-			"error": "failed to fetch searched widgets: " + err.Error(),
-		})
+		return ToApiError(err)
 	}
 
 	return c.JSON(widgets)
@@ -97,16 +85,10 @@ func (wh *WidgetHandl) Like(c *fiber.Ctx) error {
 	cookie := c.Cookies("jwt")
 	uid, err := wh.AuthServ.GetId(ctx, cookie)
 	if err != nil {
-		c.Status(fiber.StatusInternalServerError)
-		return c.JSON(fiber.Map{
-			"error": "failed to get user id: " + err.Error(),
-		})
+		return ToApiError(err)
 	}
 	if err := wh.WidgetServ.Like(ctx, id, uid); err != nil {
-		c.Status(fiber.StatusInternalServerError)
-		return c.JSON(fiber.Map{
-			"error": "failed to like widget: " + err.Error(),
-		})
+		return ToApiError(err)
 	}
 	return SuccessResponse(c)
 }
@@ -120,16 +102,10 @@ func (wh *WidgetHandl) Dislike(c *fiber.Ctx) error {
 	cookie := c.Cookies("jwt")
 	uid, err := wh.AuthServ.GetId(ctx, cookie)
 	if err != nil {
-		c.Status(fiber.StatusInternalServerError)
-		return c.JSON(fiber.Map{
-			"error": "failed to get user id: " + err.Error(),
-		})
+		return ToApiError(err)
 	}
 	if err := wh.WidgetServ.Dislike(ctx, id, uid); err != nil {
-		c.Status(fiber.StatusInternalServerError)
-		return c.JSON(fiber.Map{
-			"error": "failed to dislike widget: " + err.Error(),
-		})
+		return ToApiError(err)
 	}
 	return SuccessResponse(c)
 }
@@ -139,17 +115,11 @@ func (wh *WidgetHandl) FetchFavoriteWidgets(c *fiber.Ctx) error {
 	cookie := c.Cookies("jwt")
 	id, err := wh.AuthServ.GetId(ctx, cookie)
 	if err != nil {
-		c.Status(fiber.StatusInternalServerError)
-		return c.JSON(fiber.Map{
-			"error": "failed to get user id: " + err.Error(),
-		})
+		return ToApiError(err)
 	}
 	widgets, err := wh.WidgetServ.FetchFavorite(ctx, id)
 	if err != nil {
-		c.Status(fiber.StatusInternalServerError)
-		return c.JSON(fiber.Map{
-			"error": "failed to fetch favorite widgets: " + err.Error(),
-		})
+		return ToApiError(err)
 	}
 	return c.JSON(widgets)
 }

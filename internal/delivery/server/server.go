@@ -2,7 +2,12 @@ package server
 
 import (
 	"context"
+	"errors"
+
+	//"errors"
 	"readmeow/internal/config"
+	"readmeow/internal/delivery/handlers"
+	//"readmeow/internal/delivery/handlers"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -19,6 +24,7 @@ func NewServer(scfg config.ServerConfig, acfg config.AuthConfig) *Server {
 		ReadTimeout:  time.Duration(int(time.Second) * scfg.ReadTimeout),
 		WriteTimeout: time.Duration(int(time.Second) * scfg.WriteTimeout),
 		IdleTimeout:  time.Duration(int(time.Second) * scfg.IdleTimeout),
+		ErrorHandler: errorHandler,
 	})
 	app.Use(
 		cors.New(cors.Config{}),
@@ -71,4 +77,17 @@ func requestTimeoutMiddleware(timeout time.Duration) fiber.Handler {
 		}
 		return err
 	}
+}
+
+func errorHandler(c *fiber.Ctx, err error) error {
+	var apiErr handlers.ApiErr
+	if errors.As(err, &apiErr) {
+		return c.Status(apiErr.Code).JSON(apiErr)
+	}
+
+	c.Set(fiber.HeaderContentType, fiber.MIMETextPlainCharsetUTF8)
+
+	return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+		"error": "internal server error",
+	})
 }

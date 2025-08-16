@@ -30,10 +30,7 @@ func (ah *AuthHandl) Register(c *fiber.Ctx) error {
 		return err
 	}
 	if err := ah.AuthServ.Register(ctx, req.Email, req.Code); err != nil {
-		c.Status(fiber.StatusInternalServerError)
-		return c.JSON(fiber.Map{
-			"error": "failed to register user: " + err.Error(),
-		})
+		return ToApiError(err)
 	}
 	return SuccessResponse(c)
 }
@@ -45,10 +42,7 @@ func (ah *AuthHandl) VerifyEmail(c *fiber.Ctx) error {
 		return err
 	}
 	if err := ah.AuthServ.SendVerifyCode(ctx, req.Email, req.Login, req.Nickname, req.Password); err != nil {
-		c.Status(fiber.StatusInternalServerError)
-		return c.JSON(fiber.Map{
-			"error": "failed to send verification code: " + err.Error(),
-		})
+		return ToApiError(err)
 	}
 	return SuccessResponse(c)
 }
@@ -61,10 +55,7 @@ func (ah *AuthHandl) Login(c *fiber.Ctx) error {
 	}
 	loginResponce, err := ah.AuthServ.Login(ctx, req.Login, req.Password)
 	if err != nil {
-		c.Status(fiber.StatusInternalServerError)
-		return c.JSON(fiber.Map{
-			"error": "failed to login user: " + err.Error(),
-		})
+		return ToApiError(err)
 	}
 	cookie := &fiber.Cookie{
 		Name:     "jwt",
@@ -102,17 +93,11 @@ func (ah *AuthHandl) Profile(c *fiber.Ctx) error {
 	cookie := c.Cookies("jwt")
 	id, err := ah.AuthServ.GetId(ctx, cookie)
 	if err != nil {
-		c.Status(fiber.StatusInternalServerError)
-		return c.JSON(fiber.Map{
-			"error": "failed to get user id: " + err.Error(),
-		})
+		return ToApiError(err)
 	}
 	user, err := ah.UserServ.Get(ctx, id)
 	if err != nil {
-		c.Status(fiber.StatusInternalServerError)
-		return c.JSON(fiber.Map{
-			"error": "failed to get user: " + err.Error(),
-		})
+		return ToApiError(err)
 	}
 	return c.JSON(user)
 }
@@ -124,10 +109,7 @@ func (ah *AuthHandl) SendNewCode(c *fiber.Ctx) error {
 		return err
 	}
 	if err := ah.AuthServ.SendNewCode(ctx, req.Email); err != nil {
-		c.Status(fiber.StatusInternalServerError)
-		return c.JSON(fiber.Map{
-			"error": "failed to send new code: " + err.Error(),
-		})
+		return ToApiError(err)
 	}
 	return SuccessResponse(c)
 }

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"readmeow/internal/domain/models"
+	"readmeow/pkg/errs"
 	"readmeow/pkg/storage"
 	"strings"
 
@@ -29,12 +30,6 @@ func NewReadmeStorage(s *storage.Storage) ReadmeRepo {
 	}
 }
 
-var (
-	errReadmeNotFound      = errors.New("readme not found")
-	errReadmesNotFound     = errors.New("readmes not found")
-	errReadmeAlreadyExists = errors.New("readme already exists")
-)
-
 func (rr *readmeRepo) Create(ctx context.Context, readme *models.Readme) error {
 	op := "readmeRepo.Create"
 	var tId any
@@ -47,17 +42,17 @@ func (rr *readmeRepo) Create(ctx context.Context, readme *models.Readme) error {
 	if tx, ok := storage.GetTx(ctx); ok {
 		if _, err := tx.Exec(ctx, query, readme.Id, readme.OwnerId, tId, readme.Title, readme.Image, readme.Text, readme.Links, readme.Widgets, readme.Order, readme.CreateTime, readme.LastUpdateTime); err != nil {
 			if storage.ErrorAlreadyExists(err) {
-				return fmt.Errorf("%s : %w", op, errReadmeAlreadyExists)
+				return errs.ErrAlreadyExists(op, err)
 			}
-			return fmt.Errorf("%s : %w", op, err)
+			return errs.NewAppError(op, err)
 		}
 		return nil
 	}
 	if _, err := rr.Storage.Pool.Exec(ctx, query, readme.Id, readme.OwnerId, tId, readme.Title, readme.Image, readme.Text, readme.Links, readme.Widgets, readme.Order, readme.CreateTime, readme.LastUpdateTime); err != nil {
 		if storage.ErrorAlreadyExists(err) {
-			return fmt.Errorf("%s : %w", op, errReadmeAlreadyExists)
+			return errs.ErrAlreadyExists(op, err)
 		}
-		return fmt.Errorf("%s : %w", op, err)
+		return errs.NewAppError(op, err)
 	}
 	return nil
 }
@@ -67,10 +62,10 @@ func (rr *readmeRepo) Delete(ctx context.Context, id string) error {
 	query := "DELETE FROM readmes WHERE id = $1"
 	res, err := rr.Storage.Pool.Exec(ctx, query, id)
 	if err != nil {
-		return fmt.Errorf("%s : %w", op, err)
+		return errs.NewAppError(op, err)
 	}
 	if res.RowsAffected() == 0 {
-		return fmt.Errorf("%s : %w", op, errReadmeNotFound)
+		return errs.ErrNotFound(op, err)
 	}
 	return nil
 }
@@ -90,7 +85,7 @@ func (rr *readmeRepo) Update(ctx context.Context, updates map[string]any, id str
 	i := 1
 	for k, v := range updates {
 		if !validFields[k] {
-			return fmt.Errorf("%s : %w", op, errors.New("not valid fields to update"))
+			return errs.ErrInvalidFields(op, nil)
 		}
 		str = append(str, fmt.Sprintf(" %s = $%d", k, i))
 		args = append(args, v)
@@ -101,17 +96,17 @@ func (rr *readmeRepo) Update(ctx context.Context, updates map[string]any, id str
 	if tx, ok := storage.GetTx(ctx); ok {
 		if _, err := tx.Exec(ctx, query, args...); err != nil {
 			if errors.Is(err, storage.ErrNotFound()) {
-				return fmt.Errorf("%s : %w", op, errReadmeNotFound)
+				return errs.ErrNotFound(op, err)
 			}
-			return fmt.Errorf("%s : %w", op, err)
+			return errs.NewAppError(op, err)
 		}
 		return nil
 	}
 	if _, err := rr.Storage.Pool.Exec(ctx, query, args...); err != nil {
 		if errors.Is(err, storage.ErrNotFound()) {
-			return fmt.Errorf("%s : %w", op, errReadmeNotFound)
+			return errs.ErrNotFound(op, err)
 		}
-		return fmt.Errorf("%s : %w", op, err)
+		return errs.NewAppError(op, err)
 	}
 
 	return nil
@@ -135,9 +130,9 @@ func (rr *readmeRepo) Get(ctx context.Context, id string) (*models.Readme, error
 		&readme.Widgets,
 	); err != nil {
 		if errors.Is(err, storage.ErrNotFound()) {
-			return nil, fmt.Errorf("%s : %w", op, errReadmeNotFound)
+			return nil, errs.ErrNotFound(op, err)
 		}
-		return nil, fmt.Errorf("%s : %w", op, err)
+		return nil, errs.NewAppError(op, err)
 	}
 	return &readme, nil
 }
@@ -147,7 +142,7 @@ func (rr *readmeRepo) FetchByUser(ctx context.Context, amount, page uint, uid st
 	query := "SELECT * FROM readmes WHERE owner_id = $1 OFFSET $2 LIMIT $3"
 	rows, err := rr.Storage.Pool.Query(ctx, query, uid, amount*page-amount, amount)
 	if err != nil {
-		return nil, fmt.Errorf("%s : %w", op, err)
+		return nil, errs.NewAppError(op, err)
 	}
 	defer rows.Close()
 	readmes := []models.Readme{}
@@ -166,12 +161,12 @@ func (rr *readmeRepo) FetchByUser(ctx context.Context, amount, page uint, uid st
 			&readme.LastUpdateTime,
 			&readme.Widgets,
 		); err != nil {
-			return nil, fmt.Errorf("%s : %w", op, err)
+			return nil, errs.NewAppError(op, err)
 		}
 		readmes = append(readmes, readme)
 	}
 	if len(readmes) == 0 {
-		return nil, fmt.Errorf("%s : %w", op, errReadmesNotFound)
+		return nil, errs.ErrNotFound(op, err)
 	}
 	return readmes, nil
 }

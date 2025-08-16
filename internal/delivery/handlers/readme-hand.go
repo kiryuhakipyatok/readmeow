@@ -31,16 +31,10 @@ func (rh *ReadmeHandl) CreateReadme(c *fiber.Ctx) error {
 	cookie := c.Cookies("jwt")
 	uid, err := rh.AuthServ.GetId(ctx, cookie)
 	if err != nil {
-		c.Status(fiber.StatusInternalServerError)
-		return c.JSON(fiber.Map{
-			"error": "failed to get user id: " + err.Error(),
-		})
+		return ToApiError(err)
 	}
 	if err := rh.ReadmeServ.Create(ctx, req.TemplateId, uid, req.Title, req.Image, req.Text, req.Links, req.Order, req.Widgets); err != nil {
-		c.Status(fiber.StatusInternalServerError)
-		return c.JSON(fiber.Map{
-			"error": "failed to create readme: " + err.Error(),
-		})
+		return ToApiError(err)
 	}
 	return SuccessResponse(c)
 }
@@ -54,16 +48,10 @@ func (rh *ReadmeHandl) DeleteReadme(c *fiber.Ctx) error {
 	cookie := c.Cookies("jwt")
 	uid, err := rh.AuthServ.GetId(ctx, cookie)
 	if err != nil {
-		c.Status(fiber.StatusInternalServerError)
-		return c.JSON(fiber.Map{
-			"error": "failed to get user id: " + err.Error(),
-		})
+		return ToApiError(err)
 	}
 	if err := rh.ReadmeServ.Delete(ctx, id, uid); err != nil {
-		c.Status(fiber.StatusInternalServerError)
-		return c.JSON(fiber.Map{
-			"error": "failed to delete readme: " + err.Error(),
-		})
+		return ToApiError(err)
 	}
 
 	return SuccessResponse(c)
@@ -76,10 +64,7 @@ func (rh *ReadmeHandl) UpdateReadme(c *fiber.Ctx) error {
 		return err
 	}
 	if err := rh.ReadmeServ.Update(ctx, req.Updates, req.Id); err != nil {
-		c.Status(fiber.StatusInternalServerError)
-		return c.JSON(fiber.Map{
-			"error": "failed to update readme: " + err.Error(),
-		})
+		return ToApiError(err)
 	}
 	return SuccessResponse(c)
 }
@@ -92,10 +77,7 @@ func (rh *ReadmeHandl) GetReadmeById(c *fiber.Ctx) error {
 	}
 	readme, err := rh.ReadmeServ.Get(ctx, id)
 	if err != nil {
-		c.Status(fiber.StatusInternalServerError)
-		return c.JSON(fiber.Map{
-			"error": "failed to get readme: " + err.Error(),
-		})
+		return ToApiError(err)
 	}
 	return c.JSON(readme)
 }
@@ -109,17 +91,11 @@ func (rh *ReadmeHandl) FetchReadmesByUser(c *fiber.Ctx) error {
 	cookie := c.Cookies("jwt")
 	uid, err := rh.AuthServ.GetId(ctx, cookie)
 	if err != nil {
-		c.Status(fiber.StatusInternalServerError)
-		return c.JSON(fiber.Map{
-			"error": "failed to get user id: " + err.Error(),
-		})
+		return ToApiError(err)
 	}
 	readmes, err := rh.ReadmeServ.FetchByUser(ctx, req.Amount, req.Page, uid)
 	if err != nil {
-		c.Status(fiber.StatusInternalServerError)
-		return c.JSON(fiber.Map{
-			"error": "failed to fetch readmes: " + err.Error(),
-		})
+		return ToApiError(err)
 	}
 	return c.JSON(readmes)
 }

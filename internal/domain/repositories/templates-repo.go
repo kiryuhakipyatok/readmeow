@@ -9,6 +9,7 @@ import (
 	"readmeow/internal/config"
 	"readmeow/internal/domain/models"
 	"readmeow/pkg/cache"
+	"readmeow/pkg/errs"
 	"readmeow/pkg/search"
 	"readmeow/pkg/storage"
 	"strings"
@@ -49,29 +50,23 @@ func NewTemplateRepo(s *storage.Storage, c *cache.Cache, sc *search.SearchClient
 	}
 }
 
-var (
-	errTemplateNotFound      = errors.New("template not found")
-	errTemplatesNotFound     = errors.New("templates not found")
-	errTemplateAlreadyExists = errors.New("template already exists")
-)
-
 func (tr *templateRepo) Create(ctx context.Context, template *models.Template) error {
 	op := "templateRepo.Create"
 	query := "INSERT INTO templates (id, owner_id, title, image,description, text, links, widgets,num_of_users, render_order, create_time, last_update_time) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)"
 	if tx, ok := storage.GetTx(ctx); ok {
 		if _, err := tx.Exec(ctx, query, template.Id, template.OwnerId, template.Title, template.Image, template.Description, template.Text, template.Links, template.Widgets, template.NumOfUsers, template.Order, template.CreateTime, template.LastUpdateTime); err != nil {
 			if storage.ErrorAlreadyExists(err) {
-				return fmt.Errorf("%s : %w", op, errTemplateAlreadyExists)
+				return errs.ErrAlreadyExists(op, err)
 			}
-			return fmt.Errorf("%s : %w", op, err)
+			return errs.NewAppError(op, err)
 		}
 		return nil
 	}
 	if _, err := tr.Storage.Pool.Exec(ctx, query, template.Id, template.OwnerId, template.Title, template.Image, template.Description, template.Text, template.Links, template.Widgets, template.NumOfUsers, template.Order, template.CreateTime, template.LastUpdateTime); err != nil {
 		if storage.ErrorAlreadyExists(err) {
-			return fmt.Errorf("%s : %w", op, errTemplateAlreadyExists)
+			return errs.ErrAlreadyExists(op, err)
 		}
-		return fmt.Errorf("%s : %w", op, err)
+		return errs.NewAppError(op, err)
 	}
 	return nil
 }
@@ -92,7 +87,7 @@ func (tr *templateRepo) Update(ctx context.Context, updates map[string]any, id s
 	i := 1
 	for k, v := range updates {
 		if !validFields[k] {
-			return fmt.Errorf("%s : %w", op, errors.New("not valid fields to update"))
+			return errs.ErrInvalidFields(op, nil)
 		}
 		str = append(str, fmt.Sprintf(" %s = $%d", k, i))
 		args = append(args, v)
@@ -103,25 +98,25 @@ func (tr *templateRepo) Update(ctx context.Context, updates map[string]any, id s
 	if tx, ok := storage.GetTx(ctx); ok {
 		res, err := tx.Exec(ctx, query, args...)
 		if err != nil {
-			return fmt.Errorf("%s : %w", op, err)
+			return errs.NewAppError(op, err)
 		}
 		if res.RowsAffected() == 0 {
-			return fmt.Errorf("%s : %w", op, errTemplateNotFound)
+			return errs.ErrNotFound(op, err)
 		}
 		if err := tr.Cache.Redis.Del(ctx, id).Err(); err != nil {
-			return fmt.Errorf("%s : %w", op, err)
+			return errs.NewAppError(op, err)
 		}
 		return nil
 	}
 	res, err := tr.Storage.Pool.Exec(ctx, query, args...)
 	if err != nil {
-		return fmt.Errorf("%s : %w", op, err)
+		return errs.NewAppError(op, err)
 	}
 	if res.RowsAffected() == 0 {
-		return fmt.Errorf("%s : %w", op, errTemplateNotFound)
+		return errs.ErrNotFound(op, nil)
 	}
 	if err := tr.Cache.Redis.Del(ctx, id).Err(); err != nil {
-		return fmt.Errorf("%s : %w", op, err)
+		return errs.NewAppError(op, err)
 	}
 	return nil
 }
@@ -130,21 +125,19 @@ func (tr *templateRepo) Like(ctx context.Context, id, uid string) error {
 	op := "templateRepo.Like"
 	query := "INSERT INTO favorite_templates (template_id, user_id) VALUES ($1,$2)"
 	if tx, ok := storage.GetTx(ctx); ok {
-		res, err := tx.Exec(ctx, query, id, uid)
-		if err != nil {
-			return fmt.Errorf("%s : %w", op, err)
-		}
-		if res.RowsAffected() == 0 {
-			return fmt.Errorf("%s : %w", op, errTemplateNotFound)
+		if _, err := tx.Exec(ctx, query, id, uid); err != nil {
+			if storage.ErrorAlreadyExists(err) {
+				return errs.ErrAlreadyExists(op, err)
+			}
+			return errs.NewAppError(op, err)
 		}
 		return nil
 	}
-	res, err := tr.Storage.Pool.Exec(ctx, query, id, uid)
-	if err != nil {
-		return fmt.Errorf("%s : %w", op, err)
-	}
-	if res.RowsAffected() == 0 {
-		return fmt.Errorf("%s : %w", op, errTemplateNotFound)
+	if _, err := tr.Storage.Pool.Exec(ctx, query, id, uid); err != nil {
+		if storage.ErrorAlreadyExists(err) {
+			return errs.ErrAlreadyExists(op, err)
+		}
+		return errs.NewAppError(op, err)
 	}
 	return nil
 }
@@ -155,19 +148,19 @@ func (tr *templateRepo) Dislike(ctx context.Context, id, uid string) error {
 	if tx, ok := storage.GetTx(ctx); ok {
 		res, err := tx.Exec(ctx, query, id, uid)
 		if err != nil {
-			return fmt.Errorf("%s : %w", op, err)
+			return errs.NewAppError(op, err)
 		}
 		if res.RowsAffected() == 0 {
-			return fmt.Errorf("%s : %w", op, errTemplateNotFound)
+			return errs.ErrNotFound(op, nil)
 		}
 		return nil
 	}
 	res, err := tr.Storage.Pool.Exec(ctx, query, id, uid)
 	if err != nil {
-		return fmt.Errorf("%s : %w", op, err)
+		return errs.NewAppError(op, err)
 	}
 	if res.RowsAffected() == 0 {
-		return fmt.Errorf("%s : %w", op, errTemplateNotFound)
+		return errs.ErrNotFound(op, nil)
 	}
 	return nil
 }
@@ -177,13 +170,13 @@ func (tr *templateRepo) Delete(ctx context.Context, id string) error {
 	query := "DELETE FROM templates WHERE id = $1"
 	res, err := tr.Storage.Pool.Exec(ctx, query, id)
 	if err != nil {
-		return fmt.Errorf("%s : %w", op, err)
+		return errs.NewAppError(op, err)
 	}
 	if res.RowsAffected() == 0 {
-		return fmt.Errorf("%s : %w", op, errTemplateNotFound)
+		return errs.ErrNotFound(op, nil)
 	}
 	if err := tr.Cache.Redis.Del(ctx, id).Err(); err != nil {
-		return err
+		return errs.NewAppError(op, err)
 	}
 	return nil
 }
@@ -194,7 +187,7 @@ func (tr *templateRepo) Get(ctx context.Context, id string) (*models.Template, e
 	cachedTemplate, err := tr.Cache.Redis.Get(ctx, id).Result()
 	if err == nil {
 		if err := json.Unmarshal([]byte(cachedTemplate), template); err != nil {
-			return nil, fmt.Errorf("%s : %w", op, err)
+			return nil, errs.NewAppError(op, err)
 		}
 		return template, nil
 	}
@@ -217,9 +210,9 @@ func (tr *templateRepo) Get(ctx context.Context, id string) (*models.Template, e
 				&template.Likes,
 			); err != nil {
 				if errors.Is(err, storage.ErrNotFound()) {
-					return nil, fmt.Errorf("%s : %w", op, errTemplateNotFound)
+					return nil, errs.ErrNotFound(op, err)
 				}
-				return nil, fmt.Errorf("%s : %w", op, err)
+				return nil, errs.NewAppError(op, err)
 			}
 		} else {
 			if err := tr.Storage.Pool.QueryRow(ctx, query, id).Scan(
@@ -238,9 +231,9 @@ func (tr *templateRepo) Get(ctx context.Context, id string) (*models.Template, e
 				&template.Likes,
 			); err != nil {
 				if errors.Is(err, storage.ErrNotFound()) {
-					return nil, fmt.Errorf("%s : %w", op, errTemplateNotFound)
+					return nil, errs.ErrNotFound(op, err)
 				}
-				return nil, fmt.Errorf("%s : %w", op, err)
+				return nil, errs.NewAppError(op, err)
 			}
 		}
 
@@ -248,10 +241,10 @@ func (tr *templateRepo) Get(ctx context.Context, id string) (*models.Template, e
 	if (template.NumOfUsers >= 20) || template.OwnerId == uuid.Nil {
 		cache, err := json.Marshal(template)
 		if err != nil {
-			return nil, fmt.Errorf("%s : %w", op, err)
+			return nil, errs.NewAppError(op, err)
 		}
 		if err := tr.Cache.Redis.Set(ctx, template.Id.String(), cache, time.Hour*24).Err(); err != nil {
-			return nil, fmt.Errorf("%s : %w", op, err)
+			return nil, errs.NewAppError(op, err)
 		}
 	}
 	return template, nil
@@ -263,18 +256,18 @@ func (tr *templateRepo) FetchFavorite(ctx context.Context, id string) ([]string,
 	tids := []string{}
 	rows, err := tr.Storage.Pool.Query(ctx, query, id)
 	if err != nil {
-		return nil, fmt.Errorf("%s : %w", op, err)
+		return nil, errs.NewAppError(op, err)
 	}
 	defer rows.Close()
 	for rows.Next() {
 		var tid string
 		if err := rows.Scan(&tid); err != nil {
-			return nil, fmt.Errorf("%s : %w", op, err)
+			return nil, errs.NewAppError(op, err)
 		}
 		tids = append(tids, tid)
 	}
 	if len(tids) == 0 {
-		return nil, fmt.Errorf("%s : %w", op, errTemplatesNotFound)
+		return nil, errs.ErrNotFound(op, nil)
 	}
 	return tids, nil
 }
@@ -285,7 +278,7 @@ func (tr *templateRepo) Fetch(ctx context.Context, amount, page uint) ([]models.
 	templates := []models.Template{}
 	rows, err := tr.Storage.Pool.Query(ctx, query, amount*page-amount, amount)
 	if err != nil {
-		return nil, fmt.Errorf("%s : %w", op, err)
+		return nil, errs.NewAppError(op, err)
 	}
 	defer rows.Close()
 	for rows.Next() {
@@ -305,12 +298,12 @@ func (tr *templateRepo) Fetch(ctx context.Context, amount, page uint) ([]models.
 			&template.Widgets,
 			&template.Likes,
 		); err != nil {
-			return nil, fmt.Errorf("%s : %w", op, err)
+			return nil, errs.NewAppError(op, err)
 		}
 		templates = append(templates, template)
 	}
 	if len(templates) == 0 {
-		return nil, fmt.Errorf("%s : %w", op, errTemplatesNotFound)
+		return nil, errs.ErrNotFound(op, nil)
 	}
 	return templates, nil
 }
@@ -322,7 +315,7 @@ func (tr *templateRepo) Sort(ctx context.Context, amount, page uint, dest, field
 		"create_time":  true,
 	}
 	if !validFields[field] {
-		return nil, fmt.Errorf("%s : %w", op, errors.New("not valid field to sort"))
+		return nil, errs.ErrInvalidFields(op, nil)
 	}
 	if dest != "ASC" && dest != "DESC" {
 		dest = "DESC"
@@ -331,7 +324,7 @@ func (tr *templateRepo) Sort(ctx context.Context, amount, page uint, dest, field
 	query := fmt.Sprintf("SELECT t.*, COUNT(ft.template_id) AS likes FROM templates t LEFT JOIN favorite_templates ft ON ft.template_id=t.id GROUP BY t.id ORDER BY %s %s OFFSET $1 LIMIT $2", field, dest)
 	rows, err := tr.Storage.Pool.Query(ctx, query, amount*page-amount, amount)
 	if err != nil {
-		return nil, fmt.Errorf("%s : %w", op, err)
+		return nil, errs.NewAppError(op, err)
 	}
 	defer rows.Close()
 	for rows.Next() {
@@ -351,12 +344,12 @@ func (tr *templateRepo) Sort(ctx context.Context, amount, page uint, dest, field
 			&template.Widgets,
 			&template.Likes,
 		); err != nil {
-			return nil, fmt.Errorf("%s : %w", op, err)
+			return nil, errs.NewAppError(op, err)
 		}
 		templates = append(templates, template)
 	}
 	if len(templates) == 0 {
-		return nil, fmt.Errorf("%s : %w", op, errTemplatesNotFound)
+		return nil, errs.ErrNotFound(op, nil)
 	}
 	return templates, nil
 }
@@ -382,7 +375,7 @@ func (tr *templateRepo) Search(ctx context.Context, amount, page uint, query str
 		Source_: &types.SourceFilter{Includes: []string{"id"}},
 	}).Do(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("%s : %w", op, err)
+		return nil, errs.NewAppError(op, err)
 	}
 	ids := []string{}
 	for _, hit := range res.Hits.Hits {
@@ -391,11 +384,11 @@ func (tr *templateRepo) Search(ctx context.Context, amount, page uint, query str
 		}
 	}
 	if len(ids) == 0 {
-		return nil, fmt.Errorf("%s : %w", op, errTemplatesNotFound)
+		return nil, errs.ErrNotFound(op, nil)
 	}
 	templates, err := tr.GetByIds(ctx, ids)
 	if err != nil {
-		return nil, fmt.Errorf("%s : %w", op, err)
+		return nil, errs.NewAppError(op, err)
 	}
 
 	return templates, nil
@@ -408,7 +401,7 @@ func (tr *templateRepo) GetByIds(ctx context.Context, ids []string) ([]models.Te
 	templates := make([]models.Template, 0, len(ids))
 	rows, err := tr.Storage.Pool.Query(ctx, query, ids)
 	if err != nil {
-		return nil, fmt.Errorf("%s : %w", op, err)
+		return nil, errs.NewAppError(op, err)
 	}
 	defer rows.Close()
 	byId := map[string]models.Template{}
@@ -429,7 +422,7 @@ func (tr *templateRepo) GetByIds(ctx context.Context, ids []string) ([]models.Te
 			&template.Widgets,
 			&template.Likes,
 		); err != nil {
-			return nil, fmt.Errorf("%s : %w", op, err)
+			return nil, errs.NewAppError(op, err)
 		}
 		byId[template.Id.String()] = template
 	}
@@ -439,7 +432,7 @@ func (tr *templateRepo) GetByIds(ctx context.Context, ids []string) ([]models.Te
 		}
 	}
 	if len(templates) == 0 {
-		return nil, fmt.Errorf("%s : %w", op, errTemplatesNotFound)
+		return nil, errs.ErrNotFound(op, nil)
 	}
 	return templates, nil
 }
@@ -450,7 +443,7 @@ func (tr *templateRepo) getAll(ctx context.Context) ([]models.Template, error) {
 	templates := []models.Template{}
 	rows, err := tr.Storage.Pool.Query(ctx, query)
 	if err != nil {
-		return nil, fmt.Errorf("%s : %w", op, err)
+		return nil, errs.NewAppError(op, err)
 	}
 	defer rows.Close()
 
@@ -461,12 +454,12 @@ func (tr *templateRepo) getAll(ctx context.Context) ([]models.Template, error) {
 			&template.Title,
 			&template.Description,
 		); err != nil {
-			return nil, fmt.Errorf("%s : %w", op, err)
+			return nil, errs.NewAppError(op, err)
 		}
 		templates = append(templates, template)
 	}
 	if len(templates) == 0 {
-		return nil, fmt.Errorf("%s : %w", op, errTemplatesNotFound)
+		return nil, errs.ErrNotFound(op, nil)
 	}
 	return templates, nil
 }
@@ -475,14 +468,14 @@ func (tr *templateRepo) MustBulk(ctx context.Context, cfg config.SearchConfig) e
 	op := "templateRepo.SearchPreparing.Bulk"
 	templates, err := tr.getAll(ctx)
 	if err != nil {
-		return fmt.Errorf("%s : %w", op, err)
+		return errs.NewAppError(op, err)
 	}
 	bi, err := esutil.NewBulkIndexer(esutil.BulkIndexerConfig{
 		Client: tr.SearchClient.Client,
 		Index:  "templates",
 	})
 	if err != nil {
-		return fmt.Errorf("%s : %w", op, err)
+		return errs.NewAppError(op, err)
 
 	}
 	type doc struct {
@@ -498,18 +491,18 @@ func (tr *templateRepo) MustBulk(ctx context.Context, cfg config.SearchConfig) e
 		}
 		data, err := json.Marshal(d)
 		if err != nil {
-			return fmt.Errorf("%s : %w", op, err)
+			return errs.NewAppError(op, err)
 		}
 		if err := bi.Add(ctx, esutil.BulkIndexerItem{
 			Action:     "index",
 			DocumentID: t.Id.String(),
 			Body:       bytes.NewReader(data),
 		}); err != nil {
-			return fmt.Errorf("%s : %w", op, err)
+			return errs.NewAppError(op, err)
 		}
 	}
 	if err := bi.Close(ctx); err != nil {
-		return fmt.Errorf("%s : %w\n stats: flushed - %d, failed - %d", op, err, bi.Stats().NumFlushed, bi.Stats().NumFailed)
+		return errs.NewAppError(op, fmt.Errorf("%w, stats: flushed - %d, failed - %d", err, bi.Stats().NumFlushed, bi.Stats().NumFailed))
 	}
 	return nil
 }

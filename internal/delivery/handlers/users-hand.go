@@ -28,10 +28,7 @@ func (uh *UserHandl) GetUser(c *fiber.Ctx) error {
 	}
 	user, err := uh.UserServ.Get(ctx, id)
 	if err != nil {
-		c.Status(fiber.StatusInternalServerError)
-		return c.JSON(fiber.Map{
-			"error": "failed to update user: " + err.Error(),
-		})
+		return ToApiError(err)
 	}
 	return c.JSON(user)
 }
@@ -43,14 +40,9 @@ func (uh *UserHandl) Update(c *fiber.Ctx) error {
 		return err
 	}
 	if err := uh.UserServ.Update(ctx, req.Updates, req.Id); err != nil {
-		c.Status(fiber.StatusInternalServerError)
-		return c.JSON(fiber.Map{
-			"error": "failed to update user: " + err.Error(),
-		})
+		return ToApiError(err)
 	}
-	return c.JSON(fiber.Map{
-		"message": "success",
-	})
+	return SuccessResponse(c)
 }
 
 func (uh *UserHandl) Delete(c *fiber.Ctx) error {
@@ -60,10 +52,7 @@ func (uh *UserHandl) Delete(c *fiber.Ctx) error {
 		return err
 	}
 	if err := uh.UserServ.Delete(ctx, req.Id, req.Password); err != nil {
-		c.Status(fiber.StatusInternalServerError)
-		return c.JSON(fiber.Map{
-			"error": "failed to delete user: " + err.Error(),
-		})
+		return ToApiError(err)
 	}
 	return SuccessResponse(c)
 }
@@ -75,10 +64,7 @@ func (uh *UserHandl) ChangeUserPassword(c *fiber.Ctx) error {
 		return err
 	}
 	if err := uh.UserServ.ChangePassword(ctx, req.Id, req.OldPasswrod, req.NewPassword); err != nil {
-		c.Status(fiber.StatusInternalServerError)
-		return c.JSON(fiber.Map{
-			"error": "failed to change user password: " + err.Error(),
-		})
+		return ToApiError(err)
 	}
 	return SuccessResponse(c)
 }

@@ -9,6 +9,7 @@ import (
 	"readmeow/internal/config"
 	"readmeow/internal/domain/models"
 	"readmeow/pkg/cache"
+	"readmeow/pkg/errs"
 	"readmeow/pkg/search"
 	"readmeow/pkg/storage"
 	"strings"
@@ -46,18 +47,13 @@ func NewWidgetRepo(s *storage.Storage, c *cache.Cache, sc *search.SearchClient) 
 	}
 }
 
-var (
-	errWidgetNotFound  = errors.New("widget not found")
-	errWidgetsNotFound = errors.New("widgets not found")
-)
-
 func (wr *widgetRepo) Get(ctx context.Context, id string) (*models.Widget, error) {
 	op := "widgetRepo.Get"
 	widget := &models.Widget{}
 	cachedWidget, err := wr.Cache.Redis.Get(ctx, id).Result()
 	if err == nil {
 		if err := json.Unmarshal([]byte(cachedWidget), widget); err != nil {
-			return nil, fmt.Errorf("%s : %w", op, err)
+			return nil, errs.NewAppError(op, err)
 		}
 		fmt.Println("widget from redis")
 		return widget, nil
@@ -77,9 +73,9 @@ func (wr *widgetRepo) Get(ctx context.Context, id string) (*models.Widget, error
 				&widget.Likes,
 			); err != nil {
 				if errors.Is(err, storage.ErrNotFound()) {
-					return nil, fmt.Errorf("%s : %w", op, errWidgetNotFound)
+					return nil, errs.ErrNotFound(op, err)
 				}
-				return nil, fmt.Errorf("%s : %w", op, err)
+				return nil, errs.NewAppError(op, err)
 			}
 		} else {
 			if err := wr.Storage.Pool.QueryRow(ctx, query, id).Scan(
@@ -94,18 +90,18 @@ func (wr *widgetRepo) Get(ctx context.Context, id string) (*models.Widget, error
 				&widget.Likes,
 			); err != nil {
 				if errors.Is(err, storage.ErrNotFound()) {
-					return nil, fmt.Errorf("%s : %w", op, errWidgetNotFound)
+					return nil, errs.ErrNotFound(op, err)
 				}
-				return nil, fmt.Errorf("%s : %w", op, err)
+				return nil, errs.NewAppError(op, err)
 			}
 		}
 	}
 	cache, err := json.Marshal(widget)
 	if err != nil {
-		return nil, fmt.Errorf("%s : %w", op, err)
+		return nil, errs.NewAppError(op, err)
 	}
 	if err := wr.Cache.Redis.Set(ctx, widget.Id.String(), cache, time.Hour*24).Err(); err != nil {
-		return nil, fmt.Errorf("%s : %w", op, err)
+		return nil, errs.NewAppError(op, err)
 	}
 	return widget, nil
 }
@@ -115,7 +111,7 @@ func (wr *widgetRepo) Fetch(ctx context.Context, amount, page uint) ([]models.Wi
 	query := "SELECT w.*, COUNT(fw.widget_id) as likes FROM widgets w LEFT JOIN favorite_widgets fw ON w.id=fw.widget_id GROUP BY w.id ORDER BY likes DESC OFFSET $1 LIMIT $2"
 	rows, err := wr.Storage.Pool.Query(ctx, query, amount*page-amount, amount)
 	if err != nil {
-		return nil, fmt.Errorf("%s : %w", op, err)
+		return nil, errs.NewAppError(op, err)
 	}
 	defer rows.Close()
 	widgets := []models.Widget{}
@@ -132,12 +128,12 @@ func (wr *widgetRepo) Fetch(ctx context.Context, amount, page uint) ([]models.Wi
 			&widget.Tags,
 			&widget.Likes,
 		); err != nil {
-			return nil, fmt.Errorf("%s : %w", op, err)
+			return nil, errs.NewAppError(op, err)
 		}
 		widgets = append(widgets, widget)
 	}
 	if len(widgets) == 0 {
-		return nil, fmt.Errorf("%s : %w", op, errWidgetsNotFound)
+		return nil, errs.ErrNotFound(op, err)
 	}
 	return widgets, nil
 }
@@ -148,18 +144,18 @@ func (wr *widgetRepo) FetchFavorite(ctx context.Context, id string) ([]string, e
 	wids := []string{}
 	rows, err := wr.Storage.Pool.Query(ctx, query, id)
 	if err != nil {
-		return nil, fmt.Errorf("%s : %w", op, err)
+		return nil, errs.NewAppError(op, err)
 	}
 	defer rows.Close()
 	for rows.Next() {
 		var wid string
 		if err := rows.Scan(&wid); err != nil {
-			return nil, fmt.Errorf("%s : %w", op, err)
+			return nil, errs.NewAppError(op, err)
 		}
 		wids = append(wids, wid)
 	}
 	if len(wids) == 0 {
-		return nil, fmt.Errorf("%s : %w", op, errWidgetsNotFound)
+		return nil, errs.ErrNotFound(op, err)
 	}
 	return wids, nil
 }
@@ -168,21 +164,19 @@ func (wr *widgetRepo) Like(ctx context.Context, uid, id string) error {
 	op := "widgetRepo.Like"
 	query := "INSERT INTO favorite_widgets (widget_id, user_id) VALUES($1,$2)"
 	if tx, ok := storage.GetTx(ctx); ok {
-		res, err := tx.Exec(ctx, query, id, uid)
-		if err != nil {
-			return fmt.Errorf("%s : %w", op, err)
-		}
-		if res.RowsAffected() == 0 {
-			return fmt.Errorf("%s : %w", op, errWidgetNotFound)
+		if _, err := tx.Exec(ctx, query, id, uid); err != nil {
+			if storage.ErrorAlreadyExists(err) {
+				return errs.ErrAlreadyExists(op, err)
+			}
+			return errs.NewAppError(op, err)
 		}
 		return nil
 	}
-	res, err := wr.Storage.Pool.Exec(ctx, query, id, uid)
-	if err != nil {
-		return fmt.Errorf("%s : %w", op, err)
-	}
-	if res.RowsAffected() == 0 {
-		return fmt.Errorf("%s : %w", op, errWidgetNotFound)
+	if _, err := wr.Storage.Pool.Exec(ctx, query, id, uid); err != nil {
+		if storage.ErrorAlreadyExists(err) {
+			return errs.ErrAlreadyExists(op, err)
+		}
+		return errs.NewAppError(op, err)
 	}
 	return nil
 }
@@ -193,19 +187,19 @@ func (wr *widgetRepo) Dislike(ctx context.Context, uid, id string) error {
 	if tx, ok := storage.GetTx(ctx); ok {
 		res, err := tx.Exec(ctx, query, id, uid)
 		if err != nil {
-			return fmt.Errorf("%s : %w", op, err)
+			return errs.NewAppError(op, err)
 		}
 		if res.RowsAffected() == 0 {
-			return fmt.Errorf("%s : %w", op, errWidgetNotFound)
+			return errs.ErrNotFound(op, nil)
 		}
 		return nil
 	}
 	res, err := wr.Storage.Pool.Exec(ctx, query, id, uid)
 	if err != nil {
-		return fmt.Errorf("%s : %w", op, err)
+		return errs.NewAppError(op, err)
 	}
 	if res.RowsAffected() == 0 {
-		return fmt.Errorf("%s : %w", op, errWidgetNotFound)
+		return errs.ErrNotFound(op, nil)
 	}
 	return nil
 }
@@ -217,7 +211,7 @@ func (wr *widgetRepo) Sort(ctx context.Context, amount, page uint, field, dest s
 		"num_of_users": true,
 	}
 	if !validFields[field] {
-		return nil, fmt.Errorf("%s : %w", op, errors.New("not valid field to sort"))
+		return nil, errs.ErrInvalidFields(op, nil)
 	}
 	if dest != "DESC" && dest != "ASC" {
 		dest = "DESC"
@@ -225,7 +219,7 @@ func (wr *widgetRepo) Sort(ctx context.Context, amount, page uint, field, dest s
 	query := fmt.Sprintf("SELECT w.*, COUNT(fw.widget_id) as likes FROM widgets w LEFT JOIN favorite_widgets fw ON w.id=fw.widget_id GROUP BY w.id ORDER BY %s %s OFFSET $1 LIMIT $2", field, dest)
 	rows, err := wr.Storage.Pool.Query(ctx, query, amount*page-amount, amount)
 	if err != nil {
-		return nil, fmt.Errorf("%s : %w", op, err)
+		return nil, errs.NewAppError(op, err)
 	}
 	defer rows.Close()
 	widgets := []models.Widget{}
@@ -242,12 +236,12 @@ func (wr *widgetRepo) Sort(ctx context.Context, amount, page uint, field, dest s
 			&widget.Tags,
 			&widget.Likes,
 		); err != nil {
-			return nil, fmt.Errorf("%s : %w", op, err)
+			return nil, errs.NewAppError(op, err)
 		}
 		widgets = append(widgets, widget)
 	}
 	if len(widgets) == 0 {
-		return nil, fmt.Errorf("%s : %w", op, errWidgetsNotFound)
+		return nil, errs.ErrNotFound(op, nil)
 	}
 	return widgets, nil
 }
@@ -270,7 +264,7 @@ func (wr *widgetRepo) Search(ctx context.Context, amount, page uint, query strin
 		Source_: &types.SourceFilter{Includes: []string{"id"}},
 	}).Do(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("%s : %w", op, err)
+		return nil, errs.NewAppError(op, err)
 	}
 	ids := []string{}
 	for _, hit := range res.Hits.Hits {
@@ -280,7 +274,7 @@ func (wr *widgetRepo) Search(ctx context.Context, amount, page uint, query strin
 	}
 	widgets, err := wr.GetByIds(ctx, ids)
 	if err != nil {
-		return nil, fmt.Errorf("%s : %w", op, err)
+		return nil, errs.NewAppError(op, err)
 	}
 	return widgets, nil
 }
@@ -293,7 +287,7 @@ func (wr *widgetRepo) GetByIds(ctx context.Context, ids []string) ([]models.Widg
 	if tx, ok := storage.GetTx(ctx); ok {
 		rows, err := tx.Query(ctx, query, ids)
 		if err != nil {
-			return nil, fmt.Errorf("%s : %w", op, err)
+			return nil, errs.NewAppError(op, err)
 		}
 		defer rows.Close()
 		for rows.Next() {
@@ -309,14 +303,14 @@ func (wr *widgetRepo) GetByIds(ctx context.Context, ids []string) ([]models.Widg
 				&widget.Tags,
 				&widget.Likes,
 			); err != nil {
-				return nil, fmt.Errorf("%s : %w", op, err)
+				return nil, errs.NewAppError(op, err)
 			}
 			byId[widget.Id.String()] = widget
 		}
 	} else {
 		rows, err := wr.Storage.Pool.Query(ctx, query, ids)
 		if err != nil {
-			return nil, fmt.Errorf("%s : %w", op, err)
+			return nil, errs.NewAppError(op, err)
 		}
 		defer rows.Close()
 
@@ -333,7 +327,7 @@ func (wr *widgetRepo) GetByIds(ctx context.Context, ids []string) ([]models.Widg
 				&widget.Tags,
 				&widget.Likes,
 			); err != nil {
-				return nil, fmt.Errorf("%s : %w", op, err)
+				return nil, errs.NewAppError(op, err)
 			}
 			byId[widget.Id.String()] = widget
 		}
@@ -344,7 +338,7 @@ func (wr *widgetRepo) GetByIds(ctx context.Context, ids []string) ([]models.Widg
 		}
 	}
 	if len(widgets) == 0 {
-		return nil, fmt.Errorf("%s : %w", op, errWidgetsNotFound)
+		return nil, errs.ErrNotFound(op, nil)
 	}
 	return widgets, nil
 }
@@ -355,7 +349,7 @@ func (wr *widgetRepo) getAll(ctx context.Context) ([]models.Widget, error) {
 	widgets := []models.Widget{}
 	rows, err := wr.Storage.Pool.Query(ctx, query)
 	if err != nil {
-		return nil, fmt.Errorf("%s : %w", op, err)
+		return nil, errs.NewAppError(op, err)
 	}
 	defer rows.Close()
 
@@ -367,12 +361,12 @@ func (wr *widgetRepo) getAll(ctx context.Context) ([]models.Widget, error) {
 			&widget.Description,
 			&widget.Type,
 		); err != nil {
-			return nil, fmt.Errorf("%s : %w", op, err)
+			return nil, errs.NewAppError(op, err)
 		}
 		widgets = append(widgets, widget)
 	}
 	if len(widgets) == 0 {
-		return nil, fmt.Errorf("%s : %w", op, errWidgetsNotFound)
+		return nil, errs.ErrNotFound(op, nil)
 	}
 	return widgets, nil
 }
@@ -381,14 +375,14 @@ func (wr *widgetRepo) MustBulk(ctx context.Context, cfg config.SearchConfig) err
 	op := "widgetRepo.SearchPreparing.Bulk"
 	widgets, err := wr.getAll(ctx)
 	if err != nil {
-		return fmt.Errorf("%s : %w", op, err)
+		return errs.NewAppError(op, err)
 	}
 	bi, err := esutil.NewBulkIndexer(esutil.BulkIndexerConfig{
 		Client: wr.SearchClient.Client,
 		Index:  "widgets",
 	})
 	if err != nil {
-		return fmt.Errorf("%s : %w", op, err)
+		return errs.NewAppError(op, err)
 	}
 	type doc struct {
 		Id          string
@@ -405,18 +399,18 @@ func (wr *widgetRepo) MustBulk(ctx context.Context, cfg config.SearchConfig) err
 		}
 		data, err := json.Marshal(d)
 		if err != nil {
-			return fmt.Errorf("%s : %w", op, err)
+			return errs.NewAppError(op, err)
 		}
 		if err := bi.Add(ctx, esutil.BulkIndexerItem{
 			Action:     "index",
 			DocumentID: w.Id.String(),
 			Body:       bytes.NewReader(data),
 		}); err != nil {
-			return fmt.Errorf("%s : %w", op, err)
+			return errs.NewAppError(op, err)
 		}
 	}
 	if err := bi.Close(ctx); err != nil {
-		return fmt.Errorf("%s : %w\n stats: flushed - %d, failed - %d", op, err, bi.Stats().NumFlushed, bi.Stats().NumFailed)
+		return errs.NewAppError(op, fmt.Errorf("%w, stats: flushed - %d, failed - %d", err, bi.Stats().NumFlushed, bi.Stats().NumFailed))
 	}
 	return nil
 }
@@ -431,7 +425,7 @@ func (wr *widgetRepo) Update(ctx context.Context, updates map[string]any, id str
 	i := 1
 	for k, v := range updates {
 		if !validFields[k] {
-			return fmt.Errorf("%s : %w", op, errors.New("not valid fields to update"))
+			return errs.ErrInvalidFields(op, nil)
 		}
 		str = append(str, fmt.Sprintf(" %s = $%d", k, i))
 		args = append(args, v)
@@ -442,22 +436,22 @@ func (wr *widgetRepo) Update(ctx context.Context, updates map[string]any, id str
 	if tx, ok := storage.GetTx(ctx); ok {
 		res, err := tx.Exec(ctx, query, args...)
 		if err != nil {
-			return fmt.Errorf("%s : %w", op, err)
+			errs.NewAppError(op, err)
 		}
 		if res.RowsAffected() == 0 {
-			return fmt.Errorf("%s : %w", op, errWidgetNotFound)
+			return errs.ErrNotFound(op, nil)
 		}
 	} else {
 		res, err := wr.Storage.Pool.Exec(ctx, query, args...)
 		if err != nil {
-			return fmt.Errorf("%s : %w", op, err)
+			errs.NewAppError(op, err)
 		}
 		if res.RowsAffected() == 0 {
-			return fmt.Errorf("%s : %w", op, errWidgetNotFound)
+			return errs.ErrNotFound(op, nil)
 		}
 	}
 	if err := wr.Cache.Redis.Del(ctx, id).Err(); err != nil {
-		return fmt.Errorf("%s : %w", op, err)
+		return errs.NewAppError(op, err)
 	}
 	return nil
 }

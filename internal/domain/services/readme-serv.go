@@ -3,10 +3,10 @@ package services
 import (
 	"context"
 	"errors"
-	"fmt"
 	"readmeow/internal/delivery/dto"
 	"readmeow/internal/domain/models"
 	"readmeow/internal/domain/repositories"
+	"readmeow/pkg/errs"
 	"readmeow/pkg/logger"
 	"readmeow/pkg/storage"
 	"time"
@@ -126,7 +126,7 @@ func (rs *readmeServ) Create(ctx context.Context, tid, oid, title, image string,
 	})
 	if err != nil {
 		log.Log.Error("failed to create readme", logger.Err(err))
-		return fmt.Errorf("%s : %w", op, err)
+		return errs.NewAppError(op, err)
 	}
 	log.Log.Info("readme created successfully")
 	return nil
@@ -139,20 +139,20 @@ func (rs *readmeServ) Delete(ctx context.Context, id, uid string) error {
 	user, err := rs.UserRepo.Get(ctx, uid)
 	if err != nil {
 		log.Log.Error("failed to get user", logger.Err(err))
-		return fmt.Errorf("%s : %w", op, err)
+		return errs.NewAppError(op, err)
 	}
 	readme, err := rs.ReadmeRepo.Get(ctx, id)
 	if err != nil {
 		log.Log.Error("failed to get readme", logger.Err(err))
-		return fmt.Errorf("%s : %w", op, err)
+		return errs.NewAppError(op, err)
 	}
 	if readme.OwnerId != user.Id {
 		log.Log.Error("failed to delete readme", logger.Err(errors.New("readme owner id and user id are not equal")))
-		return fmt.Errorf("%s : %w", op, err)
+		return errs.NewAppError(op, err)
 	}
 	if err := rs.ReadmeRepo.Delete(ctx, id); err != nil {
 		log.Log.Error("failed to delete readme", logger.Err(err))
-		return fmt.Errorf("%s : %w", op, err)
+		return errs.NewAppError(op, err)
 	}
 	log.Log.Info("readme deleted successfully")
 	return nil
@@ -165,7 +165,7 @@ func (rs *readmeServ) Update(ctx context.Context, updates map[string]any, id str
 	updates["last_update_time"] = time.Now()
 	if err := rs.ReadmeRepo.Update(ctx, updates, id); err != nil {
 		log.Log.Error("failed to update readme", logger.Err(err))
-		return fmt.Errorf("%s : %w", op, err)
+		return errs.NewAppError(op, err)
 	}
 	log.Log.Info("readme updated successfully")
 	return nil
@@ -178,7 +178,7 @@ func (rs *readmeServ) Get(ctx context.Context, id string) (*models.Readme, error
 	readme, err := rs.ReadmeRepo.Get(ctx, id)
 	if err != nil {
 		log.Log.Error("failed to receive readme", logger.Err(err))
-		return nil, fmt.Errorf("%s : %w", op, err)
+		return nil, errs.NewAppError(op, err)
 	}
 	log.Log.Info("readme received successfully")
 	return readme, nil
@@ -191,7 +191,7 @@ func (rs *readmeServ) FetchByUser(ctx context.Context, amount, page uint, uid st
 	rdms, err := rs.ReadmeRepo.FetchByUser(ctx, amount, page, uid)
 	if err != nil {
 		log.Log.Error("failed to receive readmes", logger.Err(err))
-		return nil, fmt.Errorf("%s : %w", op, err)
+		return nil, errs.NewAppError(op, err)
 	}
 	readmes := make([]dto.ReadmeResponse, 0, len(rdms))
 	for _, r := range rdms {
