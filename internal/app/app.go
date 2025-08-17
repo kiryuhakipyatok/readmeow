@@ -76,7 +76,7 @@ func Run() {
 	readmeServ := services.NewReadmeServ(readmeRepo, userRepo, templateRepo, widgetRepo, transactor, log)
 	widgetServ := services.NewWidgetServ(widgetRepo, userRepo, log)
 	templateServ := services.NewTemplateServ(templateRepo, userRepo, widgetRepo, transactor, log)
-	userServ := services.NewUserServ(userRepo, log)
+	userServ := services.NewUserServ(userRepo, transactor, log)
 
 	authHandl := handlers.NewAuthHandle(authServ, userServ, validator)
 	readmeHandl := handlers.NewReadmeHandl(readmeServ, authServ, validator)

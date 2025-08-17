@@ -1,1 +1,182 @@
 package helpers
+
+import (
+	"context"
+	"errors"
+	"readmeow/internal/domain/models"
+	"readmeow/pkg/errs"
+	"readmeow/pkg/storage"
+)
+
+type QueryData struct {
+	Ctx       context.Context
+	Storage   *storage.Storage
+	Operation string
+	Query     string
+	Args      []any
+}
+
+func NewQueryData(ctx context.Context, s *storage.Storage, op string, query string, args ...any) QueryData {
+	return QueryData{
+		Ctx:       ctx,
+		Storage:   s,
+		Operation: op,
+		Query:     query,
+		Args:      args,
+	}
+}
+
+func InsertWithTx(qd QueryData) error {
+	if tx, ok := storage.GetTx(qd.Ctx); ok {
+		if _, err := tx.Exec(qd.Ctx, qd.Query, qd.Args...); err != nil {
+			if storage.ErrorAlreadyExists(err) {
+				return errs.ErrAlreadyExists(qd.Operation, err)
+			}
+			return errs.NewAppError(qd.Operation, err)
+		}
+		return nil
+	}
+	if _, err := qd.Storage.Pool.Exec(qd.Ctx, qd.Query, qd.Args...); err != nil {
+		if storage.ErrorAlreadyExists(err) {
+			return errs.ErrAlreadyExists(qd.Operation, err)
+		}
+		return errs.NewAppError(qd.Operation, err)
+	}
+	return nil
+}
+
+func DeleteOrUpdateWithTx(qd QueryData) error {
+	if tx, ok := storage.GetTx(qd.Ctx); ok {
+		res, err := tx.Exec(qd.Ctx, qd.Query, qd.Args...)
+		if err != nil {
+			return errs.NewAppError(qd.Operation, err)
+		}
+		if res.RowsAffected() == 0 {
+			return errs.ErrNotFound(qd.Operation, err)
+		}
+		return nil
+	}
+	res, err := qd.Storage.Pool.Exec(qd.Ctx, qd.Query, qd.Args...)
+	if err != nil {
+		return errs.NewAppError(qd.Operation, err)
+	}
+	if res.RowsAffected() == 0 {
+		return errs.ErrNotFound(qd.Operation, err)
+	}
+	return nil
+}
+
+func queryRow(qd QueryData, data ...any) error {
+	if tx, ok := storage.GetTx(qd.Ctx); ok {
+		if err := tx.QueryRow(qd.Ctx, qd.Query, qd.Args...).Scan(data...); err != nil {
+			if errors.Is(err, storage.ErrNotFound()) {
+				return errs.ErrNotFound(qd.Operation, err)
+			}
+			return errs.NewAppError(qd.Operation, err)
+		}
+		return nil
+	}
+	if err := qd.Storage.Pool.QueryRow(qd.Ctx, qd.Query, qd.Args...).Scan(data...); err != nil {
+		if errors.Is(err, storage.ErrNotFound()) {
+			return errs.ErrNotFound(qd.Operation, err)
+		}
+		return errs.NewAppError(qd.Operation, err)
+	}
+	return nil
+}
+
+func QueryRowWithTx(qd QueryData, entity any) error {
+	switch e := entity.(type) {
+	case *models.User:
+		userData := []any{
+			&e.Id,
+			&e.Login,
+			&e.Email,
+			&e.Avatar,
+			&e.TimeOfRegister,
+			&e.NumOfTemplates,
+			&e.NumOfReadmes,
+		}
+		if err := queryRow(qd, userData...); err != nil {
+			return err
+		}
+		return nil
+	case *models.Readme:
+		readmeData := []any{
+			&e.Id,
+			&e.OwnerId,
+			&e.TemplateId,
+			&e.Image,
+			&e.Title,
+			&e.Text,
+			&e.Links,
+			&e.Order,
+			&e.CreateTime,
+			&e.LastUpdateTime,
+			&e.Widgets,
+		}
+		if err := queryRow(qd, readmeData...); err != nil {
+			return err
+		}
+		return nil
+	case *models.Template:
+		templateData := []any{
+			&e.Id,
+			&e.OwnerId,
+			&e.Title,
+			&e.Image,
+			&e.Description,
+			&e.Text,
+			&e.Links,
+			&e.Order,
+			&e.CreateTime,
+			&e.LastUpdateTime,
+			&e.NumOfUsers,
+			&e.Widgets,
+			&e.Likes,
+		}
+		if err := queryRow(qd, templateData...); err != nil {
+			return err
+		}
+		return nil
+	case *models.Widget:
+		widgetData := []any{
+			&e.Id,
+			&e.Title,
+			&e.Image,
+			&e.Description,
+			&e.Type,
+			&e.Link,
+			&e.NumOfUsers,
+			&e.Tags,
+			&e.Likes,
+		}
+		if err := queryRow(qd, widgetData...); err != nil {
+			return err
+		}
+		return nil
+	case *models.Credentials:
+		credentialsData := []any{
+			&e.Email,
+			&e.Login,
+			&e.Nickname,
+			&e.Password,
+		}
+		if err := queryRow(qd, credentialsData...); err != nil {
+			return err
+		}
+		return nil
+	case *int:
+		if err := queryRow(qd, e); err != nil {
+			return err
+		}
+		return nil
+	case []byte:
+		if err := queryRow(qd, e); err != nil {
+			return err
+		}
+		return nil
+	default:
+		return errs.NewAppError(qd.Operation, errors.New("invalid entity"))
+	}
+}

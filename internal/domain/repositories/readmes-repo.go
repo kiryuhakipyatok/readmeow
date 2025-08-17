@@ -2,9 +2,9 @@ package repositories
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"readmeow/internal/domain/models"
+	"readmeow/internal/domain/repositories/helpers"
 	"readmeow/pkg/errs"
 	"readmeow/pkg/storage"
 	"strings"
@@ -39,20 +39,8 @@ func (rr *readmeRepo) Create(ctx context.Context, readme *models.Readme) error {
 		tId = readme.TemplateId
 	}
 	query := "INSERT INTO readmes (id, owner_id, template_id, image, title, text, links, widgets, render_order, create_time, last_update_time) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)"
-	if tx, ok := storage.GetTx(ctx); ok {
-		if _, err := tx.Exec(ctx, query, readme.Id, readme.OwnerId, tId, readme.Title, readme.Image, readme.Text, readme.Links, readme.Widgets, readme.Order, readme.CreateTime, readme.LastUpdateTime); err != nil {
-			if storage.ErrorAlreadyExists(err) {
-				return errs.ErrAlreadyExists(op, err)
-			}
-			return errs.NewAppError(op, err)
-		}
-		return nil
-	}
-	if _, err := rr.Storage.Pool.Exec(ctx, query, readme.Id, readme.OwnerId, tId, readme.Title, readme.Image, readme.Text, readme.Links, readme.Widgets, readme.Order, readme.CreateTime, readme.LastUpdateTime); err != nil {
-		if storage.ErrorAlreadyExists(err) {
-			return errs.ErrAlreadyExists(op, err)
-		}
-		return errs.NewAppError(op, err)
+	if err := helpers.InsertWithTx(helpers.NewQueryData(ctx, rr.Storage, op, query, readme.Id, readme.OwnerId, tId, readme.Title, readme.Image, readme.Text, readme.Links, readme.Widgets, readme.Order, readme.CreateTime, readme.LastUpdateTime)); err != nil {
+		return err
 	}
 	return nil
 }
@@ -93,48 +81,20 @@ func (rr *readmeRepo) Update(ctx context.Context, updates map[string]any, id str
 	}
 	args = append(args, id)
 	query := fmt.Sprintf("UPDATE readmes SET%s WHERE id = $%d", strings.Join(str, ","), i)
-	if tx, ok := storage.GetTx(ctx); ok {
-		if _, err := tx.Exec(ctx, query, args...); err != nil {
-			if errors.Is(err, storage.ErrNotFound()) {
-				return errs.ErrNotFound(op, err)
-			}
-			return errs.NewAppError(op, err)
-		}
-		return nil
+	if err := helpers.DeleteOrUpdateWithTx(helpers.NewQueryData(ctx, rr.Storage, op, query, args...)); err != nil {
+		return err
 	}
-	if _, err := rr.Storage.Pool.Exec(ctx, query, args...); err != nil {
-		if errors.Is(err, storage.ErrNotFound()) {
-			return errs.ErrNotFound(op, err)
-		}
-		return errs.NewAppError(op, err)
-	}
-
 	return nil
 }
 
 func (rr *readmeRepo) Get(ctx context.Context, id string) (*models.Readme, error) {
 	op := "readmeRepo.Get"
 	query := "SELECT * FROM readmes WHERE id = $1"
-	readme := models.Readme{}
-	if err := rr.Storage.Pool.QueryRow(ctx, query, id).Scan(
-		&readme.Id,
-		&readme.OwnerId,
-		&readme.TemplateId,
-		&readme.Image,
-		&readme.Title,
-		&readme.Text,
-		&readme.Links,
-		&readme.Order,
-		&readme.CreateTime,
-		&readme.LastUpdateTime,
-		&readme.Widgets,
-	); err != nil {
-		if errors.Is(err, storage.ErrNotFound()) {
-			return nil, errs.ErrNotFound(op, err)
-		}
-		return nil, errs.NewAppError(op, err)
+	readme := &models.Readme{}
+	if err := helpers.QueryRowWithTx(helpers.NewQueryData(ctx, rr.Storage, op, query, id), readme); err != nil {
+		return nil, err
 	}
-	return &readme, nil
+	return readme, nil
 }
 
 func (rr *readmeRepo) FetchByUser(ctx context.Context, amount, page uint, uid string) ([]models.Readme, error) {

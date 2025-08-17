@@ -50,7 +50,7 @@ func (ts *templateServ) Create(ctx context.Context, oid, title, image, descripti
 	log := ts.Logger.AddOp(op)
 	log.Log.Info("creating template")
 	_, err := ts.Transactor.WithinTransaction(ctx, func(c context.Context) (any, error) {
-		user, err := ts.UserRepo.Get(ctx, oid)
+		user, err := ts.UserRepo.Get(c, oid)
 		if err != nil {
 			log.Log.Error("failed to get user", logger.Err(err))
 			return nil, err
@@ -78,7 +78,7 @@ func (ts *templateServ) Create(ctx context.Context, oid, title, image, descripti
 		}
 		fmt.Println(keys)
 		if len(widgets) != 0 {
-			widgetsData, err := ts.WidgetRepo.GetByIds(ctx, keys)
+			widgetsData, err := ts.WidgetRepo.GetByIds(c, keys)
 			if err != nil {
 				log.Log.Error("failed to fetch widgets", logger.Err(err))
 				return nil, err
@@ -89,14 +89,14 @@ func (ts *templateServ) Create(ctx context.Context, oid, title, image, descripti
 				update := map[string]any{
 					"num_of_users": updatedNumOfUsers,
 				}
-				if err := ts.WidgetRepo.Update(ctx, update, w.Id.String()); err != nil {
+				if err := ts.WidgetRepo.Update(c, update, w.Id.String()); err != nil {
 					log.Log.Error("failed to update widget info", logger.Err(err))
 					return nil, err
 				}
 			}
 
 		}
-		if err := ts.TemplateRepo.Create(ctx, template); err != nil {
+		if err := ts.TemplateRepo.Create(c, template); err != nil {
 			log.Log.Error("failed to create template", logger.Err(err))
 			return nil, err
 		}
@@ -104,7 +104,7 @@ func (ts *templateServ) Create(ctx context.Context, oid, title, image, descripti
 		update := map[string]any{
 			"num_of_templates": numOfTemplates,
 		}
-		if err := ts.UserRepo.Update(ctx, update, user.Id.String()); err != nil {
+		if err := ts.UserRepo.Update(c, update, user.Id.String()); err != nil {
 			log.Log.Error("failed to update user info", logger.Err(err))
 			return nil, err
 		}

@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"readmeow/internal/config"
 	"readmeow/internal/domain/models"
+	"readmeow/internal/domain/repositories/helpers"
 	"readmeow/pkg/cache"
 	"readmeow/pkg/errs"
 	"readmeow/pkg/search"
@@ -53,20 +53,8 @@ func NewTemplateRepo(s *storage.Storage, c *cache.Cache, sc *search.SearchClient
 func (tr *templateRepo) Create(ctx context.Context, template *models.Template) error {
 	op := "templateRepo.Create"
 	query := "INSERT INTO templates (id, owner_id, title, image,description, text, links, widgets,num_of_users, render_order, create_time, last_update_time) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)"
-	if tx, ok := storage.GetTx(ctx); ok {
-		if _, err := tx.Exec(ctx, query, template.Id, template.OwnerId, template.Title, template.Image, template.Description, template.Text, template.Links, template.Widgets, template.NumOfUsers, template.Order, template.CreateTime, template.LastUpdateTime); err != nil {
-			if storage.ErrorAlreadyExists(err) {
-				return errs.ErrAlreadyExists(op, err)
-			}
-			return errs.NewAppError(op, err)
-		}
-		return nil
-	}
-	if _, err := tr.Storage.Pool.Exec(ctx, query, template.Id, template.OwnerId, template.Title, template.Image, template.Description, template.Text, template.Links, template.Widgets, template.NumOfUsers, template.Order, template.CreateTime, template.LastUpdateTime); err != nil {
-		if storage.ErrorAlreadyExists(err) {
-			return errs.ErrAlreadyExists(op, err)
-		}
-		return errs.NewAppError(op, err)
+	if err := helpers.InsertWithTx(helpers.NewQueryData(ctx, tr.Storage, op, query, template.Id, template.OwnerId, template.Title, template.Image, template.Description, template.Text, template.Links, template.Widgets, template.NumOfUsers, template.Order, template.CreateTime, template.LastUpdateTime)); err != nil {
+		return err
 	}
 	return nil
 }
@@ -95,25 +83,8 @@ func (tr *templateRepo) Update(ctx context.Context, updates map[string]any, id s
 	}
 	args = append(args, id)
 	query := fmt.Sprintf("UPDATE templates SET %s WHERE id = $%d", strings.Join(str, ","), i)
-	if tx, ok := storage.GetTx(ctx); ok {
-		res, err := tx.Exec(ctx, query, args...)
-		if err != nil {
-			return errs.NewAppError(op, err)
-		}
-		if res.RowsAffected() == 0 {
-			return errs.ErrNotFound(op, err)
-		}
-		if err := tr.Cache.Redis.Del(ctx, id).Err(); err != nil {
-			return errs.NewAppError(op, err)
-		}
-		return nil
-	}
-	res, err := tr.Storage.Pool.Exec(ctx, query, args...)
-	if err != nil {
-		return errs.NewAppError(op, err)
-	}
-	if res.RowsAffected() == 0 {
-		return errs.ErrNotFound(op, nil)
+	if err := helpers.DeleteOrUpdateWithTx(helpers.NewQueryData(ctx, tr.Storage, op, query, args...)); err != nil {
+		return err
 	}
 	if err := tr.Cache.Redis.Del(ctx, id).Err(); err != nil {
 		return errs.NewAppError(op, err)
@@ -124,20 +95,8 @@ func (tr *templateRepo) Update(ctx context.Context, updates map[string]any, id s
 func (tr *templateRepo) Like(ctx context.Context, id, uid string) error {
 	op := "templateRepo.Like"
 	query := "INSERT INTO favorite_templates (template_id, user_id) VALUES ($1,$2)"
-	if tx, ok := storage.GetTx(ctx); ok {
-		if _, err := tx.Exec(ctx, query, id, uid); err != nil {
-			if storage.ErrorAlreadyExists(err) {
-				return errs.ErrAlreadyExists(op, err)
-			}
-			return errs.NewAppError(op, err)
-		}
-		return nil
-	}
-	if _, err := tr.Storage.Pool.Exec(ctx, query, id, uid); err != nil {
-		if storage.ErrorAlreadyExists(err) {
-			return errs.ErrAlreadyExists(op, err)
-		}
-		return errs.NewAppError(op, err)
+	if err := helpers.InsertWithTx(helpers.NewQueryData(ctx, tr.Storage, op, query, id, uid)); err != nil {
+		return err
 	}
 	return nil
 }
@@ -145,22 +104,8 @@ func (tr *templateRepo) Like(ctx context.Context, id, uid string) error {
 func (tr *templateRepo) Dislike(ctx context.Context, id, uid string) error {
 	op := "templateRepo.Dislike"
 	query := "DELETE FROM favorite_templates WHERE (template_id, user_id) = ($1,$2)"
-	if tx, ok := storage.GetTx(ctx); ok {
-		res, err := tx.Exec(ctx, query, id, uid)
-		if err != nil {
-			return errs.NewAppError(op, err)
-		}
-		if res.RowsAffected() == 0 {
-			return errs.ErrNotFound(op, nil)
-		}
-		return nil
-	}
-	res, err := tr.Storage.Pool.Exec(ctx, query, id, uid)
-	if err != nil {
-		return errs.NewAppError(op, err)
-	}
-	if res.RowsAffected() == 0 {
-		return errs.ErrNotFound(op, nil)
+	if err := helpers.DeleteOrUpdateWithTx(helpers.NewQueryData(ctx, tr.Storage, op, query, id, uid)); err != nil {
+		return err
 	}
 	return nil
 }
@@ -193,50 +138,9 @@ func (tr *templateRepo) Get(ctx context.Context, id string) (*models.Template, e
 	}
 	if err == cache.EMPTY {
 		query := "SELECT t.*, COUNT(ft.template_id) AS likes FROM templates t LEFT JOIN favorite_templates ft ON ft.template_id=t.id WHERE id = $1 GROUP BY t.id"
-		if tx, ok := storage.GetTx(ctx); ok {
-			if err := tx.QueryRow(ctx, query, id).Scan(
-				&template.Id,
-				&template.OwnerId,
-				&template.Title,
-				&template.Image,
-				&template.Description,
-				&template.Text,
-				&template.Links,
-				&template.Order,
-				&template.CreateTime,
-				&template.LastUpdateTime,
-				&template.NumOfUsers,
-				&template.Widgets,
-				&template.Likes,
-			); err != nil {
-				if errors.Is(err, storage.ErrNotFound()) {
-					return nil, errs.ErrNotFound(op, err)
-				}
-				return nil, errs.NewAppError(op, err)
-			}
-		} else {
-			if err := tr.Storage.Pool.QueryRow(ctx, query, id).Scan(
-				&template.Id,
-				&template.OwnerId,
-				&template.Title,
-				&template.Image,
-				&template.Description,
-				&template.Text,
-				&template.Links,
-				&template.Order,
-				&template.CreateTime,
-				&template.LastUpdateTime,
-				&template.NumOfUsers,
-				&template.Widgets,
-				&template.Likes,
-			); err != nil {
-				if errors.Is(err, storage.ErrNotFound()) {
-					return nil, errs.ErrNotFound(op, err)
-				}
-				return nil, errs.NewAppError(op, err)
-			}
+		if err := helpers.QueryRowWithTx(helpers.NewQueryData(ctx, tr.Storage, op, query, id), template); err != nil {
+			return nil, err
 		}
-
 	}
 	if (template.NumOfUsers >= 20) || template.OwnerId == uuid.Nil {
 		cache, err := json.Marshal(template)

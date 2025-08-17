@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"readmeow/internal/config"
 	"readmeow/internal/domain/models"
+	"readmeow/internal/domain/repositories/helpers"
 	"readmeow/pkg/cache"
 	"readmeow/pkg/errs"
 	"readmeow/pkg/search"
@@ -60,40 +60,8 @@ func (wr *widgetRepo) Get(ctx context.Context, id string) (*models.Widget, error
 	}
 	if err == cache.EMPTY {
 		query := "SELECT w.*, COUNT(fw.widget_id) as likes FROM widgets w LEFT JOIN favorite_widgets fw ON w.id=fw.widget_id WHERE w.id = $1 GROUP BY w.id"
-		if tx, ok := storage.GetTx(ctx); ok {
-			if err := tx.QueryRow(ctx, query, id).Scan(
-				&widget.Id,
-				&widget.Title,
-				&widget.Image,
-				&widget.Description,
-				&widget.Type,
-				&widget.Link,
-				&widget.NumOfUsers,
-				&widget.Tags,
-				&widget.Likes,
-			); err != nil {
-				if errors.Is(err, storage.ErrNotFound()) {
-					return nil, errs.ErrNotFound(op, err)
-				}
-				return nil, errs.NewAppError(op, err)
-			}
-		} else {
-			if err := wr.Storage.Pool.QueryRow(ctx, query, id).Scan(
-				&widget.Id,
-				&widget.Title,
-				&widget.Image,
-				&widget.Description,
-				&widget.Type,
-				&widget.Link,
-				&widget.NumOfUsers,
-				&widget.Tags,
-				&widget.Likes,
-			); err != nil {
-				if errors.Is(err, storage.ErrNotFound()) {
-					return nil, errs.ErrNotFound(op, err)
-				}
-				return nil, errs.NewAppError(op, err)
-			}
+		if err := helpers.QueryRowWithTx(helpers.NewQueryData(ctx, wr.Storage, op, query, id), widget); err != nil {
+			return nil, err
 		}
 	}
 	cache, err := json.Marshal(widget)
@@ -163,20 +131,8 @@ func (wr *widgetRepo) FetchFavorite(ctx context.Context, id string) ([]string, e
 func (wr *widgetRepo) Like(ctx context.Context, uid, id string) error {
 	op := "widgetRepo.Like"
 	query := "INSERT INTO favorite_widgets (widget_id, user_id) VALUES($1,$2)"
-	if tx, ok := storage.GetTx(ctx); ok {
-		if _, err := tx.Exec(ctx, query, id, uid); err != nil {
-			if storage.ErrorAlreadyExists(err) {
-				return errs.ErrAlreadyExists(op, err)
-			}
-			return errs.NewAppError(op, err)
-		}
-		return nil
-	}
-	if _, err := wr.Storage.Pool.Exec(ctx, query, id, uid); err != nil {
-		if storage.ErrorAlreadyExists(err) {
-			return errs.ErrAlreadyExists(op, err)
-		}
-		return errs.NewAppError(op, err)
+	if err := helpers.InsertWithTx(helpers.NewQueryData(ctx, wr.Storage, op, query, id, uid)); err != nil {
+		return err
 	}
 	return nil
 }
@@ -184,22 +140,8 @@ func (wr *widgetRepo) Like(ctx context.Context, uid, id string) error {
 func (wr *widgetRepo) Dislike(ctx context.Context, uid, id string) error {
 	op := "widgetRepo.Dislike"
 	query := "DELETE FROM favorite_widgets WHERE (widget_id,user_id)=($1,$2)"
-	if tx, ok := storage.GetTx(ctx); ok {
-		res, err := tx.Exec(ctx, query, id, uid)
-		if err != nil {
-			return errs.NewAppError(op, err)
-		}
-		if res.RowsAffected() == 0 {
-			return errs.ErrNotFound(op, nil)
-		}
-		return nil
-	}
-	res, err := wr.Storage.Pool.Exec(ctx, query, id, uid)
-	if err != nil {
-		return errs.NewAppError(op, err)
-	}
-	if res.RowsAffected() == 0 {
-		return errs.ErrNotFound(op, nil)
+	if err := helpers.DeleteOrUpdateWithTx(helpers.NewQueryData(ctx, wr.Storage, op, query, id, uid)); err != nil {
+		return err
 	}
 	return nil
 }
@@ -433,22 +375,8 @@ func (wr *widgetRepo) Update(ctx context.Context, updates map[string]any, id str
 	}
 	args = append(args, id)
 	query := fmt.Sprintf("UPDATE widgets SET%s WHERE id = $%d", strings.Join(str, ","), i)
-	if tx, ok := storage.GetTx(ctx); ok {
-		res, err := tx.Exec(ctx, query, args...)
-		if err != nil {
-			errs.NewAppError(op, err)
-		}
-		if res.RowsAffected() == 0 {
-			return errs.ErrNotFound(op, nil)
-		}
-	} else {
-		res, err := wr.Storage.Pool.Exec(ctx, query, args...)
-		if err != nil {
-			errs.NewAppError(op, err)
-		}
-		if res.RowsAffected() == 0 {
-			return errs.ErrNotFound(op, nil)
-		}
+	if err := helpers.DeleteOrUpdateWithTx(helpers.NewQueryData(ctx, wr.Storage, op, query, args...)); err != nil {
+		return err
 	}
 	if err := wr.Cache.Redis.Del(ctx, id).Err(); err != nil {
 		return errs.NewAppError(op, err)

@@ -47,14 +47,14 @@ func (rs *readmeServ) Create(ctx context.Context, tid, oid, title, image string,
 	log := rs.Logger.AddOp(op)
 	log.Log.Info("creating readme")
 	_, err := rs.Transactor.WithinTransaction(ctx, func(c context.Context) (any, error) {
-		user, err := rs.UserRepo.Get(ctx, oid)
+		user, err := rs.UserRepo.Get(c, oid)
 		if err != nil {
 			log.Log.Error("failed to get user", logger.Err(err))
 			return nil, err
 		}
 		var t models.Template
 		if tid != "" {
-			tempalate, err := rs.TemplateRepo.Get(ctx, tid)
+			tempalate, err := rs.TemplateRepo.Get(c, tid)
 			if err != nil {
 				log.Log.Error("failed to get template", logger.Err(err))
 				return nil, err
@@ -63,7 +63,7 @@ func (rs *readmeServ) Create(ctx context.Context, tid, oid, title, image string,
 			update := map[string]any{
 				"num_of_users": updatedNumOfUsers,
 			}
-			if err := rs.TemplateRepo.Update(ctx, update, tempalate.Id.String()); err != nil {
+			if err := rs.TemplateRepo.Update(c, update, tempalate.Id.String()); err != nil {
 				log.Log.Error("failed to update template info", logger.Err(err))
 				return nil, err
 			}
@@ -85,7 +85,7 @@ func (rs *readmeServ) Create(ctx context.Context, tid, oid, title, image string,
 			CreateTime:     time.Now(),
 			LastUpdateTime: time.Now(),
 		}
-		if err := rs.ReadmeRepo.Create(ctx, readme); err != nil {
+		if err := rs.ReadmeRepo.Create(c, readme); err != nil {
 			log.Log.Error("failed to create readme", logger.Err(err))
 			return nil, err
 		}
@@ -96,7 +96,7 @@ func (rs *readmeServ) Create(ctx context.Context, tid, oid, title, image string,
 					keys = append(keys, k)
 				}
 			}
-			widgetsData, err := rs.WidgetRepo.GetByIds(ctx, keys)
+			widgetsData, err := rs.WidgetRepo.GetByIds(c, keys)
 			if err != nil {
 				log.Log.Error("failed to fetch widgets", logger.Err(err))
 				return nil, err
@@ -107,7 +107,7 @@ func (rs *readmeServ) Create(ctx context.Context, tid, oid, title, image string,
 				update := map[string]any{
 					"num_of_users": updatedNumOfUsers,
 				}
-				if err := rs.WidgetRepo.Update(ctx, update, w.Id.String()); err != nil {
+				if err := rs.WidgetRepo.Update(c, update, w.Id.String()); err != nil {
 					log.Log.Error("failed to update widget info", logger.Err(err))
 					return nil, err
 				}
@@ -118,7 +118,7 @@ func (rs *readmeServ) Create(ctx context.Context, tid, oid, title, image string,
 		update := map[string]any{
 			"num_of_readmes": updatedNumOfReadmes,
 		}
-		if err := rs.UserRepo.Update(ctx, update, user.Id.String()); err != nil {
+		if err := rs.UserRepo.Update(c, update, user.Id.String()); err != nil {
 			log.Log.Error("failed to update user info", logger.Err(err))
 			return nil, err
 		}
@@ -136,24 +136,30 @@ func (rs *readmeServ) Delete(ctx context.Context, id, uid string) error {
 	op := "readmeServ"
 	log := rs.Logger.AddOp(op)
 	log.Log.Info("deleting readme")
-	user, err := rs.UserRepo.Get(ctx, uid)
-	if err != nil {
-		log.Log.Error("failed to get user", logger.Err(err))
+	if _, err := rs.Transactor.WithinTransaction(ctx, func(c context.Context) (any, error) {
+		user, err := rs.UserRepo.Get(c, uid)
+		if err != nil {
+			log.Log.Error("failed to get user", logger.Err(err))
+			return nil, err
+		}
+		readme, err := rs.ReadmeRepo.Get(c, id)
+		if err != nil {
+			log.Log.Error("failed to get readme", logger.Err(err))
+			return nil, err
+		}
+		if readme.OwnerId != user.Id {
+			log.Log.Error("failed to delete readme", logger.Err(errors.New("readme owner id and user id are not equal")))
+			return nil, err
+		}
+		if err := rs.ReadmeRepo.Delete(c, id); err != nil {
+			log.Log.Error("failed to delete readme", logger.Err(err))
+			return nil, err
+		}
+		return nil, nil
+	}); err != nil {
 		return errs.NewAppError(op, err)
 	}
-	readme, err := rs.ReadmeRepo.Get(ctx, id)
-	if err != nil {
-		log.Log.Error("failed to get readme", logger.Err(err))
-		return errs.NewAppError(op, err)
-	}
-	if readme.OwnerId != user.Id {
-		log.Log.Error("failed to delete readme", logger.Err(errors.New("readme owner id and user id are not equal")))
-		return errs.NewAppError(op, err)
-	}
-	if err := rs.ReadmeRepo.Delete(ctx, id); err != nil {
-		log.Log.Error("failed to delete readme", logger.Err(err))
-		return errs.NewAppError(op, err)
-	}
+
 	log.Log.Info("readme deleted successfully")
 	return nil
 }

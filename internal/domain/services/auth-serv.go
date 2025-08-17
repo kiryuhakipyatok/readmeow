@@ -63,18 +63,20 @@ func (as *authServ) Register(ctx context.Context, email, code string) error {
 			log.Log.Info("invalid code")
 			return nil, errs.NewAppError(op, errors.New("invalid code"))
 		}
-		credentials, err := as.VerificationRepo.FetchCredentials(c, email)
+		credentials, err := as.VerificationRepo.GetCredentials(c, email)
 		if err != nil {
 			log.Log.Error("failed to get user credentials", logger.Err(err))
 			return nil, errs.NewAppError(op, err)
 		}
 		user := models.User{
-			Id:             uuid.New(),
-			Nickname:       credentials.Nickname,
-			Login:          credentials.Login,
-			Email:          credentials.Email,
+			Id: uuid.New(),
+			Credentials: models.Credentials{
+				Nickname: credentials.Nickname,
+				Login:    credentials.Login,
+				Email:    credentials.Email,
+				Password: credentials.Password,
+			},
 			Avatar:         "empty",
-			Password:       credentials.Password,
 			TimeOfRegister: time.Now(),
 			NumOfTemplates: 0,
 			NumOfReadmes:   0,
@@ -112,6 +114,7 @@ func (as *authServ) Login(ctx context.Context, login, password string) (*loginRe
 	op := "authServ.Login"
 	log := as.Logger.AddOp(op)
 	log.Log.Info("logining user")
+
 	user, err := as.UserRepo.GetByLogin(ctx, login)
 	if err != nil {
 		log.Log.Error("failed to get user by login", logger.Err(err))

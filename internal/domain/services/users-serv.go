@@ -6,6 +6,7 @@ import (
 	"readmeow/internal/domain/repositories"
 	"readmeow/pkg/errs"
 	"readmeow/pkg/logger"
+	"readmeow/pkg/storage"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -18,14 +19,16 @@ type UserServ interface {
 }
 
 type userServ struct {
-	UserRepo repositories.UserRepo
-	Logger   *logger.Logger
+	UserRepo   repositories.UserRepo
+	Transactor storage.Transactor
+	Logger     *logger.Logger
 }
 
-func NewUserServ(ur repositories.UserRepo, l *logger.Logger) UserServ {
+func NewUserServ(ur repositories.UserRepo, t storage.Transactor, l *logger.Logger) UserServ {
 	return &userServ{
-		UserRepo: ur,
-		Logger:   l,
+		UserRepo:   ur,
+		Transactor: t,
+		Logger:     l,
 	}
 }
 
@@ -45,19 +48,25 @@ func (us *userServ) Delete(ctx context.Context, id, password string) error {
 	op := "userServ.Delete"
 	log := us.Logger.AddOp(op)
 	log.Log.Info("deleting user")
-	userPassword, err := us.UserRepo.GetPassword(ctx, id)
-	if err != nil {
-		log.Log.Error("failed to get user password", logger.Err(err))
+	if _, err := us.Transactor.WithinTransaction(ctx, func(c context.Context) (any, error) {
+		userPassword, err := us.UserRepo.GetPassword(c, id)
+		if err != nil {
+			log.Log.Error("failed to get user password", logger.Err(err))
+			return nil, err
+		}
+		if err := bcrypt.CompareHashAndPassword(userPassword, []byte(password)); err != nil {
+			log.Log.Error("user and entered passwords are not equal", logger.Err(err))
+			return nil, err
+		}
+		if err := us.UserRepo.Delete(c, id); err != nil {
+			log.Log.Error("failed to delete user", logger.Err(err))
+			return nil, err
+		}
+		return nil, nil
+	}); err != nil {
 		return errs.NewAppError(op, err)
 	}
-	if err := bcrypt.CompareHashAndPassword(userPassword, []byte(password)); err != nil {
-		log.Log.Error("user and entered passwords are not equal", logger.Err(err))
-		return errs.NewAppError(op, err)
-	}
-	if err := us.UserRepo.Delete(ctx, id); err != nil {
-		log.Log.Error("failed to delete user", logger.Err(err))
-		return errs.NewAppError(op, err)
-	}
+
 	log.Log.Info("user deleted successfully")
 	return nil
 }
@@ -66,28 +75,33 @@ func (us *userServ) ChangePassword(ctx context.Context, id string, oldPassword, 
 	op := "userServ.UpdatePassword"
 	log := us.Logger.AddOp(op)
 	log.Log.Info("changing user password")
+	if _, err := us.Transactor.WithinTransaction(ctx, func(c context.Context) (any, error) {
+		userPassword, err := us.UserRepo.GetPassword(c, id)
+		if err != nil {
+			log.Log.Error("failed to get user password", logger.Err(err))
+			return nil, err
+		}
 
-	userPassword, err := us.UserRepo.GetPassword(ctx, id)
-	if err != nil {
-		log.Log.Error("failed to get user password", logger.Err(err))
+		if err := bcrypt.CompareHashAndPassword(userPassword, []byte(oldPassword)); err != nil {
+			log.Log.Error("old and entered passwords are not equal", logger.Err(err))
+			return nil, err
+		}
+
+		newHashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPasswrod), 14)
+		if err != nil {
+			log.Log.Error("failed to hash password", logger.Err(err))
+			return nil, err
+		}
+
+		if err := us.UserRepo.ChangePassword(c, id, newHashedPassword); err != nil {
+			log.Log.Error("failed to change user password", logger.Err(err))
+			return nil, err
+		}
+		return nil, nil
+	}); err != nil {
 		return errs.NewAppError(op, err)
 	}
 
-	if err := bcrypt.CompareHashAndPassword(userPassword, []byte(oldPassword)); err != nil {
-		log.Log.Error("old and entered passwords are not equal", logger.Err(err))
-		return errs.NewAppError(op, err)
-	}
-
-	newHashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPasswrod), 14)
-	if err != nil {
-		log.Log.Error("failed to hash password", logger.Err(err))
-		return errs.NewAppError(op, err)
-	}
-
-	if err := us.UserRepo.ChangePassword(ctx, id, newHashedPassword); err != nil {
-		log.Log.Error("failed to change user password", logger.Err(err))
-		return errs.NewAppError(op, err)
-	}
 	log.Log.Info("user password changed successfully")
 	return nil
 }
