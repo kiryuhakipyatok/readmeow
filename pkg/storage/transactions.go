@@ -33,23 +33,24 @@ func GetTx(ctx context.Context) (pgx.Tx, bool) {
 }
 
 func (t *transactor) WithinTransaction(ctx context.Context, tFunc func(c context.Context) (any, error)) (any, error) {
-	txCtx, cancel := context.WithCancel(ctx)
-	defer cancel()
-
-	tx, err := t.Storage.Pool.BeginTx(txCtx, pgx.TxOptions{})
+	tx, err := t.Storage.Pool.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
 		return nil, err
 	}
-	ctxTime, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	res, err := tFunc(injectTx(ctxTime, tx))
-	if err != nil {
-		if err := tx.Rollback(ctxTime); err != nil {
-			return nil, err
+	defer func() {
+		if err != nil {
+			rbCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+			tx.Rollback(rbCtx)
 		}
+	}()
+	res, err := tFunc(injectTx(ctx, tx))
+	if err != nil {
 		return nil, err
 	}
-	if err := tx.Commit(ctxTime); err != nil {
+	cmCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := tx.Commit(cmCtx); err != nil {
 		return nil, err
 	}
 	return res, nil
