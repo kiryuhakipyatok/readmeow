@@ -54,9 +54,11 @@ func (wr *widgetRepo) Get(ctx context.Context, id string) (*models.Widget, error
 	cachedWidget, err := wr.Cache.Redis.Get(ctx, id).Result()
 	if err == nil {
 		if err := json.Unmarshal([]byte(cachedWidget), widget); err != nil {
+			if err := wr.Cache.Redis.Del(ctx, id).Err(); err != nil {
+				return nil, err
+			}
 			return nil, errs.NewAppError(op, err)
 		}
-		fmt.Println("widget from redis")
 		return widget, nil
 	}
 	if err == cache.EMPTY {
@@ -70,7 +72,11 @@ func (wr *widgetRepo) Get(ctx context.Context, id string) (*models.Widget, error
 	if err != nil {
 		return nil, errs.NewAppError(op, err)
 	}
-	if err := wr.Cache.Redis.Set(ctx, widget.Id.String(), cache, time.Hour*24).Err(); err != nil {
+	ttl := time.Hour * 24
+	if widget.NumOfUsers >= 100 {
+		ttl = time.Hour * 48
+	}
+	if err := wr.Cache.Redis.Set(ctx, widget.Id.String(), cache, ttl).Err(); err != nil {
 		return nil, errs.NewAppError(op, err)
 	}
 	return widget, nil

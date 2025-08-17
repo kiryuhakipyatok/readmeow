@@ -84,5 +84,5 @@ type UpdateReadmeRequest struct {
 }
 
 type SendNewCodeRequest struct {
-	Email string `json:"email" validate:"requared,email"`
+	Email string `json:"email" validate:"required,email"`
 }

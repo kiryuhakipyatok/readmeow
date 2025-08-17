@@ -54,20 +54,20 @@ func (rs *readmeServ) Create(ctx context.Context, tid, oid, title, image string,
 		}
 		var t models.Template
 		if tid != "" {
-			tempalate, err := rs.TemplateRepo.Get(c, tid)
+			template, err := rs.TemplateRepo.Get(c, tid)
 			if err != nil {
 				log.Log.Error("failed to get template", logger.Err(err))
 				return nil, err
 			}
-			updatedNumOfUsers := tempalate.NumOfUsers + 1
+			updatedNumOfUsers := template.NumOfUsers + 1
 			update := map[string]any{
 				"num_of_users": updatedNumOfUsers,
 			}
-			if err := rs.TemplateRepo.Update(c, update, tempalate.Id.String()); err != nil {
+			if err := rs.TemplateRepo.Update(c, update, template.Id.String()); err != nil {
 				log.Log.Error("failed to update template info", logger.Err(err))
 				return nil, err
 			}
-			t = *tempalate
+			t = *template
 		} else {
 			t.Id = uuid.Nil
 		}

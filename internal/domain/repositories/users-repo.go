@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"readmeow/internal/domain/models"
 	"readmeow/internal/domain/repositories/helpers"
@@ -14,6 +15,7 @@ type UserRepo interface {
 	Create(ctx context.Context, user *models.User) error
 	Get(ctx context.Context, id string) (*models.User, error)
 	GetByLogin(ctx context.Context, login string) (*models.User, error)
+	GetByIds(ctx context.Context, ids []string) ([]models.User, error)
 	Update(ctx context.Context, updates map[string]any, id string) error
 	Delete(ctx context.Context, id string) error
 	IdCheck(ctx context.Context, id string) (bool, error)
@@ -51,6 +53,30 @@ func (ur *userRepo) Get(ctx context.Context, id string) (*models.User, error) {
 		return nil, err
 	}
 	return user, nil
+}
+
+func (ur *userRepo) GetByIds(ctx context.Context, ids []string) ([]models.User, error) {
+	op := "userRepo.GetByIds"
+	query := "SELECT id, avatar FROM users WHERE id = ANY($1)"
+	users := []models.User{}
+	rows, err := ur.Storage.Pool.Query(ctx, query, ids)
+	if err != nil {
+		if errors.Is(err, storage.ErrNotFound()) {
+			return nil, errs.ErrNotFound(op)
+		}
+		return nil, errs.NewAppError(op, err)
+	}
+	for rows.Next() {
+		user := models.User{}
+		if err := rows.Scan(
+			&user.Id,
+			&user.Avatar,
+		); err != nil {
+			return nil, errs.NewAppError(op, err)
+		}
+		users = append(users, user)
+	}
+	return users, nil
 }
 
 func (ur *userRepo) GetByLogin(ctx context.Context, login string) (*models.User, error) {

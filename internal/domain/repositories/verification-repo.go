@@ -66,7 +66,7 @@ func (vr *verificationRepo) Delete(ctx context.Context, email string) error {
 }
 
 func (vr *verificationRepo) DeleteExpired(ctx context.Context) error {
-	op := "verificationRepo"
+	op := "verificationRepo.DeleteExpired"
 	query := "DELETE FROM verifications WHERE expired_time <= NOW()"
 	qd := helpers.NewQueryData(ctx, vr.Storage, op, query)
 	if err := qd.DeleteOrUpdateWithTx(); err != nil {
@@ -77,7 +77,7 @@ func (vr *verificationRepo) DeleteExpired(ctx context.Context) error {
 
 func (vr *verificationRepo) minusAttempts(ctx context.Context, email string) error {
 	op := "verificationRepo.minusAttempts"
-	query := "UPDATE verifications SET attempts = attempts - 1 WHERE email = $2"
+	query := "UPDATE verifications SET attempts = attempts - 1 WHERE email = $1"
 	res, err := vr.Storage.Pool.Exec(ctx, query, email)
 	if err != nil {
 		if storage.CheckErr(err) {

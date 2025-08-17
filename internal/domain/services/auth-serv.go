@@ -126,11 +126,17 @@ func (as *authServ) Login(ctx context.Context, login, password string) (*loginRe
 	}
 	t := time.Now().Add(time.Second * time.Duration(as.AuthConfig.TokenTTL))
 	ttl := jwt.NewNumericDate(t)
+	iat := jwt.NewNumericDate(t)
+	jti := uuid.New().String()
 	claims := jwt.MapClaims{
 		"sub": user.Id.String(),
 		"exp": ttl,
+		"iat": iat,
+		"jti": jti,
+		"iss": "readmeow",
+		"aud": "readmeow-users",
 	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	token := jwt.NewWithClaims(jwt.SigningMethodHS512, claims)
 	jwt, err := token.SignedString([]byte(as.AuthConfig.Secret))
 	if err != nil {
 		log.Log.Error("failed to sign token", logger.Err(err))
@@ -152,6 +158,9 @@ func (as *authServ) GetId(ctx context.Context, cookie string) (string, error) {
 	log := as.Logger.AddOp(op)
 	log.Log.Info("id receiving")
 	token, err := jwt.ParseWithClaims(cookie, &jwt.RegisteredClaims{}, func(t *jwt.Token) (any, error) {
+		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
+		}
 		return []byte(as.AuthConfig.Secret), nil
 	})
 	if err != nil {
@@ -187,7 +196,7 @@ func (as *authServ) SendVerifyCode(ctx context.Context, email, login, nickname, 
 		r := rand.New(rand.NewSource(time.Now().UnixNano()))
 		code := fmt.Sprintf("%06d", r.Intn(1000000))
 		codeHash := sha256.Sum256([]byte(code))
-		passwordHash, err := bcrypt.GenerateFromPassword([]byte(password), 10)
+		passwordHash, err := bcrypt.GenerateFromPassword([]byte(password), 12)
 		if err != nil {
 			log.Log.Info("failed to generate password hash", logger.Err(err))
 			return nil, errs.NewAppError(op, err)
@@ -217,7 +226,7 @@ func (as *authServ) SendVerifyCode(ctx context.Context, email, login, nickname, 
 }
 
 func (as *authServ) SendNewCode(ctx context.Context, email string) error {
-	op := "authServ.SenvVerifyCode"
+	op := "authServ.SendNewCode"
 	log := as.Logger.AddOp(op)
 	log.Log.Info("sending new verify code")
 	if _, err := as.Transactor.WithinTransaction(ctx, func(c context.Context) (any, error) {

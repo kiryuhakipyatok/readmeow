@@ -166,6 +166,6 @@ func (ws *widgetServ) FetchFavorite(ctx context.Context, id string) ([]dto.Widge
 		}
 		widgets = append(widgets, widget)
 	}
-	log.Log.Info("favorites widgets fecthed successfully")
+	log.Log.Info("favorites widgets fetched successfully")
 	return widgets, nil
 }

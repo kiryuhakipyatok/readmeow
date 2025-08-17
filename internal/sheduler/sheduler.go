@@ -77,7 +77,7 @@ func (s *Sheduler) Start() {
 			log.Log.Info("templates data bulked successfully")
 		}
 	}); err != nil {
-		panic(fmt.Errorf("failed to start BulkWidgetsTemplates"))
+		panic(fmt.Errorf("failed to start BulkWidgetsTemplates: %w", err))
 	}
 	s.Cron.Start()
 }

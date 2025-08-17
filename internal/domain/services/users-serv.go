@@ -87,7 +87,7 @@ func (us *userServ) ChangePassword(ctx context.Context, id string, oldPassword, 
 			return nil, err
 		}
 
-		newHashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPasswrod), 14)
+		newHashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPasswrod), 12)
 		if err != nil {
 			log.Log.Error("failed to hash password", logger.Err(err))
 			return nil, err

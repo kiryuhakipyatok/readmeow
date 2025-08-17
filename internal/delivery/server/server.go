@@ -38,12 +38,18 @@ func (s *Server) MustClose(ctx context.Context) {
 	}
 }
 
+const (
+	login    = "/api/auth/login"
+	register = "/api/auth/register"
+	verify   = "/api/auth/verify"
+)
+
 func authMiddleware(acfg config.AuthConfig) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		validPaths := map[string]bool{
-			"/api/auth/login":    true,
-			"/api/auth/register": true,
-			"/api/auth/verify":   true,
+			login:    true,
+			register: true,
+			verify:   true,
 		}
 		if validPaths[c.Path()] {
 			return c.Next()

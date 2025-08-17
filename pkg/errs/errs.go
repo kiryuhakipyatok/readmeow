@@ -7,7 +7,7 @@ import (
 
 var (
 	ErrNotFoundBase      = errors.New("not found")
-	ErrAlreadyExistsBase = errors.New("alredy exists")
+	ErrAlreadyExistsBase = errors.New("already exists")
 	ErrInvalidFieldsBase = errors.New("not valid fields")
 )
 

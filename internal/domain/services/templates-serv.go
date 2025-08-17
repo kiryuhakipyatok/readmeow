@@ -163,11 +163,24 @@ func (ts *templateServ) FetchFavorite(ctx context.Context, id string) ([]dto.Tem
 		return nil, errs.NewAppError(op, err)
 	}
 	templates := make([]dto.TemplateResponse, 0, len(templs))
+	uids := []string{}
 	for _, t := range templs {
-		user, err := ts.UserRepo.Get(ctx, t.OwnerId.String())
-		if err != nil {
-			log.Log.Error("failed to get template owner", logger.Err(err))
-			return nil, errs.NewAppError(op, err)
+		uids = append(uids, t.OwnerId.String())
+	}
+	users, err := ts.UserRepo.GetByIds(ctx, uids)
+	if err != nil {
+		log.Log.Error("failed to fetch owners", logger.Err(err))
+		return nil, errs.NewAppError(op, err)
+	}
+	userMap := make(map[string]models.User)
+	for _, user := range users {
+		userMap[user.Id.String()] = user
+	}
+
+	for _, t := range templs {
+		owner, ok := userMap[t.OwnerId.String()]
+		if !ok {
+			log.Log.Error("undefind template owner", logger.Err(err))
 		}
 		template := dto.TemplateResponse{
 			Id:             t.Id.String(),
@@ -176,8 +189,8 @@ func (ts *templateServ) FetchFavorite(ctx context.Context, id string) ([]dto.Tem
 			LastUpdateTime: t.LastUpdateTime,
 			NumOfUsers:     t.NumOfUsers,
 			Likes:          t.Likes,
-			OwnerId:        user.Id,
-			OwnerAvatar:    user.Avatar,
+			OwnerId:        owner.Id,
+			OwnerAvatar:    owner.Avatar,
 		}
 		templates = append(templates, template)
 	}
@@ -195,11 +208,23 @@ func (ts *templateServ) Fetch(ctx context.Context, amount, page uint) ([]dto.Tem
 		return nil, errs.NewAppError(op, err)
 	}
 	templates := make([]dto.TemplateResponse, 0, len(templs))
+	uids := []string{}
 	for _, t := range templs {
-		user, err := ts.UserRepo.Get(ctx, t.OwnerId.String())
-		if err != nil {
-			log.Log.Error("failed to get template owner", logger.Err(err))
-			return nil, errs.NewAppError(op, err)
+		uids = append(uids, t.OwnerId.String())
+	}
+	users, err := ts.UserRepo.GetByIds(ctx, uids)
+	if err != nil {
+		log.Log.Error("failed to fetch owners", logger.Err(err))
+		return nil, errs.NewAppError(op, err)
+	}
+	userMap := make(map[string]models.User)
+	for _, user := range users {
+		userMap[user.Id.String()] = user
+	}
+	for _, t := range templs {
+		owner, ok := userMap[t.OwnerId.String()]
+		if !ok {
+			log.Log.Error("undefind template owner", logger.Err(err))
 		}
 		template := dto.TemplateResponse{
 			Id:             t.Id.String(),
@@ -208,8 +233,8 @@ func (ts *templateServ) Fetch(ctx context.Context, amount, page uint) ([]dto.Tem
 			LastUpdateTime: t.LastUpdateTime,
 			NumOfUsers:     t.NumOfUsers,
 			Likes:          t.Likes,
-			OwnerId:        user.Id,
-			OwnerAvatar:    user.Avatar,
+			OwnerId:        owner.Id,
+			OwnerAvatar:    owner.Avatar,
 		}
 		templates = append(templates, template)
 	}
@@ -227,11 +252,24 @@ func (ts *templateServ) Sort(ctx context.Context, amount, page uint, dest, field
 		return nil, errs.NewAppError(op, err)
 	}
 	templates := make([]dto.TemplateResponse, 0, len(templs))
+	uids := []string{}
 	for _, t := range templs {
-		user, err := ts.UserRepo.Get(ctx, t.OwnerId.String())
-		if err != nil {
-			log.Log.Error("failed to get template owner", logger.Err(err))
-			return nil, errs.NewAppError(op, err)
+		uids = append(uids, t.OwnerId.String())
+	}
+	users, err := ts.UserRepo.GetByIds(ctx, uids)
+	if err != nil {
+		log.Log.Error("failed to fetch owners", logger.Err(err))
+		return nil, errs.NewAppError(op, err)
+	}
+	userMap := make(map[string]models.User)
+	for _, user := range users {
+		userMap[user.Id.String()] = user
+	}
+
+	for _, t := range templs {
+		owner, ok := userMap[t.OwnerId.String()]
+		if !ok {
+			log.Log.Error("undefind template owner", logger.Err(err))
 		}
 		template := dto.TemplateResponse{
 			Id:             t.Id.String(),
@@ -240,8 +278,8 @@ func (ts *templateServ) Sort(ctx context.Context, amount, page uint, dest, field
 			LastUpdateTime: t.LastUpdateTime,
 			NumOfUsers:     t.NumOfUsers,
 			Likes:          t.Likes,
-			OwnerId:        user.Id,
-			OwnerAvatar:    user.Avatar,
+			OwnerId:        owner.Id,
+			OwnerAvatar:    owner.Avatar,
 		}
 		templates = append(templates, template)
 	}
@@ -259,11 +297,24 @@ func (ts *templateServ) Search(ctx context.Context, amount, page uint, query str
 		return nil, errs.NewAppError(op, err)
 	}
 	templates := make([]dto.TemplateResponse, 0, len(templs))
+	uids := []string{}
 	for _, t := range templs {
-		user, err := ts.UserRepo.Get(ctx, t.OwnerId.String())
-		if err != nil {
-			log.Log.Error("failed to get template owner", logger.Err(err))
-			return nil, errs.NewAppError(op, err)
+		uids = append(uids, t.OwnerId.String())
+	}
+	users, err := ts.UserRepo.GetByIds(ctx, uids)
+	if err != nil {
+		log.Log.Error("failed to fetch owners", logger.Err(err))
+		return nil, errs.NewAppError(op, err)
+	}
+	userMap := make(map[string]models.User)
+	for _, user := range users {
+		userMap[user.Id.String()] = user
+	}
+
+	for _, t := range templs {
+		owner, ok := userMap[t.OwnerId.String()]
+		if !ok {
+			log.Log.Error("undefind template owner", logger.Err(err))
 		}
 		template := dto.TemplateResponse{
 			Id:             t.Id.String(),
@@ -272,8 +323,8 @@ func (ts *templateServ) Search(ctx context.Context, amount, page uint, query str
 			LastUpdateTime: t.LastUpdateTime,
 			NumOfUsers:     t.NumOfUsers,
 			Likes:          t.Likes,
-			OwnerId:        user.Id,
-			OwnerAvatar:    user.Avatar,
+			OwnerId:        owner.Id,
+			OwnerAvatar:    owner.Avatar,
 		}
 		templates = append(templates, template)
 	}
@@ -289,7 +340,7 @@ func (ts *templateServ) Like(ctx context.Context, id, uid string) error {
 		log.Log.Error("failed to like template", logger.Err(err))
 		return errs.NewAppError(op, err)
 	}
-	log.Log.Info("widget liked successfully")
+	log.Log.Info("template liked successfully")
 	return nil
 }
 
@@ -301,6 +352,6 @@ func (ts *templateServ) Dislike(ctx context.Context, id, uid string) error {
 		log.Log.Error("failed to dislike template", logger.Err(err))
 		return errs.NewAppError(op, err)
 	}
-	log.Log.Info("widget disliked successfully")
+	log.Log.Info("template disliked successfully")
 	return nil
 }

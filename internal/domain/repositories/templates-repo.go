@@ -61,7 +61,7 @@ func (tr *templateRepo) Create(ctx context.Context, template *models.Template) e
 }
 
 func (tr *templateRepo) Update(ctx context.Context, updates map[string]any, id string) error {
-	op := "templdateRepo.Update"
+	op := "templateRepo.Update"
 	validFields := map[string]bool{
 		"title":            true,
 		"text":             true,
@@ -136,6 +136,9 @@ func (tr *templateRepo) Get(ctx context.Context, id string) (*models.Template, e
 	cachedTemplate, err := tr.Cache.Redis.Get(ctx, id).Result()
 	if err == nil {
 		if err := json.Unmarshal([]byte(cachedTemplate), template); err != nil {
+			if err := tr.Cache.Redis.Del(ctx, id).Err(); err != nil {
+				return nil, err
+			}
 			return nil, errs.NewAppError(op, err)
 		}
 		return template, nil
@@ -148,11 +151,15 @@ func (tr *templateRepo) Get(ctx context.Context, id string) (*models.Template, e
 		}
 	}
 	if (template.NumOfUsers >= 20) || template.OwnerId == uuid.Nil {
+		ttl := time.Hour * 24
+		if template.NumOfUsers >= 100 {
+			ttl = time.Hour * 48
+		}
 		cache, err := json.Marshal(template)
 		if err != nil {
 			return nil, errs.NewAppError(op, err)
 		}
-		if err := tr.Cache.Redis.Set(ctx, template.Id.String(), cache, time.Hour*24).Err(); err != nil {
+		if err := tr.Cache.Redis.Set(ctx, template.Id.String(), cache, ttl).Err(); err != nil {
 			return nil, errs.NewAppError(op, err)
 		}
 	}
