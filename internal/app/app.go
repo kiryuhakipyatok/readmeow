@@ -82,7 +82,7 @@ func Run() {
 	readmeHandl := handlers.NewReadmeHandl(readmeServ, authServ, validator)
 	widgetHandl := handlers.NewWidgetHandl(widgetServ, authServ, validator)
 	templateHandl := handlers.NewTemplateHandl(templateServ, authServ, validator)
-	userHandl := handlers.NewUserHandl(userServ, validator)
+	userHandl := handlers.NewUserHandl(userServ, authServ, validator)
 
 	sheduler := sheduler.NewSheduler(widgetRepo, templateRepo, verificationRepo, cfg.Sheduler, cfg.Search, log)
 	sheduler.Start()

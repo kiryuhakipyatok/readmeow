@@ -39,12 +39,10 @@ type UpdateUserRequest struct {
 }
 
 type DeleteUserRequest struct {
-	Id       string `json:"id" validate:"required,uuid"`
 	Password string `json:"password" validate:"required"`
 }
 
 type ChangePasswordRequest struct {
-	Id          string `json:"id" validate:"required,uuid"`
 	OldPasswrod string `json:"old_password" validate:"required"`
 	NewPassword string `json:"new_password" validate:"required"`
 }

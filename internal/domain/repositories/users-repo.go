@@ -16,6 +16,7 @@ type UserRepo interface {
 	GetByLogin(ctx context.Context, login string) (*models.User, error)
 	Update(ctx context.Context, updates map[string]any, id string) error
 	Delete(ctx context.Context, id string) error
+	IdCheck(ctx context.Context, id string) (bool, error)
 	ExistanceCheck(ctx context.Context, login, email, nickname string) (bool, error)
 	ChangePassword(ctx context.Context, id string, password []byte) error
 	GetPassword(ctx context.Context, id string) ([]byte, error)
@@ -65,6 +66,16 @@ func (ur *userRepo) ExistanceCheck(ctx context.Context, login, email, nickname s
 	query := "SELECT 1 FROM users WHERE login = $1 OR email = $2 OR nickname = $3"
 	var res int
 	if err := helpers.QueryRowWithTx(helpers.NewQueryData(ctx, ur.Storage, op, query, login, email, nickname), &res); err != nil {
+		return false, err
+	}
+	return res == 1, nil
+}
+
+func (ur *userRepo) IdCheck(ctx context.Context, id string) (bool, error) {
+	op := "userRepo.IdCheck"
+	query := "SELECT 1 FROM users WHERE id = $1"
+	var res int
+	if err := helpers.QueryRowWithTx(helpers.NewQueryData(ctx, ur.Storage, op, query, id), &res); err != nil {
 		return false, err
 	}
 	return res == 1, nil

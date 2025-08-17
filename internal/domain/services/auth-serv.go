@@ -160,12 +160,19 @@ func (as *authServ) GetId(ctx context.Context, cookie string) (string, error) {
 	}
 	claims := token.Claims.(*jwt.RegisteredClaims)
 	id := claims.Subject
+	exist, err := as.UserRepo.IdCheck(ctx, id)
+	if err != nil {
+		return "", errs.NewAppError(op, err)
+	}
+	if !exist {
+		return "", errs.ErrNotFound(op, err)
+	}
 	log.Log.Info("id received successfully")
 	return id, nil
 }
 
 func (as *authServ) SendVerifyCode(ctx context.Context, email, login, nickname, password string) error {
-	op := "authServ.SenvVerifyCode"
+	op := "authServ.SendVerifyCode"
 	log := as.Logger.AddOp(op)
 	log.Log.Info("sending verify code")
 	if _, err := as.Transactor.WithinTransaction(ctx, func(c context.Context) (any, error) {

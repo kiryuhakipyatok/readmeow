@@ -5,16 +5,18 @@ import (
 	"readmeow/internal/delivery/handlers/helpers"
 	"readmeow/internal/domain/services"
 	"readmeow/pkg/validator"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 )
 
 type UserHandl struct {
 	UserServ  services.UserServ
+	AuthServ  services.AuthServ
 	Validator *validator.Validator
 }
 
-func NewUserHandl(us services.UserServ, v *validator.Validator) *UserHandl {
+func NewUserHandl(us services.UserServ, as services.AuthServ, v *validator.Validator) *UserHandl {
 	return &UserHandl{
 		UserServ:  us,
 		Validator: v,
@@ -52,9 +54,24 @@ func (uh *UserHandl) Delete(c *fiber.Ctx) error {
 	if err := helpers.ParseAndValidateRequest(c, &req, helpers.Body{}, uh.Validator); err != nil {
 		return err
 	}
-	if err := uh.UserServ.Delete(ctx, req.Id, req.Password); err != nil {
+	cookie := c.Cookies("jwt")
+	id, err := uh.AuthServ.GetId(ctx, cookie)
+	if err != nil {
 		return helpers.ToApiError(err)
 	}
+	if err := uh.UserServ.Delete(ctx, id, req.Password); err != nil {
+		return helpers.ToApiError(err)
+	}
+	newCookie := &fiber.Cookie{
+		Name:     "jwt",
+		Value:    "",
+		HTTPOnly: true,
+		Expires:  time.Now().Add(-time.Hour),
+		MaxAge:   -1,
+		Path:     "/",
+		SameSite: "Lax",
+	}
+	c.Cookie(newCookie)
 	return helpers.SuccessResponse(c)
 }
 
@@ -64,7 +81,12 @@ func (uh *UserHandl) ChangeUserPassword(c *fiber.Ctx) error {
 	if err := helpers.ParseAndValidateRequest(c, &req, helpers.Body{}, uh.Validator); err != nil {
 		return err
 	}
-	if err := uh.UserServ.ChangePassword(ctx, req.Id, req.OldPasswrod, req.NewPassword); err != nil {
+	cookie := c.Cookies("jwt")
+	id, err := uh.AuthServ.GetId(ctx, cookie)
+	if err != nil {
+		return helpers.ToApiError(err)
+	}
+	if err := uh.UserServ.ChangePassword(ctx, id, req.OldPasswrod, req.NewPassword); err != nil {
 		return helpers.ToApiError(err)
 	}
 	return helpers.SuccessResponse(c)
