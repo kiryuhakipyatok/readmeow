@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"readmeow/internal/config"
 	"readmeow/internal/domain/models"
@@ -27,7 +28,7 @@ type WidgetRepo interface {
 	Search(ctx context.Context, amount, page uint, query string) ([]models.Widget, error)
 	Like(ctx context.Context, uid, id string) error
 	Dislike(ctx context.Context, uid, id string) error
-	FetchFavorite(ctx context.Context, id string) ([]string, error)
+	FetchFavorite(ctx context.Context, id string) ([]models.Widget, error)
 	GetByIds(ctx context.Context, ids []string) ([]models.Widget, error)
 	Update(ctx context.Context, updates map[string]any, id string) error
 	MustBulk(ctx context.Context, cfg config.SearchConfig) error
@@ -79,6 +80,9 @@ func (wr *widgetRepo) Fetch(ctx context.Context, amount, page uint) ([]models.Wi
 	query := "SELECT w.*, COUNT(fw.widget_id) as likes FROM widgets w LEFT JOIN favorite_widgets fw ON w.id=fw.widget_id GROUP BY w.id ORDER BY likes DESC OFFSET $1 LIMIT $2"
 	rows, err := wr.Storage.Pool.Query(ctx, query, amount*page-amount, amount)
 	if err != nil {
+		if errors.Is(err, storage.ErrNotFound()) {
+			return nil, errs.ErrNotFound(op, err)
+		}
 		return nil, errs.NewAppError(op, err)
 	}
 	defer rows.Close()
@@ -100,32 +104,39 @@ func (wr *widgetRepo) Fetch(ctx context.Context, amount, page uint) ([]models.Wi
 		}
 		widgets = append(widgets, widget)
 	}
-	if len(widgets) == 0 {
-		return nil, errs.ErrNotFound(op, err)
-	}
 	return widgets, nil
 }
 
-func (wr *widgetRepo) FetchFavorite(ctx context.Context, id string) ([]string, error) {
+func (wr *widgetRepo) FetchFavorite(ctx context.Context, id string) ([]models.Widget, error) {
 	op := "widgetRepo.FetchFavorite"
-	query := "SELECT widget_id FROM favorite_widgets WHERE user_id=$1"
-	wids := []string{}
+	query := "SELECT w.* FROM widgets w JOIN favorite_widgets fw ON w.id=fw.widget_id WHERE fw.user_id=$1"
+	widgets := []models.Widget{}
 	rows, err := wr.Storage.Pool.Query(ctx, query, id)
 	if err != nil {
+		if errors.Is(err, storage.ErrNotFound()) {
+			return nil, errs.ErrNotFound(op, err)
+		}
 		return nil, errs.NewAppError(op, err)
 	}
 	defer rows.Close()
 	for rows.Next() {
-		var wid string
-		if err := rows.Scan(&wid); err != nil {
+		widget := models.Widget{}
+		if err := rows.Scan(
+			&widget.Id,
+			&widget.Title,
+			&widget.Image,
+			&widget.Description,
+			&widget.Type,
+			&widget.Link,
+			&widget.NumOfUsers,
+			&widget.Tags,
+			&widget.Likes,
+		); err != nil {
 			return nil, errs.NewAppError(op, err)
 		}
-		wids = append(wids, wid)
+		widgets = append(widgets, widget)
 	}
-	if len(wids) == 0 {
-		return nil, errs.ErrNotFound(op, err)
-	}
-	return wids, nil
+	return widgets, nil
 }
 
 func (wr *widgetRepo) Like(ctx context.Context, uid, id string) error {
@@ -161,6 +172,9 @@ func (wr *widgetRepo) Sort(ctx context.Context, amount, page uint, field, dest s
 	query := fmt.Sprintf("SELECT w.*, COUNT(fw.widget_id) as likes FROM widgets w LEFT JOIN favorite_widgets fw ON w.id=fw.widget_id GROUP BY w.id ORDER BY %s %s OFFSET $1 LIMIT $2", field, dest)
 	rows, err := wr.Storage.Pool.Query(ctx, query, amount*page-amount, amount)
 	if err != nil {
+		if errors.Is(err, storage.ErrNotFound()) {
+			return nil, errs.ErrNotFound(op, err)
+		}
 		return nil, errs.NewAppError(op, err)
 	}
 	defer rows.Close()
@@ -181,9 +195,6 @@ func (wr *widgetRepo) Sort(ctx context.Context, amount, page uint, field, dest s
 			return nil, errs.NewAppError(op, err)
 		}
 		widgets = append(widgets, widget)
-	}
-	if len(widgets) == 0 {
-		return nil, errs.ErrNotFound(op, nil)
 	}
 	return widgets, nil
 }
@@ -229,6 +240,9 @@ func (wr *widgetRepo) GetByIds(ctx context.Context, ids []string) ([]models.Widg
 	if tx, ok := storage.GetTx(ctx); ok {
 		rows, err := tx.Query(ctx, query, ids)
 		if err != nil {
+			if errors.Is(err, storage.ErrNotFound()) {
+				return nil, errs.ErrNotFound(op, err)
+			}
 			return nil, errs.NewAppError(op, err)
 		}
 		defer rows.Close()
@@ -279,9 +293,6 @@ func (wr *widgetRepo) GetByIds(ctx context.Context, ids []string) ([]models.Widg
 			widgets = append(widgets, w)
 		}
 	}
-	if len(widgets) == 0 {
-		return nil, errs.ErrNotFound(op, nil)
-	}
 	return widgets, nil
 }
 
@@ -291,6 +302,9 @@ func (wr *widgetRepo) getAll(ctx context.Context) ([]models.Widget, error) {
 	widgets := []models.Widget{}
 	rows, err := wr.Storage.Pool.Query(ctx, query)
 	if err != nil {
+		if errors.Is(err, storage.ErrNotFound()) {
+			return nil, errs.ErrNotFound(op, err)
+		}
 		return nil, errs.NewAppError(op, err)
 	}
 	defer rows.Close()
@@ -306,9 +320,6 @@ func (wr *widgetRepo) getAll(ctx context.Context) ([]models.Widget, error) {
 			return nil, errs.NewAppError(op, err)
 		}
 		widgets = append(widgets, widget)
-	}
-	if len(widgets) == 0 {
-		return nil, errs.ErrNotFound(op, nil)
 	}
 	return widgets, nil
 }

@@ -149,12 +149,7 @@ func (ws *widgetServ) FetchFavorite(ctx context.Context, id string) ([]dto.Widge
 	op := "widgetServ.FetchFavorite"
 	log := ws.Logger.AddOp(op)
 	log.Log.Info("fetching favorite widgets")
-	fid, err := ws.WidgetRepo.FetchFavorite(ctx, id)
-	if err != nil {
-		log.Log.Error("failed to fetch favorite widgets ids", logger.Err(err))
-		return nil, errs.NewAppError(op, err)
-	}
-	wids, err := ws.WidgetRepo.GetByIds(ctx, fid)
+	wids, err := ws.WidgetRepo.FetchFavorite(ctx, id)
 	if err != nil {
 		log.Log.Error("failed to fetch favorite widgets", logger.Err(err))
 		return nil, errs.NewAppError(op, err)
@@ -171,6 +166,6 @@ func (ws *widgetServ) FetchFavorite(ctx context.Context, id string) ([]dto.Widge
 		}
 		widgets = append(widgets, widget)
 	}
-	log.Log.Info("widget disliked successfully")
+	log.Log.Info("favorites widgets fecthed successfully")
 	return widgets, nil
 }

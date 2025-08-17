@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"readmeow/internal/domain/models"
 	"readmeow/internal/domain/repositories/helpers"
@@ -102,6 +103,9 @@ func (rr *readmeRepo) FetchByUser(ctx context.Context, amount, page uint, uid st
 	query := "SELECT * FROM readmes WHERE owner_id = $1 OFFSET $2 LIMIT $3"
 	rows, err := rr.Storage.Pool.Query(ctx, query, uid, amount*page-amount, amount)
 	if err != nil {
+		if errors.Is(err, storage.ErrNotFound()) {
+			return nil, errs.ErrNotFound(op, err)
+		}
 		return nil, errs.NewAppError(op, err)
 	}
 	defer rows.Close()
@@ -124,9 +128,6 @@ func (rr *readmeRepo) FetchByUser(ctx context.Context, amount, page uint, uid st
 			return nil, errs.NewAppError(op, err)
 		}
 		readmes = append(readmes, readme)
-	}
-	if len(readmes) == 0 {
-		return nil, errs.ErrNotFound(op, err)
 	}
 	return readmes, nil
 }

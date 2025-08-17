@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"fmt"
 	"readmeow/internal/delivery/dto"
 	"readmeow/internal/domain/models"
 	"readmeow/internal/domain/repositories"
@@ -76,7 +75,6 @@ func (ts *templateServ) Create(ctx context.Context, oid, title, image, descripti
 				keys = append(keys, k)
 			}
 		}
-		fmt.Println(keys)
 		if len(widgets) != 0 {
 			widgetsData, err := ts.WidgetRepo.GetByIds(c, keys)
 			if err != nil {
@@ -159,14 +157,9 @@ func (ts *templateServ) FetchFavorite(ctx context.Context, id string) ([]dto.Tem
 	op := "templateServ.FetchFavorite"
 	log := ts.Logger.AddOp(op)
 	log.Log.Info("fetching favorite templates")
-	fid, err := ts.TemplateRepo.FetchFavorite(ctx, id)
+	templs, err := ts.TemplateRepo.FetchFavorite(ctx, id)
 	if err != nil {
-		log.Log.Error("failed to fetch favorite templates ids", logger.Err(err))
-		return nil, errs.NewAppError(op, err)
-	}
-	templs, err := ts.TemplateRepo.GetByIds(ctx, fid)
-	if err != nil {
-		log.Log.Error("failed to fetch favorite tempaltes", logger.Err(err))
+		log.Log.Error("failed to fetch favorite templates", logger.Err(err))
 		return nil, errs.NewAppError(op, err)
 	}
 	templates := make([]dto.TemplateResponse, 0, len(templs))

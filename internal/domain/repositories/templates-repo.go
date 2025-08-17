@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"readmeow/internal/config"
 	"readmeow/internal/domain/models"
@@ -29,9 +30,8 @@ type TemplateRepo interface {
 	Fetch(ctx context.Context, amount, page uint) ([]models.Template, error)
 	Like(ctx context.Context, id, uid string) error
 	Dislike(ctx context.Context, id, uid string) error
-	FetchFavorite(ctx context.Context, id string) ([]string, error)
+	FetchFavorite(ctx context.Context, id string) ([]models.Template, error)
 	Sort(ctx context.Context, amount, page uint, dest, field string) ([]models.Template, error)
-	GetByIds(ctx context.Context, ids []string) ([]models.Template, error)
 	Search(ctx context.Context, amount, page uint, query string) ([]models.Template, error)
 	MustBulk(ctx context.Context, cfg config.SearchConfig) error
 }
@@ -154,34 +154,15 @@ func (tr *templateRepo) Get(ctx context.Context, id string) (*models.Template, e
 	return template, nil
 }
 
-func (tr *templateRepo) FetchFavorite(ctx context.Context, id string) ([]string, error) {
+func (tr *templateRepo) FetchFavorite(ctx context.Context, id string) ([]models.Template, error) {
 	op := "templateRepo.FetchFavorite"
-	query := "SELECT template_id FROM favorite_templates WHERE user_id=$1"
-	tids := []string{}
+	query := "SELECT t.* FROM templates t JOIN favorite_templates ft ON w.id=ft.template_id WHERE ft.user_id=$1"
+	templates := []models.Template{}
 	rows, err := tr.Storage.Pool.Query(ctx, query, id)
 	if err != nil {
-		return nil, errs.NewAppError(op, err)
-	}
-	defer rows.Close()
-	for rows.Next() {
-		var tid string
-		if err := rows.Scan(&tid); err != nil {
-			return nil, errs.NewAppError(op, err)
+		if errors.Is(err, storage.ErrNotFound()) {
+			return nil, errs.ErrNotFound(op, err)
 		}
-		tids = append(tids, tid)
-	}
-	if len(tids) == 0 {
-		return nil, errs.ErrNotFound(op, nil)
-	}
-	return tids, nil
-}
-
-func (tr *templateRepo) Fetch(ctx context.Context, amount, page uint) ([]models.Template, error) {
-	op := "templateRepo.Fetch"
-	query := "SELECT t.*, COUNT(ft.template_id) AS likes FROM templates t LEFT JOIN favorite_templates ft ON ft.template_id=t.id GROUP BY t.id ORDER BY likes DESC OFFSET $1 LIMIT $2"
-	templates := []models.Template{}
-	rows, err := tr.Storage.Pool.Query(ctx, query, amount*page-amount, amount)
-	if err != nil {
 		return nil, errs.NewAppError(op, err)
 	}
 	defer rows.Close()
@@ -206,8 +187,41 @@ func (tr *templateRepo) Fetch(ctx context.Context, amount, page uint) ([]models.
 		}
 		templates = append(templates, template)
 	}
-	if len(templates) == 0 {
-		return nil, errs.ErrNotFound(op, nil)
+	return templates, nil
+}
+
+func (tr *templateRepo) Fetch(ctx context.Context, amount, page uint) ([]models.Template, error) {
+	op := "templateRepo.Fetch"
+	query := "SELECT t.*, COUNT(ft.template_id) AS likes FROM templates t LEFT JOIN favorite_templates ft ON ft.template_id=t.id GROUP BY t.id ORDER BY likes DESC OFFSET $1 LIMIT $2"
+	templates := []models.Template{}
+	rows, err := tr.Storage.Pool.Query(ctx, query, amount*page-amount, amount)
+	if err != nil {
+		if errors.Is(err, storage.ErrNotFound()) {
+			return nil, errs.ErrNotFound(op, err)
+		}
+		return nil, errs.NewAppError(op, err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		template := models.Template{}
+		if err := rows.Scan(
+			&template.Id,
+			&template.OwnerId,
+			&template.Title,
+			&template.Image,
+			&template.Description,
+			&template.Text,
+			&template.Links,
+			&template.Order,
+			&template.CreateTime,
+			&template.LastUpdateTime,
+			&template.NumOfUsers,
+			&template.Widgets,
+			&template.Likes,
+		); err != nil {
+			return nil, errs.NewAppError(op, err)
+		}
+		templates = append(templates, template)
 	}
 	return templates, nil
 }
@@ -228,6 +242,9 @@ func (tr *templateRepo) Sort(ctx context.Context, amount, page uint, dest, field
 	query := fmt.Sprintf("SELECT t.*, COUNT(ft.template_id) AS likes FROM templates t LEFT JOIN favorite_templates ft ON ft.template_id=t.id GROUP BY t.id ORDER BY %s %s OFFSET $1 LIMIT $2", field, dest)
 	rows, err := tr.Storage.Pool.Query(ctx, query, amount*page-amount, amount)
 	if err != nil {
+		if errors.Is(err, storage.ErrNotFound()) {
+			return nil, errs.ErrNotFound(op, err)
+		}
 		return nil, errs.NewAppError(op, err)
 	}
 	defer rows.Close()
@@ -251,9 +268,6 @@ func (tr *templateRepo) Sort(ctx context.Context, amount, page uint, dest, field
 			return nil, errs.NewAppError(op, err)
 		}
 		templates = append(templates, template)
-	}
-	if len(templates) == 0 {
-		return nil, errs.ErrNotFound(op, nil)
 	}
 	return templates, nil
 }
@@ -290,7 +304,7 @@ func (tr *templateRepo) Search(ctx context.Context, amount, page uint, query str
 	if len(ids) == 0 {
 		return nil, errs.ErrNotFound(op, nil)
 	}
-	templates, err := tr.GetByIds(ctx, ids)
+	templates, err := tr.getByIds(ctx, ids)
 	if err != nil {
 		return nil, errs.NewAppError(op, err)
 	}
@@ -298,13 +312,16 @@ func (tr *templateRepo) Search(ctx context.Context, amount, page uint, query str
 	return templates, nil
 }
 
-func (tr *templateRepo) GetByIds(ctx context.Context, ids []string) ([]models.Template, error) {
+func (tr *templateRepo) getByIds(ctx context.Context, ids []string) ([]models.Template, error) {
 	fmt.Println(ids)
 	op := "templateRepo.SearchPreparing.GetByIds"
 	query := "SELECT t.*, COUNT(ft.template_id) AS likes FROM templates t LEFT JOIN favorite_templates ft ON ft.template_id=t.id WHERE t.id = ANY($1) GROUP BY t.id"
 	templates := make([]models.Template, 0, len(ids))
 	rows, err := tr.Storage.Pool.Query(ctx, query, ids)
 	if err != nil {
+		if errors.Is(err, storage.ErrNotFound()) {
+			return nil, errs.ErrNotFound(op, err)
+		}
 		return nil, errs.NewAppError(op, err)
 	}
 	defer rows.Close()
@@ -335,9 +352,6 @@ func (tr *templateRepo) GetByIds(ctx context.Context, ids []string) ([]models.Te
 			templates = append(templates, t)
 		}
 	}
-	if len(templates) == 0 {
-		return nil, errs.ErrNotFound(op, nil)
-	}
 	return templates, nil
 }
 
@@ -347,6 +361,9 @@ func (tr *templateRepo) getAll(ctx context.Context) ([]models.Template, error) {
 	templates := []models.Template{}
 	rows, err := tr.Storage.Pool.Query(ctx, query)
 	if err != nil {
+		if errors.Is(err, storage.ErrNotFound()) {
+			return nil, errs.ErrNotFound(op, err)
+		}
 		return nil, errs.NewAppError(op, err)
 	}
 	defer rows.Close()
@@ -361,9 +378,6 @@ func (tr *templateRepo) getAll(ctx context.Context) ([]models.Template, error) {
 			return nil, errs.NewAppError(op, err)
 		}
 		templates = append(templates, template)
-	}
-	if len(templates) == 0 {
-		return nil, errs.ErrNotFound(op, nil)
 	}
 	return templates, nil
 }

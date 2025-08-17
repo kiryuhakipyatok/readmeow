@@ -22,7 +22,9 @@ type Sheduler struct {
 }
 
 func NewSheduler(wr repositories.WidgetRepo, tr repositories.TemplateRepo, vr repositories.VerificationRepo, shcfg config.ShedulerConfig, scfg config.SearchConfig, l *logger.Logger) *Sheduler {
-	cr := cron.New()
+	cr := cron.New(cron.WithChain(
+		cron.SkipIfStillRunning(cron.DefaultLogger),
+	))
 	return &Sheduler{
 		Cron:             cr,
 		WidgetRepo:       wr,
