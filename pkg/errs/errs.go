@@ -35,10 +35,10 @@ func ErrAlreadyExists(op string, err error) AppError {
 	return NewAppError(op, fmt.Errorf("%w : %w", ErrAlreadyExistsBase, err))
 }
 
-func ErrNotFound(op string, err error) AppError {
-	return NewAppError(op, fmt.Errorf("%w : %w", ErrNotFoundBase, err))
+func ErrNotFound(op string) AppError {
+	return NewAppError(op, fmt.Errorf("%w", ErrNotFoundBase))
 }
 
-func ErrInvalidFields(op string, err error) AppError {
-	return NewAppError(op, fmt.Errorf("%w : %w", ErrInvalidFieldsBase, err))
+func ErrInvalidFields(op string) AppError {
+	return NewAppError(op, fmt.Errorf("%w", ErrInvalidFieldsBase))
 }

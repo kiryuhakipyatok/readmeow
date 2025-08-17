@@ -53,7 +53,8 @@ func NewTemplateRepo(s *storage.Storage, c *cache.Cache, sc *search.SearchClient
 func (tr *templateRepo) Create(ctx context.Context, template *models.Template) error {
 	op := "templateRepo.Create"
 	query := "INSERT INTO templates (id, owner_id, title, image,description, text, links, widgets,num_of_users, render_order, create_time, last_update_time) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)"
-	if err := helpers.InsertWithTx(helpers.NewQueryData(ctx, tr.Storage, op, query, template.Id, template.OwnerId, template.Title, template.Image, template.Description, template.Text, template.Links, template.Widgets, template.NumOfUsers, template.Order, template.CreateTime, template.LastUpdateTime)); err != nil {
+	qd := helpers.NewQueryData(ctx, tr.Storage, op, query, template.Id, template.OwnerId, template.Title, template.Image, template.Description, template.Text, template.Links, template.Widgets, template.NumOfUsers, template.Order, template.CreateTime, template.LastUpdateTime)
+	if err := qd.InsertWithTx(); err != nil {
 		return err
 	}
 	return nil
@@ -75,7 +76,7 @@ func (tr *templateRepo) Update(ctx context.Context, updates map[string]any, id s
 	i := 1
 	for k, v := range updates {
 		if !validFields[k] {
-			return errs.ErrInvalidFields(op, nil)
+			return errs.ErrInvalidFields(op)
 		}
 		str = append(str, fmt.Sprintf(" %s = $%d", k, i))
 		args = append(args, v)
@@ -83,7 +84,8 @@ func (tr *templateRepo) Update(ctx context.Context, updates map[string]any, id s
 	}
 	args = append(args, id)
 	query := fmt.Sprintf("UPDATE templates SET %s WHERE id = $%d", strings.Join(str, ","), i)
-	if err := helpers.DeleteOrUpdateWithTx(helpers.NewQueryData(ctx, tr.Storage, op, query, args...)); err != nil {
+	qd := helpers.NewQueryData(ctx, tr.Storage, op, query, args...)
+	if err := qd.DeleteOrUpdateWithTx(); err != nil {
 		return err
 	}
 	if err := tr.Cache.Redis.Del(ctx, id).Err(); err != nil {
@@ -95,7 +97,8 @@ func (tr *templateRepo) Update(ctx context.Context, updates map[string]any, id s
 func (tr *templateRepo) Like(ctx context.Context, id, uid string) error {
 	op := "templateRepo.Like"
 	query := "INSERT INTO favorite_templates (template_id, user_id) VALUES ($1,$2)"
-	if err := helpers.InsertWithTx(helpers.NewQueryData(ctx, tr.Storage, op, query, id, uid)); err != nil {
+	qd := helpers.NewQueryData(ctx, tr.Storage, op, query, id, uid)
+	if err := qd.InsertWithTx(); err != nil {
 		return err
 	}
 	return nil
@@ -104,7 +107,8 @@ func (tr *templateRepo) Like(ctx context.Context, id, uid string) error {
 func (tr *templateRepo) Dislike(ctx context.Context, id, uid string) error {
 	op := "templateRepo.Dislike"
 	query := "DELETE FROM favorite_templates WHERE (template_id, user_id) = ($1,$2)"
-	if err := helpers.DeleteOrUpdateWithTx(helpers.NewQueryData(ctx, tr.Storage, op, query, id, uid)); err != nil {
+	qd := helpers.NewQueryData(ctx, tr.Storage, op, query, id, uid)
+	if err := qd.DeleteOrUpdateWithTx(); err != nil {
 		return err
 	}
 	return nil
@@ -118,7 +122,7 @@ func (tr *templateRepo) Delete(ctx context.Context, id string) error {
 		return errs.NewAppError(op, err)
 	}
 	if res.RowsAffected() == 0 {
-		return errs.ErrNotFound(op, nil)
+		return errs.ErrNotFound(op)
 	}
 	if err := tr.Cache.Redis.Del(ctx, id).Err(); err != nil {
 		return errs.NewAppError(op, err)
@@ -138,7 +142,8 @@ func (tr *templateRepo) Get(ctx context.Context, id string) (*models.Template, e
 	}
 	if err == cache.EMPTY {
 		query := "SELECT t.*, COUNT(ft.template_id) AS likes FROM templates t LEFT JOIN favorite_templates ft ON ft.template_id=t.id WHERE id = $1 GROUP BY t.id"
-		if err := helpers.QueryRowWithTx(helpers.NewQueryData(ctx, tr.Storage, op, query, id), template); err != nil {
+		qd := helpers.NewQueryData(ctx, tr.Storage, op, query, id)
+		if err := qd.QueryRowWithTx(template); err != nil {
 			return nil, err
 		}
 	}
@@ -156,12 +161,12 @@ func (tr *templateRepo) Get(ctx context.Context, id string) (*models.Template, e
 
 func (tr *templateRepo) FetchFavorite(ctx context.Context, id string) ([]models.Template, error) {
 	op := "templateRepo.FetchFavorite"
-	query := "SELECT t.* FROM templates t JOIN favorite_templates ft ON w.id=ft.template_id WHERE ft.user_id=$1"
+	query := "SELECT t.*, COUNT(ft.template_id) as likes FROM templates t JOIN favorite_templates ft ON t.id=ft.template_id WHERE ft.user_id=$1 GROUP BY t.id"
 	templates := []models.Template{}
 	rows, err := tr.Storage.Pool.Query(ctx, query, id)
 	if err != nil {
 		if errors.Is(err, storage.ErrNotFound()) {
-			return nil, errs.ErrNotFound(op, err)
+			return nil, errs.ErrNotFound(op)
 		}
 		return nil, errs.NewAppError(op, err)
 	}
@@ -197,7 +202,7 @@ func (tr *templateRepo) Fetch(ctx context.Context, amount, page uint) ([]models.
 	rows, err := tr.Storage.Pool.Query(ctx, query, amount*page-amount, amount)
 	if err != nil {
 		if errors.Is(err, storage.ErrNotFound()) {
-			return nil, errs.ErrNotFound(op, err)
+			return nil, errs.ErrNotFound(op)
 		}
 		return nil, errs.NewAppError(op, err)
 	}
@@ -233,7 +238,7 @@ func (tr *templateRepo) Sort(ctx context.Context, amount, page uint, dest, field
 		"create_time":  true,
 	}
 	if !validFields[field] {
-		return nil, errs.ErrInvalidFields(op, nil)
+		return nil, errs.ErrInvalidFields(op)
 	}
 	if dest != "ASC" && dest != "DESC" {
 		dest = "DESC"
@@ -243,7 +248,7 @@ func (tr *templateRepo) Sort(ctx context.Context, amount, page uint, dest, field
 	rows, err := tr.Storage.Pool.Query(ctx, query, amount*page-amount, amount)
 	if err != nil {
 		if errors.Is(err, storage.ErrNotFound()) {
-			return nil, errs.ErrNotFound(op, err)
+			return nil, errs.ErrNotFound(op)
 		}
 		return nil, errs.NewAppError(op, err)
 	}
@@ -302,7 +307,7 @@ func (tr *templateRepo) Search(ctx context.Context, amount, page uint, query str
 		}
 	}
 	if len(ids) == 0 {
-		return nil, errs.ErrNotFound(op, nil)
+		return nil, errs.ErrNotFound(op)
 	}
 	templates, err := tr.getByIds(ctx, ids)
 	if err != nil {
@@ -320,7 +325,7 @@ func (tr *templateRepo) getByIds(ctx context.Context, ids []string) ([]models.Te
 	rows, err := tr.Storage.Pool.Query(ctx, query, ids)
 	if err != nil {
 		if errors.Is(err, storage.ErrNotFound()) {
-			return nil, errs.ErrNotFound(op, err)
+			return nil, errs.ErrNotFound(op)
 		}
 		return nil, errs.NewAppError(op, err)
 	}
@@ -362,7 +367,7 @@ func (tr *templateRepo) getAll(ctx context.Context) ([]models.Template, error) {
 	rows, err := tr.Storage.Pool.Query(ctx, query)
 	if err != nil {
 		if errors.Is(err, storage.ErrNotFound()) {
-			return nil, errs.ErrNotFound(op, err)
+			return nil, errs.ErrNotFound(op)
 		}
 		return nil, errs.NewAppError(op, err)
 	}

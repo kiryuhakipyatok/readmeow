@@ -165,7 +165,7 @@ func (as *authServ) GetId(ctx context.Context, cookie string) (string, error) {
 		return "", errs.NewAppError(op, err)
 	}
 	if !exist {
-		return "", errs.ErrNotFound(op, err)
+		return "", errs.ErrNotFound(op)
 	}
 	log.Log.Info("id received successfully")
 	return id, nil

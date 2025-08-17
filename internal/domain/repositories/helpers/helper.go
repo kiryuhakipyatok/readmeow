@@ -26,7 +26,7 @@ func NewQueryData(ctx context.Context, s *storage.Storage, op string, query stri
 	}
 }
 
-func InsertWithTx(qd QueryData) error {
+func (qd QueryData) InsertWithTx() error {
 	if tx, ok := storage.GetTx(qd.Ctx); ok {
 		if _, err := tx.Exec(qd.Ctx, qd.Query, qd.Args...); err != nil {
 			if storage.ErrorAlreadyExists(err) {
@@ -45,14 +45,14 @@ func InsertWithTx(qd QueryData) error {
 	return nil
 }
 
-func DeleteOrUpdateWithTx(qd QueryData) error {
+func (qd QueryData) DeleteOrUpdateWithTx() error {
 	if tx, ok := storage.GetTx(qd.Ctx); ok {
 		res, err := tx.Exec(qd.Ctx, qd.Query, qd.Args...)
 		if err != nil {
 			return errs.NewAppError(qd.Operation, err)
 		}
 		if res.RowsAffected() == 0 {
-			return errs.ErrNotFound(qd.Operation, err)
+			return errs.ErrNotFound(qd.Operation)
 		}
 		return nil
 	}
@@ -61,16 +61,16 @@ func DeleteOrUpdateWithTx(qd QueryData) error {
 		return errs.NewAppError(qd.Operation, err)
 	}
 	if res.RowsAffected() == 0 {
-		return errs.ErrNotFound(qd.Operation, err)
+		return errs.ErrNotFound(qd.Operation)
 	}
 	return nil
 }
 
-func queryRow(qd QueryData, data ...any) error {
+func (qd QueryData) queryRow(data ...any) error {
 	if tx, ok := storage.GetTx(qd.Ctx); ok {
 		if err := tx.QueryRow(qd.Ctx, qd.Query, qd.Args...).Scan(data...); err != nil {
 			if errors.Is(err, storage.ErrNotFound()) {
-				return errs.ErrNotFound(qd.Operation, err)
+				return errs.ErrNotFound(qd.Operation)
 			}
 			return errs.NewAppError(qd.Operation, err)
 		}
@@ -78,14 +78,14 @@ func queryRow(qd QueryData, data ...any) error {
 	}
 	if err := qd.Storage.Pool.QueryRow(qd.Ctx, qd.Query, qd.Args...).Scan(data...); err != nil {
 		if errors.Is(err, storage.ErrNotFound()) {
-			return errs.ErrNotFound(qd.Operation, err)
+			return errs.ErrNotFound(qd.Operation)
 		}
 		return errs.NewAppError(qd.Operation, err)
 	}
 	return nil
 }
 
-func QueryRowWithTx(qd QueryData, entity any) error {
+func (qd QueryData) QueryRowWithTx(entity any) error {
 	switch e := entity.(type) {
 	case *models.User:
 		userData := []any{
@@ -97,7 +97,7 @@ func QueryRowWithTx(qd QueryData, entity any) error {
 			&e.NumOfTemplates,
 			&e.NumOfReadmes,
 		}
-		if err := queryRow(qd, userData...); err != nil {
+		if err := qd.queryRow(userData...); err != nil {
 			return err
 		}
 		return nil
@@ -115,7 +115,7 @@ func QueryRowWithTx(qd QueryData, entity any) error {
 			&e.LastUpdateTime,
 			&e.Widgets,
 		}
-		if err := queryRow(qd, readmeData...); err != nil {
+		if err := qd.queryRow(readmeData...); err != nil {
 			return err
 		}
 		return nil
@@ -135,7 +135,7 @@ func QueryRowWithTx(qd QueryData, entity any) error {
 			&e.Widgets,
 			&e.Likes,
 		}
-		if err := queryRow(qd, templateData...); err != nil {
+		if err := qd.queryRow(templateData...); err != nil {
 			return err
 		}
 		return nil
@@ -151,7 +151,7 @@ func QueryRowWithTx(qd QueryData, entity any) error {
 			&e.Tags,
 			&e.Likes,
 		}
-		if err := queryRow(qd, widgetData...); err != nil {
+		if err := qd.queryRow(widgetData...); err != nil {
 			return err
 		}
 		return nil
@@ -162,17 +162,17 @@ func QueryRowWithTx(qd QueryData, entity any) error {
 			&e.Nickname,
 			&e.Password,
 		}
-		if err := queryRow(qd, credentialsData...); err != nil {
+		if err := qd.queryRow(credentialsData...); err != nil {
 			return err
 		}
 		return nil
 	case *int:
-		if err := queryRow(qd, e); err != nil {
+		if err := qd.queryRow(e); err != nil {
 			return err
 		}
 		return nil
 	case []byte:
-		if err := queryRow(qd, e); err != nil {
+		if err := qd.queryRow(e); err != nil {
 			return err
 		}
 		return nil

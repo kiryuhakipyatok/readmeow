@@ -45,8 +45,9 @@ func (s *Sheduler) Start() {
 		log.Log.Info("cleaning expired verify codes")
 		if err := s.VerificationRepo.DeleteExpired(ctx); err != nil {
 			log.Log.Error("failed to delete expired verify codes", logger.Err(err))
+		} else {
+			log.Log.Info("expired verify codes cleaned successfully")
 		}
-		log.Log.Info("expired verify codes cleaned successfully")
 	}); err != nil {
 		panic(fmt.Errorf("failed to start CleanExpiredVerifyCodes sheduler: %w", err))
 	}
@@ -58,8 +59,9 @@ func (s *Sheduler) Start() {
 		log.Log.Info("bulking widgets data")
 		if err := s.WidgetRepo.MustBulk(ctx, s.SearchConfig); err != nil {
 			log.Log.Error("failed to bulk widgets", logger.Err(err))
+		} else {
+			log.Log.Info("widgets data bulked successfully")
 		}
-		log.Log.Info("widgets data bulked successfully")
 	}); err != nil {
 		panic(fmt.Errorf("failed to start BulkWidgetsData sheduler: %w", err))
 	}
@@ -71,8 +73,9 @@ func (s *Sheduler) Start() {
 		log.Log.Info("bulking templates data")
 		if err := s.TemplateRepo.MustBulk(ctx, s.SearchConfig); err != nil {
 			log.Log.Error("failed to bulk templates", logger.Err(err))
+		} else {
+			log.Log.Info("templates data bulked successfully")
 		}
-		log.Log.Info("templates data bulked successfully")
 	}); err != nil {
 		panic(fmt.Errorf("failed to start BulkWidgetsTemplates"))
 	}

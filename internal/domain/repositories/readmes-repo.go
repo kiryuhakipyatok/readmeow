@@ -40,7 +40,8 @@ func (rr *readmeRepo) Create(ctx context.Context, readme *models.Readme) error {
 		tId = readme.TemplateId
 	}
 	query := "INSERT INTO readmes (id, owner_id, template_id, image, title, text, links, widgets, render_order, create_time, last_update_time) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)"
-	if err := helpers.InsertWithTx(helpers.NewQueryData(ctx, rr.Storage, op, query, readme.Id, readme.OwnerId, tId, readme.Title, readme.Image, readme.Text, readme.Links, readme.Widgets, readme.Order, readme.CreateTime, readme.LastUpdateTime)); err != nil {
+	qd := helpers.NewQueryData(ctx, rr.Storage, op, query, readme.Id, readme.OwnerId, tId, readme.Title, readme.Image, readme.Text, readme.Links, readme.Widgets, readme.Order, readme.CreateTime, readme.LastUpdateTime)
+	if err := qd.InsertWithTx(); err != nil {
 		return err
 	}
 	return nil
@@ -54,7 +55,7 @@ func (rr *readmeRepo) Delete(ctx context.Context, id string) error {
 		return errs.NewAppError(op, err)
 	}
 	if res.RowsAffected() == 0 {
-		return errs.ErrNotFound(op, err)
+		return errs.ErrNotFound(op)
 	}
 	return nil
 }
@@ -74,7 +75,7 @@ func (rr *readmeRepo) Update(ctx context.Context, updates map[string]any, id str
 	i := 1
 	for k, v := range updates {
 		if !validFields[k] {
-			return errs.ErrInvalidFields(op, nil)
+			return errs.ErrInvalidFields(op)
 		}
 		str = append(str, fmt.Sprintf(" %s = $%d", k, i))
 		args = append(args, v)
@@ -82,7 +83,8 @@ func (rr *readmeRepo) Update(ctx context.Context, updates map[string]any, id str
 	}
 	args = append(args, id)
 	query := fmt.Sprintf("UPDATE readmes SET%s WHERE id = $%d", strings.Join(str, ","), i)
-	if err := helpers.DeleteOrUpdateWithTx(helpers.NewQueryData(ctx, rr.Storage, op, query, args...)); err != nil {
+	qd := helpers.NewQueryData(ctx, rr.Storage, op, query, args...)
+	if err := qd.DeleteOrUpdateWithTx(); err != nil {
 		return err
 	}
 	return nil
@@ -92,7 +94,8 @@ func (rr *readmeRepo) Get(ctx context.Context, id string) (*models.Readme, error
 	op := "readmeRepo.Get"
 	query := "SELECT * FROM readmes WHERE id = $1"
 	readme := &models.Readme{}
-	if err := helpers.QueryRowWithTx(helpers.NewQueryData(ctx, rr.Storage, op, query, id), readme); err != nil {
+	qd := helpers.NewQueryData(ctx, rr.Storage, op, query, id)
+	if err := qd.QueryRowWithTx(readme); err != nil {
 		return nil, err
 	}
 	return readme, nil
@@ -104,7 +107,7 @@ func (rr *readmeRepo) FetchByUser(ctx context.Context, amount, page uint, uid st
 	rows, err := rr.Storage.Pool.Query(ctx, query, uid, amount*page-amount, amount)
 	if err != nil {
 		if errors.Is(err, storage.ErrNotFound()) {
-			return nil, errs.ErrNotFound(op, err)
+			return nil, errs.ErrNotFound(op)
 		}
 		return nil, errs.NewAppError(op, err)
 	}

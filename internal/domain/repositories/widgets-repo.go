@@ -61,7 +61,8 @@ func (wr *widgetRepo) Get(ctx context.Context, id string) (*models.Widget, error
 	}
 	if err == cache.EMPTY {
 		query := "SELECT w.*, COUNT(fw.widget_id) as likes FROM widgets w LEFT JOIN favorite_widgets fw ON w.id=fw.widget_id WHERE w.id = $1 GROUP BY w.id"
-		if err := helpers.QueryRowWithTx(helpers.NewQueryData(ctx, wr.Storage, op, query, id), widget); err != nil {
+		qd := helpers.NewQueryData(ctx, wr.Storage, op, query, id)
+		if err := qd.QueryRowWithTx(widget); err != nil {
 			return nil, err
 		}
 	}
@@ -81,7 +82,7 @@ func (wr *widgetRepo) Fetch(ctx context.Context, amount, page uint) ([]models.Wi
 	rows, err := wr.Storage.Pool.Query(ctx, query, amount*page-amount, amount)
 	if err != nil {
 		if errors.Is(err, storage.ErrNotFound()) {
-			return nil, errs.ErrNotFound(op, err)
+			return nil, errs.ErrNotFound(op)
 		}
 		return nil, errs.NewAppError(op, err)
 	}
@@ -109,12 +110,12 @@ func (wr *widgetRepo) Fetch(ctx context.Context, amount, page uint) ([]models.Wi
 
 func (wr *widgetRepo) FetchFavorite(ctx context.Context, id string) ([]models.Widget, error) {
 	op := "widgetRepo.FetchFavorite"
-	query := "SELECT w.* FROM widgets w JOIN favorite_widgets fw ON w.id=fw.widget_id WHERE fw.user_id=$1"
+	query := "SELECT w.*, COUNT(fw.widget_id) as likes FROM widgets w JOIN favorite_widgets fw ON w.id=fw.widget_id WHERE fw.user_id=$1 GROUP BY w.id"
 	widgets := []models.Widget{}
 	rows, err := wr.Storage.Pool.Query(ctx, query, id)
 	if err != nil {
 		if errors.Is(err, storage.ErrNotFound()) {
-			return nil, errs.ErrNotFound(op, err)
+			return nil, errs.ErrNotFound(op)
 		}
 		return nil, errs.NewAppError(op, err)
 	}
@@ -142,7 +143,8 @@ func (wr *widgetRepo) FetchFavorite(ctx context.Context, id string) ([]models.Wi
 func (wr *widgetRepo) Like(ctx context.Context, uid, id string) error {
 	op := "widgetRepo.Like"
 	query := "INSERT INTO favorite_widgets (widget_id, user_id) VALUES($1,$2)"
-	if err := helpers.InsertWithTx(helpers.NewQueryData(ctx, wr.Storage, op, query, id, uid)); err != nil {
+	qd := helpers.NewQueryData(ctx, wr.Storage, op, query, id, uid)
+	if err := qd.InsertWithTx(); err != nil {
 		return err
 	}
 	return nil
@@ -151,7 +153,8 @@ func (wr *widgetRepo) Like(ctx context.Context, uid, id string) error {
 func (wr *widgetRepo) Dislike(ctx context.Context, uid, id string) error {
 	op := "widgetRepo.Dislike"
 	query := "DELETE FROM favorite_widgets WHERE (widget_id,user_id)=($1,$2)"
-	if err := helpers.DeleteOrUpdateWithTx(helpers.NewQueryData(ctx, wr.Storage, op, query, id, uid)); err != nil {
+	qd := helpers.NewQueryData(ctx, wr.Storage, op, query, id, uid)
+	if err := qd.DeleteOrUpdateWithTx(); err != nil {
 		return err
 	}
 	return nil
@@ -164,7 +167,7 @@ func (wr *widgetRepo) Sort(ctx context.Context, amount, page uint, field, dest s
 		"num_of_users": true,
 	}
 	if !validFields[field] {
-		return nil, errs.ErrInvalidFields(op, nil)
+		return nil, errs.ErrInvalidFields(op)
 	}
 	if dest != "DESC" && dest != "ASC" {
 		dest = "DESC"
@@ -173,7 +176,7 @@ func (wr *widgetRepo) Sort(ctx context.Context, amount, page uint, field, dest s
 	rows, err := wr.Storage.Pool.Query(ctx, query, amount*page-amount, amount)
 	if err != nil {
 		if errors.Is(err, storage.ErrNotFound()) {
-			return nil, errs.ErrNotFound(op, err)
+			return nil, errs.ErrNotFound(op)
 		}
 		return nil, errs.NewAppError(op, err)
 	}
@@ -241,7 +244,7 @@ func (wr *widgetRepo) GetByIds(ctx context.Context, ids []string) ([]models.Widg
 		rows, err := tx.Query(ctx, query, ids)
 		if err != nil {
 			if errors.Is(err, storage.ErrNotFound()) {
-				return nil, errs.ErrNotFound(op, err)
+				return nil, errs.ErrNotFound(op)
 			}
 			return nil, errs.NewAppError(op, err)
 		}
@@ -303,7 +306,7 @@ func (wr *widgetRepo) getAll(ctx context.Context) ([]models.Widget, error) {
 	rows, err := wr.Storage.Pool.Query(ctx, query)
 	if err != nil {
 		if errors.Is(err, storage.ErrNotFound()) {
-			return nil, errs.ErrNotFound(op, err)
+			return nil, errs.ErrNotFound(op)
 		}
 		return nil, errs.NewAppError(op, err)
 	}
@@ -378,7 +381,7 @@ func (wr *widgetRepo) Update(ctx context.Context, updates map[string]any, id str
 	i := 1
 	for k, v := range updates {
 		if !validFields[k] {
-			return errs.ErrInvalidFields(op, nil)
+			return errs.ErrInvalidFields(op)
 		}
 		str = append(str, fmt.Sprintf(" %s = $%d", k, i))
 		args = append(args, v)
@@ -386,7 +389,8 @@ func (wr *widgetRepo) Update(ctx context.Context, updates map[string]any, id str
 	}
 	args = append(args, id)
 	query := fmt.Sprintf("UPDATE widgets SET%s WHERE id = $%d", strings.Join(str, ","), i)
-	if err := helpers.DeleteOrUpdateWithTx(helpers.NewQueryData(ctx, wr.Storage, op, query, args...)); err != nil {
+	qd := helpers.NewQueryData(ctx, wr.Storage, op, query, args...)
+	if err := qd.DeleteOrUpdateWithTx(); err != nil {
 		return err
 	}
 	if err := wr.Cache.Redis.Del(ctx, id).Err(); err != nil {

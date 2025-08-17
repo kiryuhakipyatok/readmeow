@@ -38,7 +38,8 @@ type Credentials struct {
 func (vr *verificationRepo) AddCode(ctx context.Context, email, login, nickname string, password []byte, code []byte, ttl time.Time, attempts int) error {
 	op := "verificationRepo.AddCode"
 	query := "INSERT INTO verifications (email,login,nickname,password,code,expired_time, attempts) VALUES($1,$2,$3,$4,$5,$6,$7)"
-	if err := helpers.InsertWithTx(helpers.NewQueryData(ctx, vr.Storage, op, query, email, login, nickname, password, code, ttl, attempts)); err != nil {
+	qd := helpers.NewQueryData(ctx, vr.Storage, op, query, email, login, nickname, password, code, ttl, attempts)
+	if err := qd.InsertWithTx(); err != nil {
 		return err
 	}
 	return nil
@@ -47,7 +48,8 @@ func (vr *verificationRepo) AddCode(ctx context.Context, email, login, nickname 
 func (vr *verificationRepo) SendNewCode(ctx context.Context, email string, code []byte, ttl time.Time, attempts int) error {
 	op := "verificationRepo.SendNewCode"
 	query := "UPDATE verifications SET code = $1, expired_time=$2, attempts=$3 WHERE email = $4"
-	if err := helpers.DeleteOrUpdateWithTx(helpers.NewQueryData(ctx, vr.Storage, op, query, code, ttl, attempts, email)); err != nil {
+	qd := helpers.NewQueryData(ctx, vr.Storage, op, query, code, ttl, attempts, email)
+	if err := qd.DeleteOrUpdateWithTx(); err != nil {
 		return err
 	}
 	return nil
@@ -56,7 +58,8 @@ func (vr *verificationRepo) SendNewCode(ctx context.Context, email string, code 
 func (vr *verificationRepo) Delete(ctx context.Context, email string) error {
 	op := "verificationRepo.Delete"
 	query := "DELETE FROM verifications WHERE email = $1"
-	if err := helpers.DeleteOrUpdateWithTx(helpers.NewQueryData(ctx, vr.Storage, op, query, email)); err != nil {
+	qd := helpers.NewQueryData(ctx, vr.Storage, op, query, email)
+	if err := qd.DeleteOrUpdateWithTx(); err != nil {
 		return err
 	}
 	return nil
@@ -65,7 +68,8 @@ func (vr *verificationRepo) Delete(ctx context.Context, email string) error {
 func (vr *verificationRepo) DeleteExpired(ctx context.Context) error {
 	op := "verificationRepo"
 	query := "DELETE FROM verifications WHERE expired_time <= NOW()"
-	if err := helpers.DeleteOrUpdateWithTx(helpers.NewQueryData(ctx, vr.Storage, op, query)); err != nil {
+	qd := helpers.NewQueryData(ctx, vr.Storage, op, query)
+	if err := qd.DeleteOrUpdateWithTx(); err != nil {
 		return err
 	}
 	return nil
@@ -83,7 +87,7 @@ func (vr *verificationRepo) minusAttempts(ctx context.Context, email string) err
 		return errs.NewAppError(op, err)
 	}
 	if res.RowsAffected() == 0 {
-		return errs.ErrNotFound(op, nil)
+		return errs.ErrNotFound(op)
 	}
 	return nil
 }
@@ -125,7 +129,8 @@ func (vr *verificationRepo) GetCredentials(ctx context.Context, email string) (*
 	op := "verificationRepo.FetchCredentials"
 	query := "SELECT email,login,nickname,password FROM verifications WHERE email = $1"
 	creds := &Credentials{}
-	if err := helpers.QueryRowWithTx(helpers.NewQueryData(ctx, vr.Storage, op, query, email), creds); err != nil {
+	qd := helpers.NewQueryData(ctx, vr.Storage, op, query, email)
+	if err := qd.QueryRowWithTx(creds); err != nil {
 		return nil, err
 	}
 	return creds, nil
