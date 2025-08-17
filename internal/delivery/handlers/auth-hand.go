@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"readmeow/internal/delivery/dto"
+	"readmeow/internal/delivery/handlers/helpers"
 	"readmeow/internal/domain/services"
 	"readmeow/pkg/validator"
 	"time"
@@ -26,36 +27,36 @@ func NewAuthHandle(as services.AuthServ, us services.UserServ, v *validator.Vali
 func (ah *AuthHandl) Register(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	req := dto.RegisterRequest{}
-	if err := ParseAndValidateRequest(c, &req, Body{}, ah.Validator); err != nil {
+	if err := helpers.ParseAndValidateRequest(c, &req, helpers.Body{}, ah.Validator); err != nil {
 		return err
 	}
 	if err := ah.AuthServ.Register(ctx, req.Email, req.Code); err != nil {
-		return ToApiError(err)
+		return helpers.ToApiError(err)
 	}
-	return SuccessResponse(c)
+	return helpers.SuccessResponse(c)
 }
 
 func (ah *AuthHandl) VerifyEmail(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	req := dto.VerifyRequest{}
-	if err := ParseAndValidateRequest(c, &req, Body{}, ah.Validator); err != nil {
+	if err := helpers.ParseAndValidateRequest(c, &req, helpers.Body{}, ah.Validator); err != nil {
 		return err
 	}
 	if err := ah.AuthServ.SendVerifyCode(ctx, req.Email, req.Login, req.Nickname, req.Password); err != nil {
-		return ToApiError(err)
+		return helpers.ToApiError(err)
 	}
-	return SuccessResponse(c)
+	return helpers.SuccessResponse(c)
 }
 
 func (ah *AuthHandl) Login(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	req := dto.LoginRequest{}
-	if err := ParseAndValidateRequest(c, &req, Body{}, ah.Validator); err != nil {
+	if err := helpers.ParseAndValidateRequest(c, &req, helpers.Body{}, ah.Validator); err != nil {
 		return err
 	}
 	loginResponce, err := ah.AuthServ.Login(ctx, req.Login, req.Password)
 	if err != nil {
-		return ToApiError(err)
+		return helpers.ToApiError(err)
 	}
 	cookie := &fiber.Cookie{
 		Name:     "jwt",
@@ -85,7 +86,7 @@ func (ah *AuthHandl) Logout(c *fiber.Ctx) error {
 		SameSite: "Lax",
 	}
 	c.Cookie(cookie)
-	return SuccessResponse(c)
+	return helpers.SuccessResponse(c)
 }
 
 func (ah *AuthHandl) Profile(c *fiber.Ctx) error {
@@ -93,11 +94,11 @@ func (ah *AuthHandl) Profile(c *fiber.Ctx) error {
 	cookie := c.Cookies("jwt")
 	id, err := ah.AuthServ.GetId(ctx, cookie)
 	if err != nil {
-		return ToApiError(err)
+		return helpers.ToApiError(err)
 	}
 	user, err := ah.UserServ.Get(ctx, id)
 	if err != nil {
-		return ToApiError(err)
+		return helpers.ToApiError(err)
 	}
 	return c.JSON(user)
 }
@@ -105,11 +106,11 @@ func (ah *AuthHandl) Profile(c *fiber.Ctx) error {
 func (ah *AuthHandl) SendNewCode(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	req := dto.SendNewCodeRequest{}
-	if err := ParseAndValidateRequest(c, &req, Body{}, ah.Validator); err != nil {
+	if err := helpers.ParseAndValidateRequest(c, &req, helpers.Body{}, ah.Validator); err != nil {
 		return err
 	}
 	if err := ah.AuthServ.SendNewCode(ctx, req.Email); err != nil {
-		return ToApiError(err)
+		return helpers.ToApiError(err)
 	}
-	return SuccessResponse(c)
+	return helpers.SuccessResponse(c)
 }

@@ -50,6 +50,7 @@ type StorageConfig struct {
 	Port           string `mapstructure:"port"`
 	SSLMode        string `mapstructure:"sslMode"`
 	ConnectTimeout int    `mapstructure:"connectTimeout"`
+	AmountOfConns  int32  `mapstructure:"amountOfConns"`
 }
 
 type CacheConfig struct {

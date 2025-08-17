@@ -29,7 +29,7 @@ func MustConnect(cfg config.StorageConfig) *Storage {
 	if err != nil {
 		panic("failed to parse pool config" + err.Error())
 	}
-	pcfg.MaxConns = 10
+	pcfg.MaxConns = cfg.AmountOfConns
 	pool, err := pgxpool.NewWithConfig(ctx, pcfg)
 	if err != nil {
 		panic("failed to create postgres pool" + err.Error())

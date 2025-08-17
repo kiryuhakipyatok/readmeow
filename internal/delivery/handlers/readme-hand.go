@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"readmeow/internal/delivery/dto"
+	"readmeow/internal/delivery/handlers/helpers"
 	"readmeow/internal/domain/services"
 	"readmeow/pkg/validator"
 
@@ -25,59 +26,59 @@ func NewReadmeHandl(rs services.ReadmeServ, as services.AuthServ, v *validator.V
 func (rh *ReadmeHandl) CreateReadme(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	req := dto.CreateReadmeRequest{}
-	if err := ParseAndValidateRequest(c, &req, Body{}, rh.Validator); err != nil {
+	if err := helpers.ParseAndValidateRequest(c, &req, helpers.Body{}, rh.Validator); err != nil {
 		return err
 	}
 	cookie := c.Cookies("jwt")
 	uid, err := rh.AuthServ.GetId(ctx, cookie)
 	if err != nil {
-		return ToApiError(err)
+		return helpers.ToApiError(err)
 	}
 	if err := rh.ReadmeServ.Create(ctx, req.TemplateId, uid, req.Title, req.Image, req.Text, req.Links, req.Order, req.Widgets); err != nil {
-		return ToApiError(err)
+		return helpers.ToApiError(err)
 	}
-	return SuccessResponse(c)
+	return helpers.SuccessResponse(c)
 }
 
 func (rh *ReadmeHandl) DeleteReadme(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	id := c.Params("readme")
-	if err := ValidateId(c, id); err != nil {
+	if err := helpers.ValidateId(c, id); err != nil {
 		return err
 	}
 	cookie := c.Cookies("jwt")
 	uid, err := rh.AuthServ.GetId(ctx, cookie)
 	if err != nil {
-		return ToApiError(err)
+		return helpers.ToApiError(err)
 	}
 	if err := rh.ReadmeServ.Delete(ctx, id, uid); err != nil {
-		return ToApiError(err)
+		return helpers.ToApiError(err)
 	}
 
-	return SuccessResponse(c)
+	return helpers.SuccessResponse(c)
 }
 
 func (rh *ReadmeHandl) UpdateReadme(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	req := dto.UpdateReadmeRequest{}
-	if err := ParseAndValidateRequest(c, &req, Body{}, rh.Validator); err != nil {
+	if err := helpers.ParseAndValidateRequest(c, &req, helpers.Body{}, rh.Validator); err != nil {
 		return err
 	}
 	if err := rh.ReadmeServ.Update(ctx, req.Updates, req.Id); err != nil {
-		return ToApiError(err)
+		return helpers.ToApiError(err)
 	}
-	return SuccessResponse(c)
+	return helpers.SuccessResponse(c)
 }
 
 func (rh *ReadmeHandl) GetReadmeById(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	id := c.Params("readme")
-	if err := ValidateId(c, id); err != nil {
+	if err := helpers.ValidateId(c, id); err != nil {
 		return err
 	}
 	readme, err := rh.ReadmeServ.Get(ctx, id)
 	if err != nil {
-		return ToApiError(err)
+		return helpers.ToApiError(err)
 	}
 	return c.JSON(readme)
 }
@@ -85,17 +86,17 @@ func (rh *ReadmeHandl) GetReadmeById(c *fiber.Ctx) error {
 func (rh *ReadmeHandl) FetchReadmesByUser(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	req := dto.PaginationRequest{}
-	if err := ParseAndValidateRequest(c, &req, Query{}, rh.Validator); err != nil {
+	if err := helpers.ParseAndValidateRequest(c, &req, helpers.Query{}, rh.Validator); err != nil {
 		return err
 	}
 	cookie := c.Cookies("jwt")
 	uid, err := rh.AuthServ.GetId(ctx, cookie)
 	if err != nil {
-		return ToApiError(err)
+		return helpers.ToApiError(err)
 	}
 	readmes, err := rh.ReadmeServ.FetchByUser(ctx, req.Amount, req.Page, uid)
 	if err != nil {
-		return ToApiError(err)
+		return helpers.ToApiError(err)
 	}
 	return c.JSON(readmes)
 }

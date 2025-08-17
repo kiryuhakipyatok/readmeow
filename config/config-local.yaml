@@ -26,6 +26,7 @@ storage:
   port: "${POSTGRES_PORT}"
   sslMode: "${SSL_MODE}"
   connectTimeout: 10
+  amountOfConns: 15
 
 cache:
   host: "redis"

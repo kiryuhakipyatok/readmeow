@@ -3,11 +3,8 @@ package server
 import (
 	"context"
 	"errors"
-
-	//"errors"
 	"readmeow/internal/config"
-	"readmeow/internal/delivery/handlers"
-	//"readmeow/internal/delivery/handlers"
+	"readmeow/internal/delivery/handlers/helpers"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -80,12 +77,10 @@ func requestTimeoutMiddleware(timeout time.Duration) fiber.Handler {
 }
 
 func errorHandler(c *fiber.Ctx, err error) error {
-	var apiErr handlers.ApiErr
+	var apiErr helpers.ApiErr
 	if errors.As(err, &apiErr) {
 		return c.Status(apiErr.Code).JSON(apiErr)
 	}
-
-	c.Set(fiber.HeaderContentType, fiber.MIMETextPlainCharsetUTF8)
 
 	return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 		"error": "internal server error",
