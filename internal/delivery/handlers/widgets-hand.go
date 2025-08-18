@@ -113,12 +113,16 @@ func (wh *WidgetHandl) Dislike(c *fiber.Ctx) error {
 
 func (wh *WidgetHandl) FetchFavoriteWidgets(c *fiber.Ctx) error {
 	ctx := c.UserContext()
+	req := dto.PaginationRequest{}
+	if err := helpers.ParseAndValidateRequest(c, &req, helpers.Query{}, wh.Validator); err != nil {
+		return err
+	}
 	cookie := c.Cookies("jwt")
 	id, err := wh.AuthServ.GetId(ctx, cookie)
 	if err != nil {
 		return helpers.ToApiError(err)
 	}
-	widgets, err := wh.WidgetServ.FetchFavorite(ctx, id)
+	widgets, err := wh.WidgetServ.FetchFavorite(ctx, id, req.Amount, req.Page)
 	if err != nil {
 		return helpers.ToApiError(err)
 	}

@@ -17,12 +17,6 @@ type Body struct{}
 func (Query) isRequestType() {}
 func (Body) isRequestType()  {}
 
-func SuccessResponse(c *fiber.Ctx) error {
-	return c.JSON(fiber.Map{
-		"message": "success",
-	})
-}
-
 func ParseAndValidateRequest[T any](c *fiber.Ctx, request *T, requestType RequestType, v *validator.Validator) error {
 	errParseFunc := func() error {
 		return InvalidRequest()
@@ -41,6 +35,12 @@ func ParseAndValidateRequest[T any](c *fiber.Ctx, request *T, requestType Reques
 		return InvalidJSON()
 	}
 	return nil
+}
+
+func SuccessResponse(c *fiber.Ctx) error {
+	return c.JSON(fiber.Map{
+		"message": "success",
+	})
 }
 
 func ValidateId(c *fiber.Ctx, id string) error {

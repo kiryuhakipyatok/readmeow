@@ -16,7 +16,7 @@ type WidgetServ interface {
 	Search(ctx context.Context, amount, page uint, query string) ([]dto.WidgetResponse, error)
 	Like(ctx context.Context, id, uid string) error
 	Dislike(ctx context.Context, id, uid string) error
-	FetchFavorite(ctx context.Context, id string) ([]dto.WidgetResponse, error)
+	FetchFavorite(ctx context.Context, id string, amount, page uint) ([]dto.WidgetResponse, error)
 }
 
 type widgetServ struct {
@@ -145,11 +145,11 @@ func (ws *widgetServ) Dislike(ctx context.Context, id, uid string) error {
 	return nil
 }
 
-func (ws *widgetServ) FetchFavorite(ctx context.Context, id string) ([]dto.WidgetResponse, error) {
+func (ws *widgetServ) FetchFavorite(ctx context.Context, id string, amount, page uint) ([]dto.WidgetResponse, error) {
 	op := "widgetServ.FetchFavorite"
 	log := ws.Logger.AddOp(op)
 	log.Log.Info("fetching favorite widgets")
-	wids, err := ws.WidgetRepo.FetchFavorite(ctx, id)
+	wids, err := ws.WidgetRepo.FetchFavorite(ctx, id, amount, page)
 	if err != nil {
 		log.Log.Error("failed to fetch favorite widgets", logger.Err(err))
 		return nil, errs.NewAppError(op, err)

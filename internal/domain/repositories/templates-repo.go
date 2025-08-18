@@ -30,7 +30,7 @@ type TemplateRepo interface {
 	Fetch(ctx context.Context, amount, page uint) ([]models.Template, error)
 	Like(ctx context.Context, id, uid string) error
 	Dislike(ctx context.Context, id, uid string) error
-	FetchFavorite(ctx context.Context, id string) ([]models.Template, error)
+	FetchFavorite(ctx context.Context, id string, amount, page uint) ([]models.Template, error)
 	Sort(ctx context.Context, amount, page uint, dest, field string) ([]models.Template, error)
 	Search(ctx context.Context, amount, page uint, query string) ([]models.Template, error)
 	MustBulk(ctx context.Context, cfg config.SearchConfig) error
@@ -166,11 +166,11 @@ func (tr *templateRepo) Get(ctx context.Context, id string) (*models.Template, e
 	return template, nil
 }
 
-func (tr *templateRepo) FetchFavorite(ctx context.Context, id string) ([]models.Template, error) {
+func (tr *templateRepo) FetchFavorite(ctx context.Context, id string, amount, page uint) ([]models.Template, error) {
 	op := "templateRepo.FetchFavorite"
-	query := "SELECT t.*, COUNT(ft.template_id) as likes FROM templates t JOIN favorite_templates ft ON t.id=ft.template_id WHERE ft.user_id=$1 GROUP BY t.id"
+	query := "SELECT t.*, COUNT(ft.template_id) as likes FROM templates t JOIN favorite_templates ft ON t.id=ft.template_id WHERE ft.user_id=$1 GROUP BY t.id ORDER BY t.num_of_users DEST OFFSET $2 LIMIT $3"
 	templates := []models.Template{}
-	rows, err := tr.Storage.Pool.Query(ctx, query, id)
+	rows, err := tr.Storage.Pool.Query(ctx, query, id, amount*page-amount, amount)
 	if err != nil {
 		if errors.Is(err, storage.ErrNotFound()) {
 			return nil, errs.ErrNotFound(op)

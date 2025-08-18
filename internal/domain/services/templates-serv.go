@@ -19,7 +19,7 @@ type TemplateServ interface {
 	Delete(ctx context.Context, id string) error
 	Get(ctx context.Context, id string) (*models.Template, error)
 	Fetch(ctx context.Context, amount, page uint) ([]dto.TemplateResponse, error)
-	FetchFavorite(ctx context.Context, id string) ([]dto.TemplateResponse, error)
+	FetchFavorite(ctx context.Context, id string, amount, page uint) ([]dto.TemplateResponse, error)
 	Sort(ctx context.Context, amount, page uint, dest, field string) ([]dto.TemplateResponse, error)
 	Search(ctx context.Context, amount, page uint, query string) ([]dto.TemplateResponse, error)
 	Like(ctx context.Context, id, uid string) error
@@ -153,11 +153,11 @@ func (ts *templateServ) Get(ctx context.Context, id string) (*models.Template, e
 	return template, nil
 }
 
-func (ts *templateServ) FetchFavorite(ctx context.Context, id string) ([]dto.TemplateResponse, error) {
+func (ts *templateServ) FetchFavorite(ctx context.Context, id string, amount, page uint) ([]dto.TemplateResponse, error) {
 	op := "templateServ.FetchFavorite"
 	log := ts.Logger.AddOp(op)
 	log.Log.Info("fetching favorite templates")
-	templs, err := ts.TemplateRepo.FetchFavorite(ctx, id)
+	templs, err := ts.TemplateRepo.FetchFavorite(ctx, id, amount, page)
 	if err != nil {
 		log.Log.Error("failed to fetch favorite templates", logger.Err(err))
 		return nil, errs.NewAppError(op, err)

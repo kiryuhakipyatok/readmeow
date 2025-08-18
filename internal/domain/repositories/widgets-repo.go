@@ -28,7 +28,7 @@ type WidgetRepo interface {
 	Search(ctx context.Context, amount, page uint, query string) ([]models.Widget, error)
 	Like(ctx context.Context, uid, id string) error
 	Dislike(ctx context.Context, uid, id string) error
-	FetchFavorite(ctx context.Context, id string) ([]models.Widget, error)
+	FetchFavorite(ctx context.Context, id string, amount, page uint) ([]models.Widget, error)
 	GetByIds(ctx context.Context, ids []string) ([]models.Widget, error)
 	Update(ctx context.Context, updates map[string]any, id string) error
 	MustBulk(ctx context.Context, cfg config.SearchConfig) error
@@ -114,11 +114,11 @@ func (wr *widgetRepo) Fetch(ctx context.Context, amount, page uint) ([]models.Wi
 	return widgets, nil
 }
 
-func (wr *widgetRepo) FetchFavorite(ctx context.Context, id string) ([]models.Widget, error) {
+func (wr *widgetRepo) FetchFavorite(ctx context.Context, id string, amount, page uint) ([]models.Widget, error) {
 	op := "widgetRepo.FetchFavorite"
-	query := "SELECT w.*, COUNT(fw.widget_id) as likes FROM widgets w JOIN favorite_widgets fw ON w.id=fw.widget_id WHERE fw.user_id=$1 GROUP BY w.id"
+	query := "SELECT w.*, COUNT(fw.widget_id) as likes FROM widgets w JOIN favorite_widgets fw ON w.id=fw.widget_id WHERE fw.user_id=$1 GROUP BY w.id ORDER BY w.num_of_users DEST OFFSET $2 LIMIT $3"
 	widgets := []models.Widget{}
-	rows, err := wr.Storage.Pool.Query(ctx, query, id)
+	rows, err := wr.Storage.Pool.Query(ctx, query, id, amount*page-amount, amount)
 	if err != nil {
 		if errors.Is(err, storage.ErrNotFound()) {
 			return nil, errs.ErrNotFound(op)
