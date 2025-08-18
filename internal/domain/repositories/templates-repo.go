@@ -53,7 +53,7 @@ func NewTemplateRepo(s *storage.Storage, c *cache.Cache, sc *search.SearchClient
 func (tr *templateRepo) Create(ctx context.Context, template *models.Template) error {
 	op := "templateRepo.Create"
 	query := "INSERT INTO templates (id, owner_id, title, image,description, text, links, widgets,num_of_users, render_order, create_time, last_update_time) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)"
-	qd := helpers.NewQueryData(ctx, tr.Storage, op, query, template.Id, template.OwnerId, template.Title, template.Image, template.Description, template.Text, template.Links, template.Widgets, template.NumOfUsers, template.Order, template.CreateTime, template.LastUpdateTime)
+	qd := helpers.NewQueryData(ctx, tr.Storage, op, query, template.Id, template.OwnerId, template.Title, template.Image, template.Description, template.Text, template.Links, template.Widgets, template.NumOfUsers, template.RenderOrder, template.CreateTime, template.LastUpdateTime)
 	if err := qd.InsertWithTx(); err != nil {
 		return err
 	}
@@ -201,7 +201,7 @@ func (tr *templateRepo) FetchFavorite(ctx context.Context, id string, amount, pa
 			&template.Description,
 			&template.Text,
 			&template.Links,
-			&template.Order,
+			&template.RenderOrder,
 			&template.CreateTime,
 			&template.LastUpdateTime,
 			&template.NumOfUsers,
@@ -237,7 +237,7 @@ func (tr *templateRepo) Fetch(ctx context.Context, amount, page uint) ([]models.
 			&template.Description,
 			&template.Text,
 			&template.Links,
-			&template.Order,
+			&template.RenderOrder,
 			&template.CreateTime,
 			&template.LastUpdateTime,
 			&template.NumOfUsers,
@@ -283,7 +283,7 @@ func (tr *templateRepo) Sort(ctx context.Context, amount, page uint, dest, field
 			&template.Description,
 			&template.Text,
 			&template.Links,
-			&template.Order,
+			&template.RenderOrder,
 			&template.CreateTime,
 			&template.LastUpdateTime,
 			&template.NumOfUsers,
@@ -361,7 +361,7 @@ func (tr *templateRepo) getByIds(ctx context.Context, ids []string) ([]models.Te
 			&template.Description,
 			&template.Text,
 			&template.Links,
-			&template.Order,
+			&template.RenderOrder,
 			&template.CreateTime,
 			&template.LastUpdateTime,
 			&template.NumOfUsers,

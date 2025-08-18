@@ -81,7 +81,9 @@ func (vr *verificationRepo) minusAttempts(ctx context.Context, email string) err
 	res, err := vr.Storage.Pool.Exec(ctx, query, email)
 	if err != nil {
 		if storage.CheckErr(err) {
-			vr.Delete(ctx, email)
+			if err := vr.Delete(ctx, email); err != nil {
+				return errs.NewAppError(op, err)
+			}
 			return errs.NewAppError(op, errors.New("attempts are zero"))
 		}
 		return errs.NewAppError(op, err)

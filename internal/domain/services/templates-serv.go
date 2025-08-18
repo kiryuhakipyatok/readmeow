@@ -65,7 +65,7 @@ func (ts *templateServ) Create(ctx context.Context, oid, title, image, descripti
 			Widgets:        widgets,
 			Likes:          0,
 			NumOfUsers:     0,
-			Order:          order,
+			RenderOrder:    order,
 			CreateTime:     time.Now(),
 			LastUpdateTime: time.Now(),
 		}

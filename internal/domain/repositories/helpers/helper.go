@@ -128,7 +128,7 @@ func (qd QueryData) QueryRowWithTx(entity any) error {
 			&e.Description,
 			&e.Text,
 			&e.Links,
-			&e.Order,
+			&e.RenderOrder,
 			&e.CreateTime,
 			&e.LastUpdateTime,
 			&e.NumOfUsers,

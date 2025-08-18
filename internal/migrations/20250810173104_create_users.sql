@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS users(
     password BYTEA NOT NULL,
     time_of_register TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     num_of_templates INTEGER NOT NULL DEFAULT 0,
-    num_of_readmes INTEGER NOT NULL DEFAULT 0,
+    num_of_readmes INTEGER NOT NULL DEFAULT 0   
 )
 -- +goose StatementEnd
 
