@@ -16,11 +16,14 @@ type Cache struct {
 const EMPTY = redis.Nil
 
 func MustConnect(cfg config.CacheConfig) *Cache {
+
 	redis := redis.NewClient(&redis.Options{
 		Addr:     cfg.Host + ":" + cfg.Port,
 		DB:       0,
 		Password: cfg.Password,
+		PoolSize: 10,
 	})
+
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*time.Duration(cfg.ConnectTimeout))
 	defer cancel()
 	if err := redis.Ping(ctx).Err(); err != nil {

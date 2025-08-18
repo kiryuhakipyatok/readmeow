@@ -1,4 +1,4 @@
-package routs
+package routes
 
 import (
 	"readmeow/internal/delivery/handlers"

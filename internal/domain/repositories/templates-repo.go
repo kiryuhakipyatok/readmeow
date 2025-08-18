@@ -255,6 +255,7 @@ func (tr *templateRepo) Sort(ctx context.Context, amount, page uint, dest, field
 	op := "templateRepo.Sort"
 	validFields := map[string]bool{
 		"num_of_users": true,
+		"likes":        true,
 		"create_time":  true,
 	}
 	if !validFields[field] {

@@ -46,7 +46,7 @@ search:
 
 email:
   name: "Readmeow Register System"
-  address: "kiryuhakipyatok@gmail.com"
+  address: "${EMAIL}"
   password: "${EMAIL_PASSWORD}"
   smtpAddress: "smtp.gmail.com"
   smtpServerAddress: "smtp.gmail.com:587"

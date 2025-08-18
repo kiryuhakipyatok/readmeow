@@ -7,12 +7,12 @@ import (
 	"os/signal"
 	"readmeow/internal/config"
 	"readmeow/internal/delivery/handlers"
-	"readmeow/internal/delivery/routs"
+	"readmeow/internal/delivery/routes"
 	"readmeow/internal/delivery/server"
 	"readmeow/internal/domain/repositories"
 	"readmeow/internal/domain/services"
 	"readmeow/internal/email"
-	"readmeow/internal/sheduler"
+	"readmeow/internal/scheduler"
 	"readmeow/pkg/cache"
 	"readmeow/pkg/logger"
 	"readmeow/pkg/search"
@@ -84,7 +84,7 @@ func Run() {
 	templateHandl := handlers.NewTemplateHandl(templateServ, authServ, validator)
 	userHandl := handlers.NewUserHandl(userServ, authServ, validator)
 
-	sheduler := sheduler.NewSheduler(widgetRepo, templateRepo, verificationRepo, cfg.Sheduler, cfg.Search, log)
+	sheduler := scheduler.NewSheduler(widgetRepo, templateRepo, verificationRepo, cfg.Sheduler, cfg.Search, log)
 	sheduler.Start()
 	defer func() {
 		sheduler.Stop()
@@ -92,7 +92,7 @@ func Run() {
 	}()
 	log.Log.Info("sheduler started")
 
-	routConfig := routs.NewRoutConfig(server.App, userHandl, authHandl, templateHandl, readmeHandl, widgetHandl)
+	routConfig := routes.NewRoutConfig(server.App, userHandl, authHandl, templateHandl, readmeHandl, widgetHandl)
 	routConfig.SetupRoutes()
 
 	go func() {

@@ -1,6 +1,6 @@
 module readmeow
 
-go 1.24.4
+go 1.25
 
 require (
 	github.com/elastic/go-elasticsearch/v9 v9.1.0
