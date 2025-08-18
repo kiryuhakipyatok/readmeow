@@ -2,6 +2,7 @@ package config
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -88,14 +89,14 @@ type ShedulerConfig struct {
 	CleanCodesTimeout   int `mapstructure:"cleanCodesTimeout"`
 }
 
-func LoadConfig(path string) *Config {
+func MustLoadConfig(path string) *Config {
 	if path == "" {
 		panic("config path is empty")
 	}
 	filename := filepath.Join(path, "config-local.yaml")
 	data, err := os.ReadFile(filename)
 	if err != nil {
-		panic("failed to read config file: " + err.Error())
+		panic(fmt.Errorf("failed to read config file: %w", err))
 	}
 	data = []byte(os.ExpandEnv(string(data)))
 	v := viper.New()
@@ -104,11 +105,11 @@ func LoadConfig(path string) *Config {
 	v.AutomaticEnv()
 	v.AddConfigPath(path)
 	if err := v.ReadConfig(bytes.NewBuffer(data)); err != nil {
-		panic("failed to read config: " + err.Error())
+		panic(fmt.Errorf("failed to read config: %w", err))
 	}
 	cfg := &Config{}
 	if err := v.Unmarshal(cfg); err != nil {
-		panic("failed to unmarshal config: " + err.Error())
+		panic(fmt.Errorf("failed to unmarshal config: %w", err))
 	}
 	return cfg
 }

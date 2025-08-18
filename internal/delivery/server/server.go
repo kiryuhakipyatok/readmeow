@@ -38,7 +38,7 @@ func NewServer(scfg config.ServerConfig, acfg config.AuthConfig) *Server {
 
 func (s *Server) MustClose(ctx context.Context) {
 	if err := s.App.ShutdownWithContext(ctx); err != nil {
-		panic(err)
+		panic("failed to close server" + err.Error())
 	}
 }
 

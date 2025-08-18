@@ -26,12 +26,12 @@ import (
 
 func Run() {
 	if err := godotenv.Load(".env"); err != nil {
-		panic(err)
+		panic("failed to load .env" + err.Error())
 	}
+	cfg := config.MustLoadConfig(os.Getenv("CONFIG_PATH"))
 
-	log := logger.NewLogger(os.Getenv("APP_ENV"))
+	log := logger.NewLogger(os.Getenv("APP_ENV"), cfg.App)
 
-	cfg := config.LoadConfig(os.Getenv("CONFIG_PATH"))
 	log.Log.Info("config loaded")
 
 	validator := validator.NewValidator()
@@ -53,11 +53,11 @@ func Run() {
 	search := search.MustConnect(cfg.Search)
 	log.Log.Info("connected to elasticsearch")
 
-	app := server.NewServer(cfg.Server, cfg.Auth)
+	server := server.NewServer(cfg.Server, cfg.Auth)
 	defer func() {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second*time.Duration(cfg.Server.CloseTimeout))
 		defer cancel()
-		app.MustClose(ctx)
+		server.MustClose(ctx)
 		log.Log.Info("server closed")
 	}()
 	log.Log.Info("server created")
@@ -92,12 +92,12 @@ func Run() {
 	}()
 	log.Log.Info("sheduler started")
 
-	routConfig := routs.NewRoutConfig(app.App, userHandl, authHandl, templateHandl, readmeHandl, widgetHandl)
+	routConfig := routs.NewRoutConfig(server.App, userHandl, authHandl, templateHandl, readmeHandl, widgetHandl)
 	routConfig.SetupRoutes()
 
 	go func() {
-		if err := app.App.Listen(cfg.Server.Host + ":" + cfg.Server.Port); err != nil {
-			panic(err)
+		if err := server.App.Listen(cfg.Server.Host + ":" + cfg.Server.Port); err != nil {
+			panic("failed to start server: " + err.Error())
 		}
 	}()
 

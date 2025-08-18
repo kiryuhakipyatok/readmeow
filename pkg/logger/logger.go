@@ -3,6 +3,7 @@ package logger
 import (
 	"log/slog"
 	"os"
+	"readmeow/internal/config"
 )
 
 const (
@@ -15,7 +16,7 @@ type Logger struct {
 	Log *slog.Logger
 }
 
-func NewLogger(env string) *Logger {
+func NewLogger(env string, acfg config.AppConfig) *Logger {
 	var log *slog.Logger
 	switch env {
 	case localEnv:
@@ -28,7 +29,11 @@ func NewLogger(env string) *Logger {
 		log = slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
 	}
 	logger := &Logger{
-		Log: log.With(slog.String("env", env)),
+		Log: log.With(
+			slog.String("env", env),
+			slog.String("app", acfg.Name),
+			slog.String("version", acfg.Version),
+		),
 	}
 	return logger
 }

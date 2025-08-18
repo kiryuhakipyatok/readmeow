@@ -2,6 +2,7 @@ package cache
 
 import (
 	"context"
+	"fmt"
 	"readmeow/internal/config"
 	"time"
 
@@ -23,7 +24,7 @@ func MustConnect(cfg config.CacheConfig) *Cache {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*time.Duration(cfg.ConnectTimeout))
 	defer cancel()
 	if err := redis.Ping(ctx).Err(); err != nil {
-		panic("failed to ping redis client" + err.Error())
+		panic(fmt.Errorf("failed to ping redis client: %w", err))
 	}
 	cache := &Cache{
 		Redis: redis,
@@ -33,6 +34,6 @@ func MustConnect(cfg config.CacheConfig) *Cache {
 
 func (c *Cache) MustClose() {
 	if err := c.Redis.Close(); err != nil {
-		panic("failed to close redis" + err.Error())
+		panic(fmt.Errorf("failed to close redis: %w", err))
 	}
 }

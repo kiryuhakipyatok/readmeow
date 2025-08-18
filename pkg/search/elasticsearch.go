@@ -20,12 +20,12 @@ func MustConnect(cfg config.SearchConfig) *SearchClient {
 		Password:  cfg.Password,
 	})
 	if err != nil {
-		panic("failed to connect to elasticsearch: " + err.Error())
+		panic(fmt.Errorf("failed to connect to elasticsearch: %w", err))
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*time.Duration(cfg.PingTimeout))
 	defer cancel()
 	if _, err := client.Ping().Do(ctx); err != nil {
-		panic("failed to ping elasticsearch: " + err.Error())
+		panic(fmt.Errorf("failed to ping elasticsearch: %w", err))
 	}
 	sc := &SearchClient{
 		Client: client,
