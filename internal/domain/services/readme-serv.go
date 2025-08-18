@@ -103,9 +103,8 @@ func (rs *readmeServ) Create(ctx context.Context, tid, oid, title, image string,
 			}
 
 			for _, w := range widgetsData {
-				updatedNumOfUsers := w.NumOfUsers + 1
-				update := map[string]any{
-					"num_of_users": updatedNumOfUsers,
+				update := map[string]string{
+					"num_of_users": "+",
 				}
 				if err := rs.WidgetRepo.Update(c, update, w.Id.String()); err != nil {
 					log.Log.Error("failed to update widget info", logger.Err(err))

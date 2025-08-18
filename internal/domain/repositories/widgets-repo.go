@@ -30,7 +30,7 @@ type WidgetRepo interface {
 	Dislike(ctx context.Context, uid, id string) error
 	FetchFavorite(ctx context.Context, id string, amount, page uint) ([]models.Widget, error)
 	GetByIds(ctx context.Context, ids []string) ([]models.Widget, error)
-	Update(ctx context.Context, updates map[string]any, id string) error
+	Update(ctx context.Context, updates map[string]string, id string) error
 	MustBulk(ctx context.Context, cfg config.SearchConfig) error
 }
 
@@ -62,7 +62,7 @@ func (wr *widgetRepo) Get(ctx context.Context, id string) (*models.Widget, error
 		return widget, nil
 	}
 	if err == cache.EMPTY {
-		query := "SELECT w.*, COUNT(fw.widget_id) as likes FROM widgets w LEFT JOIN favorite_widgets fw ON w.id=fw.widget_id WHERE w.id = $1 GROUP BY w.id"
+		query := "SELECT * FROM widgets WHERE id = $1"
 		qd := helpers.NewQueryData(ctx, wr.Storage, op, query, id)
 		if err := qd.QueryRowWithTx(widget); err != nil {
 			return nil, err
@@ -84,7 +84,7 @@ func (wr *widgetRepo) Get(ctx context.Context, id string) (*models.Widget, error
 
 func (wr *widgetRepo) Fetch(ctx context.Context, amount, page uint) ([]models.Widget, error) {
 	op := "widgetRepo.Fetch"
-	query := "SELECT w.*, COUNT(fw.widget_id) as likes FROM widgets w LEFT JOIN favorite_widgets fw ON w.id=fw.widget_id GROUP BY w.id ORDER BY likes DESC OFFSET $1 LIMIT $2"
+	query := "SELECT * FROM widgets ORDER BY likes DESC OFFSET $1 LIMIT $2"
 	rows, err := wr.Storage.Pool.Query(ctx, query, amount*page-amount, amount)
 	if err != nil {
 		if errors.Is(err, storage.ErrNotFound()) {
@@ -116,7 +116,7 @@ func (wr *widgetRepo) Fetch(ctx context.Context, amount, page uint) ([]models.Wi
 
 func (wr *widgetRepo) FetchFavorite(ctx context.Context, id string, amount, page uint) ([]models.Widget, error) {
 	op := "widgetRepo.FetchFavorite"
-	query := "SELECT w.*, COUNT(fw.widget_id) as likes FROM widgets w JOIN favorite_widgets fw ON w.id=fw.widget_id WHERE fw.user_id=$1 GROUP BY w.id ORDER BY w.num_of_users DEST OFFSET $2 LIMIT $3"
+	query := "SELECT w.* FROM widgets w JOIN favorite_widgets fw ON w.id=fw.widget_id WHERE fw.user_id=$1 ORDER BY w.num_of_users DESC OFFSET $2 LIMIT $3"
 	widgets := []models.Widget{}
 	rows, err := wr.Storage.Pool.Query(ctx, query, id, amount*page-amount, amount)
 	if err != nil {
@@ -178,7 +178,7 @@ func (wr *widgetRepo) Sort(ctx context.Context, amount, page uint, field, dest s
 	if dest != "DESC" && dest != "ASC" {
 		dest = "DESC"
 	}
-	query := fmt.Sprintf("SELECT w.*, COUNT(fw.widget_id) as likes FROM widgets w LEFT JOIN favorite_widgets fw ON w.id=fw.widget_id GROUP BY w.id ORDER BY %s %s OFFSET $1 LIMIT $2", field, dest)
+	query := fmt.Sprintf("SELECT * FROM widgets ORDER BY %s %s OFFSET $1 LIMIT $2", field, dest)
 	rows, err := wr.Storage.Pool.Query(ctx, query, amount*page-amount, amount)
 	if err != nil {
 		if errors.Is(err, storage.ErrNotFound()) {
@@ -243,7 +243,7 @@ func (wr *widgetRepo) Search(ctx context.Context, amount, page uint, query strin
 
 func (wr *widgetRepo) GetByIds(ctx context.Context, ids []string) ([]models.Widget, error) {
 	op := "widgetRepo.SearchPreparing.GetByIds"
-	query := "SELECT w.*, COUNT(fw.widget_id) as likes FROM widgets w LEFT JOIN favorite_widgets fw ON w.id=fw.widget_id WHERE w.id = ANY($1) GROUP BY w.id"
+	query := "SELECT * FROM widgets WHERE id = ANY($1)"
 	widgets := make([]models.Widget, 0, len(ids))
 	byId := map[string]models.Widget{}
 	if tx, ok := storage.GetTx(ctx); ok {
@@ -377,25 +377,25 @@ func (wr *widgetRepo) MustBulk(ctx context.Context, cfg config.SearchConfig) err
 	return nil
 }
 
-func (wr *widgetRepo) Update(ctx context.Context, updates map[string]any, id string) error {
+func (wr *widgetRepo) Update(ctx context.Context, updates map[string]string, id string) error {
 	op := "widgetRepo.Update"
 	validFields := map[string]bool{
 		"num_of_users": true,
+		"likes":        true,
+	}
+	validValues := map[string]bool{
+		"+": true,
+		"-": true,
 	}
 	str := []string{}
-	args := []any{}
-	i := 1
 	for k, v := range updates {
-		if !validFields[k] {
+		if !validFields[k] || !validValues[v] {
 			return errs.ErrInvalidFields(op)
 		}
-		str = append(str, fmt.Sprintf(" %s = $%d", k, i))
-		args = append(args, v)
-		i++
+		str = append(str, fmt.Sprintf(" %s = GREATEST(%s %s 1, 0)", k, k, v))
 	}
-	args = append(args, id)
-	query := fmt.Sprintf("UPDATE widgets SET%s WHERE id = $%d", strings.Join(str, ","), i)
-	qd := helpers.NewQueryData(ctx, wr.Storage, op, query, args...)
+	query := fmt.Sprintf("UPDATE widgets SET%s WHERE id = $1", strings.Join(str, ","))
+	qd := helpers.NewQueryData(ctx, wr.Storage, op, query, id)
 	if err := qd.DeleteOrUpdateWithTx(); err != nil {
 		return err
 	}

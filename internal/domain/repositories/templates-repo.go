@@ -69,7 +69,12 @@ func (tr *templateRepo) Update(ctx context.Context, updates map[string]any, id s
 		"widgets":          true,
 		"order":            true,
 		"num_of_users":     true,
+		"likes":            true,
 		"last_update_time": true,
+	}
+	validValuesForLikesAndNumOfUsers := map[string]bool{
+		"+": true,
+		"-": true,
 	}
 	str := []string{}
 	args := []any{}
@@ -78,9 +83,17 @@ func (tr *templateRepo) Update(ctx context.Context, updates map[string]any, id s
 		if !validFields[k] {
 			return errs.ErrInvalidFields(op)
 		}
-		str = append(str, fmt.Sprintf(" %s = $%d", k, i))
-		args = append(args, v)
-		i++
+		if k == "likes" || k == "num_of_users" {
+			val := v.(string)
+			if !validValuesForLikesAndNumOfUsers[val] {
+				return errs.ErrInvalidFields(op)
+			}
+			str = append(str, fmt.Sprintf(" %s = GREATEST(%s %s 1, 0)", k, k, val))
+		} else {
+			str = append(str, fmt.Sprintf(" %s = $%d", k, i))
+			args = append(args, v)
+			i++
+		}
 	}
 	args = append(args, id)
 	query := fmt.Sprintf("UPDATE templates SET %s WHERE id = $%d", strings.Join(str, ","), i)
@@ -144,7 +157,7 @@ func (tr *templateRepo) Get(ctx context.Context, id string) (*models.Template, e
 		return template, nil
 	}
 	if err == cache.EMPTY {
-		query := "SELECT t.*, COUNT(ft.template_id) AS likes FROM templates t LEFT JOIN favorite_templates ft ON ft.template_id=t.id WHERE id = $1 GROUP BY t.id"
+		query := "SELECT * FROM templates WHERE id = $1"
 		qd := helpers.NewQueryData(ctx, tr.Storage, op, query, id)
 		if err := qd.QueryRowWithTx(template); err != nil {
 			return nil, err
@@ -168,7 +181,7 @@ func (tr *templateRepo) Get(ctx context.Context, id string) (*models.Template, e
 
 func (tr *templateRepo) FetchFavorite(ctx context.Context, id string, amount, page uint) ([]models.Template, error) {
 	op := "templateRepo.FetchFavorite"
-	query := "SELECT t.*, COUNT(ft.template_id) as likes FROM templates t JOIN favorite_templates ft ON t.id=ft.template_id WHERE ft.user_id=$1 GROUP BY t.id ORDER BY t.num_of_users DEST OFFSET $2 LIMIT $3"
+	query := "SELECT * FROM templates t JOIN favorite_templates ft ON t.id=ft.template_id WHERE ft.user_id=$1 ORDER BY t.num_of_users DESC OFFSET $2 LIMIT $3"
 	templates := []models.Template{}
 	rows, err := tr.Storage.Pool.Query(ctx, query, id, amount*page-amount, amount)
 	if err != nil {
@@ -204,7 +217,7 @@ func (tr *templateRepo) FetchFavorite(ctx context.Context, id string, amount, pa
 
 func (tr *templateRepo) Fetch(ctx context.Context, amount, page uint) ([]models.Template, error) {
 	op := "templateRepo.Fetch"
-	query := "SELECT t.*, COUNT(ft.template_id) AS likes FROM templates t LEFT JOIN favorite_templates ft ON ft.template_id=t.id GROUP BY t.id ORDER BY likes DESC OFFSET $1 LIMIT $2"
+	query := "SELECT * FROM templates ORDER BY likes DESC OFFSET $1 LIMIT $2"
 	templates := []models.Template{}
 	rows, err := tr.Storage.Pool.Query(ctx, query, amount*page-amount, amount)
 	if err != nil {
@@ -251,7 +264,7 @@ func (tr *templateRepo) Sort(ctx context.Context, amount, page uint, dest, field
 		dest = "DESC"
 	}
 	templates := []models.Template{}
-	query := fmt.Sprintf("SELECT t.*, COUNT(ft.template_id) AS likes FROM templates t LEFT JOIN favorite_templates ft ON ft.template_id=t.id GROUP BY t.id ORDER BY %s %s OFFSET $1 LIMIT $2", field, dest)
+	query := fmt.Sprintf("SELECT * ORDER BY %s %s OFFSET $1 LIMIT $2", field, dest)
 	rows, err := tr.Storage.Pool.Query(ctx, query, amount*page-amount, amount)
 	if err != nil {
 		if errors.Is(err, storage.ErrNotFound()) {
@@ -327,7 +340,7 @@ func (tr *templateRepo) Search(ctx context.Context, amount, page uint, query str
 func (tr *templateRepo) getByIds(ctx context.Context, ids []string) ([]models.Template, error) {
 	fmt.Println(ids)
 	op := "templateRepo.SearchPreparing.GetByIds"
-	query := "SELECT t.*, COUNT(ft.template_id) AS likes FROM templates t LEFT JOIN favorite_templates ft ON ft.template_id=t.id WHERE t.id = ANY($1) GROUP BY t.id"
+	query := "SELECT * FROM templates WHERE id = ANY($1)"
 	templates := make([]models.Template, 0, len(ids))
 	rows, err := tr.Storage.Pool.Query(ctx, query, ids)
 	if err != nil {

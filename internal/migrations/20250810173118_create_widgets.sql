@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS widgets(
     description TEXT NOT NULL UNIQUE,
     type VARCHAR(50) NOT NULL,
     link TEXT NOT NULL UNIQUE,
-    likes INTEGER NOT NULL DEFAULT 0,
+    likes INTEGER NOT NULL CHECK(likes>=0) DEFAULT 0,
     num_of_users INTEGER NOT NULL DEFAULT 0
 )
 -- +goose StatementEnd

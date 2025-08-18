@@ -74,7 +74,7 @@ func Run() {
 
 	authServ := services.NewAuthServ(userRepo, verificationRepo, transactor, emailSendler, log, cfg.Auth)
 	readmeServ := services.NewReadmeServ(readmeRepo, userRepo, templateRepo, widgetRepo, transactor, log)
-	widgetServ := services.NewWidgetServ(widgetRepo, userRepo, log)
+	widgetServ := services.NewWidgetServ(widgetRepo, userRepo, transactor, log)
 	templateServ := services.NewTemplateServ(templateRepo, userRepo, widgetRepo, transactor, log)
 	userServ := services.NewUserServ(userRepo, transactor, log)
 

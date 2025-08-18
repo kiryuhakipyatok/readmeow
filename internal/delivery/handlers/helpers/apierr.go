@@ -62,5 +62,5 @@ func NotFound() ApiErr {
 }
 
 func AlreadyExists() ApiErr {
-	return NewApiError(fiber.StatusNotFound, ErrAlreadyExists)
+	return NewApiError(fiber.StatusConflict, ErrAlreadyExists)
 }

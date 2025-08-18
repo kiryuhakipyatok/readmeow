@@ -83,9 +83,8 @@ func (ts *templateServ) Create(ctx context.Context, oid, title, image, descripti
 			}
 
 			for _, w := range widgetsData {
-				updatedNumOfUsers := w.NumOfUsers + 1
-				update := map[string]any{
-					"num_of_users": updatedNumOfUsers,
+				update := map[string]string{
+					"num_of_users": "+",
 				}
 				if err := ts.WidgetRepo.Update(c, update, w.Id.String()); err != nil {
 					log.Log.Error("failed to update widget info", logger.Err(err))
@@ -98,9 +97,8 @@ func (ts *templateServ) Create(ctx context.Context, oid, title, image, descripti
 			log.Log.Error("failed to create template", logger.Err(err))
 			return nil, err
 		}
-		numOfTemplates := user.NumOfTemplates + 1
 		update := map[string]any{
-			"num_of_templates": numOfTemplates,
+			"num_of_templates": "+",
 		}
 		if err := ts.UserRepo.Update(c, update, user.Id.String()); err != nil {
 			log.Log.Error("failed to update user info", logger.Err(err))
@@ -336,10 +334,23 @@ func (ts *templateServ) Like(ctx context.Context, id, uid string) error {
 	op := "templateServ.Like"
 	log := ts.Logger.AddOp(op)
 	log.Log.Info("liking template")
-	if err := ts.TemplateRepo.Like(ctx, id, uid); err != nil {
-		log.Log.Error("failed to like template", logger.Err(err))
+	if _, err := ts.Transactor.WithinTransaction(ctx, func(c context.Context) (any, error) {
+		if err := ts.TemplateRepo.Like(c, id, uid); err != nil {
+			log.Log.Error("failed to like template", logger.Err(err))
+			return nil, err
+		}
+		update := map[string]any{
+			"likes": "+",
+		}
+		if err := ts.TemplateRepo.Update(c, update, id); err != nil {
+			log.Log.Error("failed to update template", logger.Err(err))
+			return nil, err
+		}
+		return nil, nil
+	}); err != nil {
 		return errs.NewAppError(op, err)
 	}
+
 	log.Log.Info("template liked successfully")
 	return nil
 }
@@ -348,8 +359,20 @@ func (ts *templateServ) Dislike(ctx context.Context, id, uid string) error {
 	op := "templateServ.Dislike"
 	log := ts.Logger.AddOp(op)
 	log.Log.Info("disliking template")
-	if err := ts.TemplateRepo.Dislike(ctx, id, uid); err != nil {
-		log.Log.Error("failed to dislike template", logger.Err(err))
+	if _, err := ts.Transactor.WithinTransaction(ctx, func(c context.Context) (any, error) {
+		if err := ts.TemplateRepo.Dislike(c, id, uid); err != nil {
+			log.Log.Error("failed to dislike template", logger.Err(err))
+			return nil, err
+		}
+		update := map[string]any{
+			"likes": "-",
+		}
+		if err := ts.TemplateRepo.Update(c, update, id); err != nil {
+			log.Log.Error("failed to update template", logger.Err(err))
+			return nil, err
+		}
+		return nil, nil
+	}); err != nil {
 		return errs.NewAppError(op, err)
 	}
 	log.Log.Info("template disliked successfully")

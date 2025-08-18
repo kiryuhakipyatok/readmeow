@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS templates(
     text TEXT[] NOT NULL,
     links TEXT[] NOT NULL,
     widgets JSONB[] NOT NULL,
-    likes NUMERIC NOT NULL DEFAULT 0,
+    likes INTEGER NOT NULL CHECK(likes>=0) DEFAULT 0,
     render_order TEXT[] NOT NULL,
     create_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     last_update_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
