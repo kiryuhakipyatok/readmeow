@@ -2,9 +2,9 @@ package services
 
 import (
 	"context"
-	"readmeow/internal/delivery/dto"
 	"readmeow/internal/domain/models"
 	"readmeow/internal/domain/repositories"
+	"readmeow/internal/dto"
 	"readmeow/pkg/errs"
 	"readmeow/pkg/logger"
 	"readmeow/pkg/storage"
@@ -189,7 +189,7 @@ func (ts *templateServ) FetchFavorite(ctx context.Context, id string) ([]dto.Tem
 			LastUpdateTime: t.LastUpdateTime,
 			NumOfUsers:     t.NumOfUsers,
 			Likes:          t.Likes,
-			OwnerId:        owner.Id,
+			OwnerId:        owner.Id.String(),
 			OwnerAvatar:    owner.Avatar,
 		}
 		templates = append(templates, template)
@@ -233,7 +233,7 @@ func (ts *templateServ) Fetch(ctx context.Context, amount, page uint) ([]dto.Tem
 			LastUpdateTime: t.LastUpdateTime,
 			NumOfUsers:     t.NumOfUsers,
 			Likes:          t.Likes,
-			OwnerId:        owner.Id,
+			OwnerId:        owner.Id.String(),
 			OwnerAvatar:    owner.Avatar,
 		}
 		templates = append(templates, template)
@@ -278,7 +278,7 @@ func (ts *templateServ) Sort(ctx context.Context, amount, page uint, dest, field
 			LastUpdateTime: t.LastUpdateTime,
 			NumOfUsers:     t.NumOfUsers,
 			Likes:          t.Likes,
-			OwnerId:        owner.Id,
+			OwnerId:        owner.Id.String(),
 			OwnerAvatar:    owner.Avatar,
 		}
 		templates = append(templates, template)
@@ -323,7 +323,7 @@ func (ts *templateServ) Search(ctx context.Context, amount, page uint, query str
 			LastUpdateTime: t.LastUpdateTime,
 			NumOfUsers:     t.NumOfUsers,
 			Likes:          t.Likes,
-			OwnerId:        owner.Id,
+			OwnerId:        owner.Id.String(),
 			OwnerAvatar:    owner.Avatar,
 		}
 		templates = append(templates, template)

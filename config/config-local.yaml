@@ -10,6 +10,8 @@ server:
   idleTimeout: 30
   requestTimeout: 10
   closeTimeout: 30
+  rateLimit: 1
+  burst: 2
 
 auth:
   secret: "${SECRET}"

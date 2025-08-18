@@ -124,7 +124,7 @@ func (as *authServ) Login(ctx context.Context, login, password string) (*loginRe
 		log.Log.Info("invalid credentials", logger.Err(err))
 		return nil, errs.NewAppError(op, err)
 	}
-	t := time.Now().Add(time.Second * time.Duration(as.AuthConfig.TokenTTL))
+	t := time.Now().Add(time.Duration(int(time.Second) * as.AuthConfig.TokenTTL))
 	ttl := jwt.NewNumericDate(t)
 	iat := jwt.NewNumericDate(t)
 	jti := uuid.New().String()

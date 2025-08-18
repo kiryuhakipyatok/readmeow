@@ -2,9 +2,9 @@ package services
 
 import (
 	"context"
-	"readmeow/internal/delivery/dto"
 	"readmeow/internal/domain/models"
 	"readmeow/internal/domain/repositories"
+	"readmeow/internal/dto"
 	"readmeow/pkg/errs"
 	"readmeow/pkg/logger"
 )

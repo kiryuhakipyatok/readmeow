@@ -5,6 +5,9 @@ import (
 	"errors"
 	"readmeow/internal/config"
 	"readmeow/internal/delivery/handlers/helpers"
+	"readmeow/internal/delivery/ratelimiter"
+
+	// "sync"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -26,6 +29,7 @@ func NewServer(scfg config.ServerConfig, acfg config.AuthConfig) *Server {
 	app.Use(
 		cors.New(cors.Config{}),
 		authMiddleware(acfg),
+		rateLimiterMiddleware(scfg),
 		requestTimeoutMiddleware(time.Duration(scfg.RequestTimeout*int(time.Second))),
 	)
 
@@ -91,4 +95,17 @@ func errorHandler(c *fiber.Ctx, err error) error {
 	return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 		"error": "internal server error",
 	})
+}
+
+func rateLimiterMiddleware(scfg config.ServerConfig) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		ip := c.IP()
+		limiter := ratelimiter.RateLimit(ip, scfg.RateLimit, scfg.Burst)
+		if !limiter.Allow() {
+			return c.Status(fiber.StatusTooManyRequests).JSON(fiber.Map{
+				"error": "too many requests",
+			})
+		}
+		return c.Next()
+	}
 }

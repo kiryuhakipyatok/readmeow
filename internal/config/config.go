@@ -32,6 +32,8 @@ type ServerConfig struct {
 	IdleTimeout    int    `mapstructure:"idleTimeout"`
 	RequestTimeout int    `mapstructure:"requestTimeout"`
 	CloseTimeout   int    `mapstructure:"closeTimeout"`
+	RateLimit      int    `mapstructure:"rateLimit"`
+	Burst          int    `mapstructure:"burst"`
 }
 
 type AuthConfig struct {

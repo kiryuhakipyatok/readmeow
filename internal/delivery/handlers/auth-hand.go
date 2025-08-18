@@ -1,9 +1,9 @@
 package handlers
 
 import (
-	"readmeow/internal/delivery/dto"
 	"readmeow/internal/delivery/handlers/helpers"
 	"readmeow/internal/domain/services"
+	"readmeow/internal/dto"
 	"readmeow/pkg/validator"
 	"time"
 
