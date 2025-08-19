@@ -5,7 +5,6 @@ import (
 	"readmeow/internal/domain/services"
 	"readmeow/internal/dto"
 	"readmeow/pkg/validator"
-	"strings"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -78,39 +77,13 @@ func (th *TemplateHandl) GetTemplate(c *fiber.Ctx) error {
 	return c.JSON(template)
 }
 
-func (th *TemplateHandl) FetchTemplates(c *fiber.Ctx) error {
-	ctx := c.UserContext()
-	req := dto.PaginationRequest{}
-	if err := helpers.ParseAndValidateRequest(c, &req, helpers.Query{}, th.Validator); err != nil {
-		return err
-	}
-	templates, err := th.TemplateServ.Fetch(ctx, req.Amount, req.Page)
-	if err != nil {
-		return helpers.ToApiError(err)
-	}
-	return c.JSON(templates)
-}
-
-func (th *TemplateHandl) SortTemplate(c *fiber.Ctx) error {
-	ctx := c.UserContext()
-	req := dto.SortTemplatesRequest{}
-	if err := helpers.ParseAndValidateRequest(c, &req, helpers.Query{}, th.Validator); err != nil {
-		return err
-	}
-	templates, err := th.TemplateServ.Sort(ctx, req.Amount, req.Page, strings.ToUpper(req.Destination), req.Field)
-	if err != nil {
-		return helpers.ToApiError(err)
-	}
-	return c.JSON(templates)
-}
-
 func (th *TemplateHandl) SearchTemplate(c *fiber.Ctx) error {
 	ctx := c.UserContext()
-	req := dto.SearchRequest{}
-	if err := helpers.ParseAndValidateRequest(c, &req, helpers.Query{}, th.Validator); err != nil {
+	req := dto.SearchTemplateRequest{}
+	if err := helpers.ParseAndValidateRequest(c, &req, helpers.Body{}, th.Validator); err != nil {
 		return err
 	}
-	templates, err := th.TemplateServ.Search(ctx, req.Amount, req.Page, req.Query)
+	templates, err := th.TemplateServ.Search(ctx, req.Amount, req.Page, req.Query, req.Filter, req.Sort)
 	if err != nil {
 		return helpers.ToApiError(err)
 	}

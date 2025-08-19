@@ -6,8 +6,6 @@ import (
 	"readmeow/internal/config"
 	"readmeow/internal/delivery/handlers/helpers"
 	"readmeow/internal/delivery/ratelimiter"
-
-	// "sync"
 	"time"
 
 	"github.com/gofiber/fiber/v2"

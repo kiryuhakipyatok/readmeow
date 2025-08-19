@@ -19,13 +19,12 @@ import (
 	"github.com/elastic/go-elasticsearch/v9/esutil"
 	s "github.com/elastic/go-elasticsearch/v9/typedapi/core/search"
 	"github.com/elastic/go-elasticsearch/v9/typedapi/types"
+	"github.com/elastic/go-elasticsearch/v9/typedapi/types/enums/sortorder"
 )
 
 type WidgetRepo interface {
 	Get(ctx context.Context, id string) (*models.Widget, error)
-	Fetch(ctx context.Context, amount, page uint) ([]models.Widget, error)
-	Sort(ctx context.Context, amount, page uint, field, dest string) ([]models.Widget, error)
-	Search(ctx context.Context, amount, page uint, query string) ([]models.Widget, error)
+	Search(ctx context.Context, amount, page uint, query string, filter map[string][]string, sort map[string]string) ([]models.Widget, error)
 	Like(ctx context.Context, uid, id string) error
 	Dislike(ctx context.Context, uid, id string) error
 	FetchFavorite(ctx context.Context, id string, amount, page uint) ([]models.Widget, error)
@@ -82,38 +81,6 @@ func (wr *widgetRepo) Get(ctx context.Context, id string) (*models.Widget, error
 	return widget, nil
 }
 
-func (wr *widgetRepo) Fetch(ctx context.Context, amount, page uint) ([]models.Widget, error) {
-	op := "widgetRepo.Fetch"
-	query := "SELECT * FROM widgets ORDER BY likes DESC OFFSET $1 LIMIT $2"
-	rows, err := wr.Storage.Pool.Query(ctx, query, amount*page-amount, amount)
-	if err != nil {
-		if errors.Is(err, storage.ErrNotFound()) {
-			return nil, errs.ErrNotFound(op)
-		}
-		return nil, errs.NewAppError(op, err)
-	}
-	defer rows.Close()
-	widgets := []models.Widget{}
-	for rows.Next() {
-		widget := models.Widget{}
-		if err := rows.Scan(
-			&widget.Id,
-			&widget.Title,
-			&widget.Image,
-			&widget.Description,
-			&widget.Type,
-			&widget.Link,
-			&widget.NumOfUsers,
-			&widget.Tags,
-			&widget.Likes,
-		); err != nil {
-			return nil, errs.NewAppError(op, err)
-		}
-		widgets = append(widgets, widget)
-	}
-	return widgets, nil
-}
-
 func (wr *widgetRepo) FetchFavorite(ctx context.Context, id string, amount, page uint) ([]models.Widget, error) {
 	op := "widgetRepo.FetchFavorite"
 	query := "SELECT w.* FROM widgets w JOIN favorite_widgets fw ON w.id=fw.widget_id WHERE fw.user_id=$1 ORDER BY w.num_of_users DESC OFFSET $2 LIMIT $3"
@@ -166,61 +133,119 @@ func (wr *widgetRepo) Dislike(ctx context.Context, uid, id string) error {
 	return nil
 }
 
-func (wr *widgetRepo) Sort(ctx context.Context, amount, page uint, field, dest string) ([]models.Widget, error) {
-	op := "widgetRepo.Sort"
-	validFields := map[string]bool{
-		"likes":        true,
-		"num_of_users": true,
-	}
-	if !validFields[field] {
-		return nil, errs.ErrInvalidFields(op)
-	}
-	if dest != "DESC" && dest != "ASC" {
-		dest = "DESC"
-	}
-	query := fmt.Sprintf("SELECT * FROM widgets ORDER BY %s %s OFFSET $1 LIMIT $2", field, dest)
-	rows, err := wr.Storage.Pool.Query(ctx, query, amount*page-amount, amount)
-	if err != nil {
-		if errors.Is(err, storage.ErrNotFound()) {
-			return nil, errs.ErrNotFound(op)
-		}
-		return nil, errs.NewAppError(op, err)
-	}
-	defer rows.Close()
-	widgets := []models.Widget{}
-	for rows.Next() {
-		widget := models.Widget{}
-		if err := rows.Scan(
-			&widget.Id,
-			&widget.Title,
-			&widget.Image,
-			&widget.Description,
-			&widget.Type,
-			&widget.Link,
-			&widget.NumOfUsers,
-			&widget.Tags,
-			&widget.Likes,
-		); err != nil {
-			return nil, errs.NewAppError(op, err)
-		}
-		widgets = append(widgets, widget)
-	}
-	return widgets, nil
-}
-
-func (wr *widgetRepo) Search(ctx context.Context, amount, page uint, query string) ([]models.Widget, error) {
+func (wr *widgetRepo) Search(ctx context.Context, amount, page uint, query string, filter map[string][]string, sort map[string]string) ([]models.Widget, error) {
 	op := "widgetRepo.Search"
-	mainQuery := types.Query{
-		MultiMatch: &types.MultiMatchQuery{
-			Query:     query,
-			Fields:    []string{"Title^3", "Type^2", "Description"},
-			Fuzziness: "AUTO",
-		},
+	var mainQuery types.Query
+	if query != "" {
+		mainQuery = types.Query{
+			MultiMatch: &types.MultiMatchQuery{
+				Query:     query,
+				Fields:    []string{"Title^3", "Type^2", "Description"},
+				Fuzziness: "AUTO",
+			},
+		}
+	} else {
+		mainQuery = types.Query{
+			MatchAll: &types.MatchAllQuery{},
+		}
 	}
-	res, err := wr.SearchClient.Client.Search().Index("widgets").From(int(amount*page - amount)).Size(int(amount)).Request(&s.Request{
+
+	sorts := []types.SortCombinations{}
+	if len(sort) > 0 {
+		validSortFields := map[string]bool{
+			"Likes":      true,
+			"NumOfUsers": true,
+		}
+		validSortValues := map[string]bool{
+			"desc": true,
+			"asc":  true,
+		}
+		for k, v := range sort {
+			if !validSortFields[k] {
+				return nil, errs.ErrInvalidFields(op)
+			} else if !validSortValues[strings.ToLower(v)] {
+				return nil, errs.ErrInvalidValues(op)
+			}
+			order := &sortorder.Desc
+			if v == "asc" {
+				order = &sortorder.Asc
+			}
+			sorts = append(sorts, &types.SortOptions{
+				SortOptions: map[string]types.FieldSort{
+					k: {
+						Order: order,
+					},
+				},
+			})
+		}
+	}
+
+	filters := []types.Query{}
+
+	if len(filter) > 0 {
+
+		validFilterFields := map[string]bool{
+			"Tags":  true,
+			"Types": true,
+		}
+		for k := range filter {
+			if !validFilterFields[k] {
+				return nil, errs.ErrInvalidFields(op)
+			}
+		}
+
+		if tags, ok := filter["Tags"]; ok && len(tags) > 0 {
+			tagsQuery := []types.Query{}
+			for _, t := range tags {
+				tagsQuery = append(tagsQuery, types.Query{
+					Exists: &types.ExistsQuery{
+						Field: fmt.Sprintf("Tags.%s", t),
+					},
+				})
+			}
+			filters = append(filters, types.Query{
+				Bool: &types.BoolQuery{
+					Should:             tagsQuery,
+					MinimumShouldMatch: 1,
+				},
+			})
+		}
+
+		if typs, ok := filter["Types"]; ok && len(typs) > 0 {
+			typesQuery := []types.Query{}
+			for _, t := range typs {
+				typesQuery = append(typesQuery, types.Query{
+					Term: map[string]types.TermQuery{
+						"Type.keyword": {Value: t},
+					},
+				})
+			}
+			filters = append(filters, types.Query{
+				Bool: &types.BoolQuery{
+					Should:             typesQuery,
+					MinimumShouldMatch: 1,
+				},
+			})
+		}
+
+	}
+
+	ptr := func(i int) *int {
+		return &i
+	}
+
+	res, err := wr.SearchClient.Client.Search().Index("widgets").Request(&s.Request{
+		From: ptr(int(amount*page - amount)),
+		Size: ptr(int(amount)),
 		Query: &types.Query{
 			Bool: &types.BoolQuery{
 				Must: []types.Query{mainQuery},
+			},
+		},
+		Sort: sorts,
+		PostFilter: &types.Query{
+			Bool: &types.BoolQuery{
+				Filter: filters,
 			},
 		},
 		Source_: &types.SourceFilter{Includes: []string{"id"}},
@@ -233,6 +258,9 @@ func (wr *widgetRepo) Search(ctx context.Context, amount, page uint, query strin
 		if hit.Id_ != nil {
 			ids = append(ids, *hit.Id_)
 		}
+	}
+	if len(ids) == 0 {
+		return nil, errs.ErrNotFound(op)
 	}
 	widgets, err := wr.GetByIds(ctx, ids)
 	if err != nil {
@@ -307,7 +335,7 @@ func (wr *widgetRepo) GetByIds(ctx context.Context, ids []string) ([]models.Widg
 
 func (wr *widgetRepo) getAll(ctx context.Context) ([]models.Widget, error) {
 	op := "widgetRepo.SearchPreparing.getAll"
-	query := "SELECT id, title, description, type FROM widgets"
+	query := "SELECT id, title, description, type, likes, num_of_users,tags FROM widgets"
 	widgets := []models.Widget{}
 	rows, err := wr.Storage.Pool.Query(ctx, query)
 	if err != nil {
@@ -325,6 +353,9 @@ func (wr *widgetRepo) getAll(ctx context.Context) ([]models.Widget, error) {
 			&widget.Title,
 			&widget.Description,
 			&widget.Type,
+			&widget.Likes,
+			&widget.NumOfUsers,
+			&widget.Tags,
 		); err != nil {
 			return nil, errs.NewAppError(op, err)
 		}
@@ -351,6 +382,9 @@ func (wr *widgetRepo) MustBulk(ctx context.Context, cfg config.SearchConfig) err
 		Title       string
 		Description string
 		Type        string
+		Likes       int32
+		NumOfUsers  int32
+		Tags        map[string]any
 	}
 	for _, w := range widgets {
 		d := doc{
@@ -358,6 +392,9 @@ func (wr *widgetRepo) MustBulk(ctx context.Context, cfg config.SearchConfig) err
 			Title:       w.Title,
 			Description: w.Description,
 			Type:        w.Type,
+			Likes:       w.Likes,
+			Tags:        w.Tags,
+			NumOfUsers:  w.NumOfUsers,
 		}
 		data, err := json.Marshal(d)
 		if err != nil {

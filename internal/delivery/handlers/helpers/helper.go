@@ -18,17 +18,14 @@ func (Query) isRequestType() {}
 func (Body) isRequestType()  {}
 
 func ParseAndValidateRequest[T any](c *fiber.Ctx, request *T, requestType RequestType, v *validator.Validator) error {
-	errParseFunc := func() error {
-		return InvalidRequest()
-	}
 	switch requestType.(type) {
 	case Body:
 		if err := c.BodyParser(request); err != nil {
-			return errParseFunc()
+			return InvalidRequest()
 		}
 	case Query:
 		if err := c.QueryParser(request); err != nil {
-			return errParseFunc()
+			return InvalidRequest()
 		}
 	}
 	if err := v.Validate.Struct(request); err != nil {

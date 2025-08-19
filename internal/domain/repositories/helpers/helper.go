@@ -90,8 +90,10 @@ func (qd QueryData) QueryRowWithTx(entity any) error {
 	case *models.User:
 		userData := []any{
 			&e.Id,
+			&e.Nickname,
 			&e.Login,
 			&e.Email,
+			&e.Password,
 			&e.Avatar,
 			&e.TimeOfRegister,
 			&e.NumOfTemplates,

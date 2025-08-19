@@ -19,6 +19,7 @@ import (
 	"github.com/elastic/go-elasticsearch/v9/esutil"
 	s "github.com/elastic/go-elasticsearch/v9/typedapi/core/search"
 	"github.com/elastic/go-elasticsearch/v9/typedapi/types"
+	"github.com/elastic/go-elasticsearch/v9/typedapi/types/enums/sortorder"
 	"github.com/google/uuid"
 )
 
@@ -27,12 +28,10 @@ type TemplateRepo interface {
 	Update(ctx context.Context, fields map[string]any, id string) error
 	Delete(ctx context.Context, id string) error
 	Get(ctx context.Context, id string) (*models.Template, error)
-	Fetch(ctx context.Context, amount, page uint) ([]models.Template, error)
 	Like(ctx context.Context, id, uid string) error
 	Dislike(ctx context.Context, id, uid string) error
 	FetchFavorite(ctx context.Context, id string, amount, page uint) ([]models.Template, error)
-	Sort(ctx context.Context, amount, page uint, dest, field string) ([]models.Template, error)
-	Search(ctx context.Context, amount, page uint, query string) ([]models.Template, error)
+	Search(ctx context.Context, amount, page uint, query string, filter map[string]bool, sort map[string]string) ([]models.Template, error)
 	MustBulk(ctx context.Context, cfg config.SearchConfig) error
 }
 
@@ -215,105 +214,101 @@ func (tr *templateRepo) FetchFavorite(ctx context.Context, id string, amount, pa
 	return templates, nil
 }
 
-func (tr *templateRepo) Fetch(ctx context.Context, amount, page uint) ([]models.Template, error) {
-	op := "templateRepo.Fetch"
-	query := "SELECT * FROM templates ORDER BY likes DESC OFFSET $1 LIMIT $2"
-	templates := []models.Template{}
-	rows, err := tr.Storage.Pool.Query(ctx, query, amount*page-amount, amount)
-	if err != nil {
-		if errors.Is(err, storage.ErrNotFound()) {
-			return nil, errs.ErrNotFound(op)
-		}
-		return nil, errs.NewAppError(op, err)
-	}
-	defer rows.Close()
-	for rows.Next() {
-		template := models.Template{}
-		if err := rows.Scan(
-			&template.Id,
-			&template.OwnerId,
-			&template.Title,
-			&template.Image,
-			&template.Description,
-			&template.Text,
-			&template.Links,
-			&template.RenderOrder,
-			&template.CreateTime,
-			&template.LastUpdateTime,
-			&template.NumOfUsers,
-			&template.Widgets,
-			&template.Likes,
-		); err != nil {
-			return nil, errs.NewAppError(op, err)
-		}
-		templates = append(templates, template)
-	}
-	return templates, nil
-}
-
-func (tr *templateRepo) Sort(ctx context.Context, amount, page uint, dest, field string) ([]models.Template, error) {
-	op := "templateRepo.Sort"
-	validFields := map[string]bool{
-		"num_of_users": true,
-		"likes":        true,
-		"create_time":  true,
-	}
-	if !validFields[field] {
-		return nil, errs.ErrInvalidFields(op)
-	}
-	if dest != "ASC" && dest != "DESC" {
-		dest = "DESC"
-	}
-	templates := []models.Template{}
-	query := fmt.Sprintf("SELECT * ORDER BY %s %s OFFSET $1 LIMIT $2", field, dest)
-	rows, err := tr.Storage.Pool.Query(ctx, query, amount*page-amount, amount)
-	if err != nil {
-		if errors.Is(err, storage.ErrNotFound()) {
-			return nil, errs.ErrNotFound(op)
-		}
-		return nil, errs.NewAppError(op, err)
-	}
-	defer rows.Close()
-	for rows.Next() {
-		template := models.Template{}
-		if err := rows.Scan(
-			&template.Id,
-			&template.OwnerId,
-			&template.Title,
-			&template.Image,
-			&template.Description,
-			&template.Text,
-			&template.Links,
-			&template.RenderOrder,
-			&template.CreateTime,
-			&template.LastUpdateTime,
-			&template.NumOfUsers,
-			&template.Widgets,
-			&template.Likes,
-		); err != nil {
-			return nil, errs.NewAppError(op, err)
-		}
-		templates = append(templates, template)
-	}
-	return templates, nil
-}
-
-func (tr *templateRepo) Search(ctx context.Context, amount, page uint, query string) ([]models.Template, error) {
+func (tr *templateRepo) Search(ctx context.Context, amount, page uint, query string, filter map[string]bool, sort map[string]string) ([]models.Template, error) {
 	op := "templateRepo.Search"
-	if strings.TrimSpace(query) == "" {
-		return tr.getAll(ctx)
+	var mainQuery types.Query
+	if query != "" {
+		mainQuery = types.Query{
+			MultiMatch: &types.MultiMatchQuery{
+				Query:     query,
+				Fields:    []string{"Title^2", "Description"},
+				Fuzziness: "AUTO",
+			},
+		}
+	} else {
+		mainQuery = types.Query{
+			MatchAll: &types.MatchAllQuery{},
+		}
 	}
-	mainQuery := types.Query{
-		MultiMatch: &types.MultiMatchQuery{
-			Query:     query,
-			Fields:    []string{"Title^2", "Description"},
-			Fuzziness: "AUTO",
-		},
+
+	sorts := []types.SortCombinations{}
+	if len(sort) > 0 {
+		validSortFields := map[string]bool{
+			"Likes":          true,
+			"NumOfUsers":     true,
+			"LastUpdateTime": true,
+		}
+		validSortValues := map[string]bool{
+			"desc": true,
+			"asc":  true,
+		}
+		for k, v := range sort {
+			if !validSortFields[k] {
+				return nil, errs.ErrInvalidFields(op)
+			} else if !validSortValues[strings.ToLower(v)] {
+				return nil, errs.ErrInvalidValues(op)
+			}
+			order := &sortorder.Desc
+			if v == "asc" {
+				order = &sortorder.Asc
+			}
+			sorts = append(sorts, &types.SortOptions{
+				SortOptions: map[string]types.FieldSort{
+					k: {
+						Order: order,
+					},
+				},
+			})
+		}
 	}
-	res, err := tr.SearchClient.Client.Search().Index("templates").From(int(amount*page - amount)).Size(int(amount)).Request(&s.Request{
+
+	filters := []types.Query{}
+	if len(filter) > 0 {
+		validFilterFields := map[string]bool{
+			"isOfficial": true,
+		}
+		for k, v := range filter {
+			if !validFilterFields[k] {
+				return nil, errs.ErrInvalidFields(op)
+			}
+			if v {
+				filters = append(filters, types.Query{
+					Term: map[string]types.TermQuery{
+						"OwnerId.keyword": {Value: uuid.Nil.String()},
+					},
+				})
+			} else {
+				filters = append(filters, types.Query{
+					Bool: &types.BoolQuery{
+						MustNot: []types.Query{
+							{
+								Term: map[string]types.TermQuery{
+									"OwnerId.keyword": {Value: uuid.Nil.String()},
+								},
+							},
+						},
+					},
+				})
+			}
+		}
+	}
+
+	ptr := func(i int) *int {
+		return &i
+	}
+
+	res, err := tr.SearchClient.Client.Search().Index("templates").Request(&s.Request{
+		From: ptr(int(amount*page - amount)),
+		Size: ptr(int(amount)),
 		Query: &types.Query{
 			Bool: &types.BoolQuery{
 				Must: []types.Query{mainQuery},
+			},
+		},
+		Sort: sorts,
+		PostFilter: &types.Query{
+			Bool: &types.BoolQuery{
+				Filter: filters,
 			},
 		},
 		Source_: &types.SourceFilter{Includes: []string{"id"}},
@@ -383,7 +378,7 @@ func (tr *templateRepo) getByIds(ctx context.Context, ids []string) ([]models.Te
 
 func (tr *templateRepo) getAll(ctx context.Context) ([]models.Template, error) {
 	op := "templateRepo.SearchPreparing.getAll"
-	query := "SELECT id, title, description FROM templates"
+	query := "SELECT id, owner_id, title, description, likes, num_of_users, last_update_time FROM templates"
 	templates := []models.Template{}
 	rows, err := tr.Storage.Pool.Query(ctx, query)
 	if err != nil {
@@ -398,8 +393,12 @@ func (tr *templateRepo) getAll(ctx context.Context) ([]models.Template, error) {
 		template := models.Template{}
 		if err := rows.Scan(
 			&template.Id,
+			&template.OwnerId,
 			&template.Title,
 			&template.Description,
+			&template.Likes,
+			&template.NumOfUsers,
+			&template.LastUpdateTime,
 		); err != nil {
 			return nil, errs.NewAppError(op, err)
 		}
@@ -423,15 +422,23 @@ func (tr *templateRepo) MustBulk(ctx context.Context, cfg config.SearchConfig) e
 
 	}
 	type doc struct {
-		Id          string
-		Title       string
-		Description string
+		Id             string
+		OwnerId        string
+		Title          string
+		Description    string
+		Likes          int32
+		NumOfUsers     int32
+		LastUpdateTime time.Time
 	}
 	for _, t := range templates {
 		d := doc{
-			Id:          t.Id.String(),
-			Title:       t.Title,
-			Description: t.Description,
+			Id:             t.Id.String(),
+			OwnerId:        t.OwnerId.String(),
+			Title:          t.Title,
+			Description:    t.Description,
+			NumOfUsers:     t.NumOfUsers,
+			Likes:          t.Likes,
+			LastUpdateTime: t.LastUpdateTime,
 		}
 		data, err := json.Marshal(d)
 		if err != nil {

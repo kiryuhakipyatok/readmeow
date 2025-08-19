@@ -22,15 +22,18 @@ type PaginationRequest struct {
 	Page   uint `json:"page" validate:"required,min=1"`
 }
 
-type SortWidgetsRequest struct {
+type SearchWidgetRequest struct {
 	PaginationRequest
-	Field       string `json:"field" validate:"required,oneof=likes num_of_users"`
-	Destination string `json:"destination" validate:"oneof=desc asc"`
+	Query  string              `json:"query"`
+	Sort   map[string]string   `json:"sort" validate:"dive,keys,oneof=Likes NumOfUsers,endkeys"`
+	Filter map[string][]string `json:"filter" validate:"dive,keys,oneof=Types Tags,endkeys"`
 }
 
-type SearchRequest struct {
+type SearchTemplateRequest struct {
 	PaginationRequest
-	Query string `json:"query" validate:"required"`
+	Query  string            `json:"query"`
+	Sort   map[string]string `json:"sort" validate:"dive,keys,oneof=Likes NumOfUsers LastUpdateTime,endkeys"`
+	Filter map[string]bool   `json:"filter" validate:"dive,keys,oneof=isOfficial,endkeys"`
 }
 
 type UpdateUserRequest struct {
@@ -60,12 +63,6 @@ type CreateTemplateRequest struct {
 type UpdateTemplateRequest struct {
 	Id      string         `json:"id" validate:"required,uuid"`
 	Updates map[string]any `json:"updates" validate:"required,dive,keys,oneof=title text links widgets order,endkeys,required"`
-}
-
-type SortTemplatesRequest struct {
-	PaginationRequest
-	Field       string `json:"field" validate:"required,oneof=likes num_of_users create_time"`
-	Destination string `json:"destination" validate:"oneof=desc asc"`
 }
 
 type CreateReadmeRequest struct {

@@ -58,9 +58,7 @@ func (rc *RouteConfig) AuthRoutes() {
 func (rc *RouteConfig) WidgetsRoutes() {
 	widgetGroup := rc.App.Group("/api/widgets")
 
-	widgetGroup.Get("", rc.WidgetHandl.FetchWidgets)
-	widgetGroup.Get("/sort", rc.WidgetHandl.FetchSortedWidgets)
-	widgetGroup.Get("/search", rc.WidgetHandl.SearchWidgets)
+	widgetGroup.Get("", rc.WidgetHandl.SearchWidgets)
 	widgetGroup.Get("/favorite", rc.WidgetHandl.FetchFavoriteWidgets)
 	widgetGroup.Get("/:widget", rc.WidgetHandl.GetWidgetById)
 
@@ -75,9 +73,7 @@ func (rc *RouteConfig) TemplatesRoutes() {
 
 	templateGroup.Delete("/:template", rc.TemplateHandl.DeleteTemplate)
 
-	templateGroup.Get("", rc.TemplateHandl.FetchTemplates)
-	templateGroup.Get("/sort", rc.TemplateHandl.SortTemplate)
-	templateGroup.Get("/search", rc.TemplateHandl.SearchTemplate)
+	templateGroup.Get("", rc.TemplateHandl.SearchTemplate)
 	templateGroup.Get("/favorite", rc.TemplateHandl.FetchFavoriteTemplates)
 	templateGroup.Get("/:template", rc.TemplateHandl.GetTemplate)
 

@@ -103,11 +103,11 @@ func (as *authServ) Register(ctx context.Context, email, code string) error {
 }
 
 type loginResponce struct {
-	Id     uuid.UUID
-	Login  string
-	Avatar string
-	JWT    string
-	TTL    time.Time
+	Id       uuid.UUID
+	Nickname string
+	Avatar   string
+	JWT      string
+	TTL      time.Time
 }
 
 func (as *authServ) Login(ctx context.Context, login, password string) (*loginResponce, error) {
@@ -143,11 +143,11 @@ func (as *authServ) Login(ctx context.Context, login, password string) (*loginRe
 		return nil, errs.NewAppError(op, err)
 	}
 	loginResponce := &loginResponce{
-		Id:     user.Id,
-		Login:  user.Login,
-		Avatar: user.Avatar,
-		JWT:    jwt,
-		TTL:    t,
+		Id:       user.Id,
+		Nickname: user.Login,
+		Avatar:   user.Avatar,
+		JWT:      jwt,
+		TTL:      t,
 	}
 	log.Log.Info("token generated successfully")
 	return loginResponce, nil

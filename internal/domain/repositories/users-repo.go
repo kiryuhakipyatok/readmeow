@@ -46,7 +46,7 @@ func (ur *userRepo) Create(ctx context.Context, user *models.User) error {
 
 func (ur *userRepo) Get(ctx context.Context, id string) (*models.User, error) {
 	op := "userRepo.Get"
-	query := "SELECT id, login, email, avatar, time_of_register, num_of_templates, num_of_readmes FROM users WHERE id = $1"
+	query := "SELECT id, nickname login, email, avatar, time_of_register, num_of_templates, num_of_readmes FROM users WHERE id = $1"
 	user := &models.User{}
 	qd := helpers.NewQueryData(ctx, ur.Storage, op, query, id)
 	if err := qd.QueryRowWithTx(user); err != nil {
@@ -57,7 +57,7 @@ func (ur *userRepo) Get(ctx context.Context, id string) (*models.User, error) {
 
 func (ur *userRepo) GetByIds(ctx context.Context, ids []string) ([]models.User, error) {
 	op := "userRepo.GetByIds"
-	query := "SELECT id, avatar FROM users WHERE id = ANY($1)"
+	query := "SELECT id, avatar, nickname FROM users WHERE id = ANY($1)"
 	users := []models.User{}
 	rows, err := ur.Storage.Pool.Query(ctx, query, ids)
 	if err != nil {
@@ -71,6 +71,7 @@ func (ur *userRepo) GetByIds(ctx context.Context, ids []string) ([]models.User, 
 		if err := rows.Scan(
 			&user.Id,
 			&user.Avatar,
+			&user.Nickname,
 		); err != nil {
 			return nil, errs.NewAppError(op, err)
 		}
@@ -81,7 +82,7 @@ func (ur *userRepo) GetByIds(ctx context.Context, ids []string) ([]models.User, 
 
 func (ur *userRepo) GetByLogin(ctx context.Context, login string) (*models.User, error) {
 	op := "userRepo.GetByLogin"
-	query := "SELECT id, login, email, password, avatar, time_of_register, num_of_templates, num_of_readmes FROM users WHERE login = $1"
+	query := "SELECT id, nickname, login, email, password, avatar, time_of_register, num_of_templates, num_of_readmes FROM users WHERE login = $1"
 	user := &models.User{}
 	qd := helpers.NewQueryData(ctx, ur.Storage, op, query, login)
 	if err := qd.QueryRowWithTx(user); err != nil {
@@ -129,6 +130,7 @@ func (ur *userRepo) Update(ctx context.Context, updates map[string]any, id strin
 	op := "userRepo.Update"
 	validFields := map[string]bool{
 		"login":            true,
+		"nickname":         true,
 		"email":            true,
 		"avatar":           true,
 		"num_of_readmes":   true,

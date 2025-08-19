@@ -68,9 +68,9 @@ func (ah *AuthHandl) Login(c *fiber.Ctx) error {
 	}
 	c.Cookie(cookie)
 	responce := dto.LoginResponse{
-		Id:     loginResponce.Id.String(),
-		Login:  loginResponce.Login,
-		Avatar: loginResponce.Avatar,
+		Id:       loginResponce.Id.String(),
+		Nickname: loginResponce.Nickname,
+		Avatar:   loginResponce.Avatar,
 	}
 	return c.JSON(responce)
 }

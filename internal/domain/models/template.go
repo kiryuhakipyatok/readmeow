@@ -9,6 +9,8 @@ import (
 type Template struct {
 	Id             uuid.UUID           `json:"id"`
 	OwnerId        uuid.UUID           `json:"owner_id"`
+	OwnerAvatar    string              `json:"owner_avatar"`
+	OwnerNickname  string              `json:"owner_nickname"`
 	Title          string              `json:"title"`
 	Image          string              `json:"image"`
 	Description    string              `json:"description"`

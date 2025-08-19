@@ -5,7 +5,6 @@ import (
 	"readmeow/internal/domain/services"
 	"readmeow/internal/dto"
 	"readmeow/pkg/validator"
-	"strings"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -37,39 +36,13 @@ func (wh *WidgetHandl) GetWidgetById(c *fiber.Ctx) error {
 	return c.JSON(widget)
 }
 
-func (wh *WidgetHandl) FetchWidgets(c *fiber.Ctx) error {
-	ctx := c.UserContext()
-	req := dto.PaginationRequest{}
-	if err := helpers.ParseAndValidateRequest(c, &req, helpers.Query{}, wh.Validator); err != nil {
-		return err
-	}
-	widgets, err := wh.WidgetServ.Fetch(ctx, req.Amount, req.Page)
-	if err != nil {
-		return helpers.ToApiError(err)
-	}
-	return c.JSON(widgets)
-}
-
-func (wh *WidgetHandl) FetchSortedWidgets(c *fiber.Ctx) error {
-	ctx := c.UserContext()
-	req := dto.SortWidgetsRequest{}
-	if err := helpers.ParseAndValidateRequest(c, &req, helpers.Query{}, wh.Validator); err != nil {
-		return err
-	}
-	widgets, err := wh.WidgetServ.Sort(ctx, req.Amount, req.Page, req.Field, strings.ToUpper(req.Destination))
-	if err != nil {
-		return helpers.ToApiError(err)
-	}
-	return c.JSON(widgets)
-}
-
 func (wh *WidgetHandl) SearchWidgets(c *fiber.Ctx) error {
 	ctx := c.UserContext()
-	req := dto.SearchRequest{}
-	if err := helpers.ParseAndValidateRequest(c, &req, helpers.Query{}, wh.Validator); err != nil {
+	req := dto.SearchWidgetRequest{}
+	if err := helpers.ParseAndValidateRequest(c, &req, helpers.Body{}, wh.Validator); err != nil {
 		return err
 	}
-	widgets, err := wh.WidgetServ.Search(ctx, req.Amount, req.Page, req.Query)
+	widgets, err := wh.WidgetServ.Search(ctx, req.Amount, req.Page, req.Query, req.Filter, req.Sort)
 	if err != nil {
 		return helpers.ToApiError(err)
 	}
