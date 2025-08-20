@@ -5,19 +5,19 @@ app:
 server:
   host: "0.0.0.0"
   port: "${SERVER_PORT}"
-  writeTimeout: 10
-  readTimeout: 10
-  idleTimeout: 30
-  requestTimeout: 10
-  closeTimeout: 30
+  writeTimeout: 10s
+  readTimeout: 10s
+  idleTimeout: 30s
+  requestTimeout: 10s
+  closeTimeout: 30s
   rateLimit: 1
   burst: 2
 
 auth:
   secret: "${SECRET}"
-  codeTTL: 300
+  codeTTL: 5m
   codeAttempts: 5
-  tokenTTL: 259200
+  tokenTTL: 259200s
 
 storage:
   user: "${POSTGRES_USER}"
@@ -27,22 +27,22 @@ storage:
   host: "postgres"
   port: "${POSTGRES_PORT}"
   sslMode: "${SSL_MODE}"
-  connectTimeout: 10
+  connectTimeout: 10s
+  pingTimeout: 5s
   amountOfConns: 15
 
 cache:
   host: "redis"
   port: "${REDIS_PORT}"
   password: "${REDIS_PASSWORD}"
-  connectTimeout: 5
+  pingTimeout: 5s
 
 search:
   host: "es"
   port: "${ELASTICSEARCH_PORT}"
   user: "${ELASTICSEARCH_USER}"
   password: "${ELASTICSEARCH_PASSWORD}"
-  timeout: 60
-  pingTimeout: 5
+  pingTimeout: 5s
 
 email:
   name: "Readmeow Register System"
@@ -52,9 +52,9 @@ email:
   smtpServerAddress: "smtp.gmail.com:587"
 
 sheduler:
-  widgetBulkTime: 1
-  widgetBulkTimeout: 5 
-  templateBulkTime: 1
-  templateBulkTimeout: 5
-  cleanCodesTime: 1
-  cleanCodesTimeout: 5
+  widgetBulkTime: 1m
+  widgetBulkTimeout: 5s
+  templateBulkTime: 1m
+  templateBulkTimeout: 5s
+  cleanCodesTime: 1m
+  cleanCodesTimeout: 5s

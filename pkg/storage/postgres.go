@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"readmeow/internal/config"
-	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -23,7 +22,7 @@ func MustConnect(cfg config.StorageConfig) *Storage {
 		cfg.SSLMode,
 		cfg.Timezone,
 	)
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*time.Duration(cfg.ConnectTimeout))
+	ctx, cancel := context.WithTimeout(context.Background(), cfg.ConnectTimeout)
 	defer cancel()
 	pcfg, err := pgxpool.ParseConfig(dsn)
 	if err != nil {
@@ -34,7 +33,9 @@ func MustConnect(cfg config.StorageConfig) *Storage {
 	if err != nil {
 		panic(fmt.Errorf("failed to create postgres pool: %w", err))
 	}
-	if err := pool.Ping(ctx); err != nil {
+	ctxPing, cancel := context.WithTimeout(context.Background(), cfg.PingTimeout)
+	defer cancel()
+	if err := pool.Ping(ctxPing); err != nil {
 		panic(fmt.Errorf("failed to ping postgres pool: %w", err))
 	}
 	storage := &Storage{

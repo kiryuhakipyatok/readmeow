@@ -50,6 +50,9 @@ func (ah *AuthHandl) VerifyEmail(c *fiber.Ctx) error {
 
 func (ah *AuthHandl) Login(c *fiber.Ctx) error {
 	ctx := c.UserContext()
+	if c.Cookies("jwt") != "" {
+		return helpers.AlreadyExists()
+	}
 	req := dto.LoginRequest{}
 	if err := helpers.ParseAndValidateRequest(c, &req, helpers.Body{}, ah.Validator); err != nil {
 		return err
@@ -82,7 +85,6 @@ func (ah *AuthHandl) Logout(c *fiber.Ctx) error {
 		HTTPOnly: true,
 		Expires:  time.Now().Add(-time.Hour),
 		MaxAge:   -1,
-		Path:     "/",
 		SameSite: "Lax",
 	}
 	c.Cookie(cookie)

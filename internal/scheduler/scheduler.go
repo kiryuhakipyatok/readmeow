@@ -6,7 +6,6 @@ import (
 	"readmeow/internal/config"
 	"readmeow/internal/domain/repositories"
 	"readmeow/pkg/logger"
-	"time"
 
 	"github.com/robfig/cron/v3"
 )
@@ -37,10 +36,10 @@ func NewSheduler(wr repositories.WidgetRepo, tr repositories.TemplateRepo, vr re
 }
 
 func (s *Sheduler) Start() {
-	if _, err := s.Cron.AddFunc(fmt.Sprintf("@every %dm", s.ShedulerConfig.CleanCodesTime), func() {
+	if _, err := s.Cron.AddFunc(fmt.Sprintf("@every %s", s.ShedulerConfig.CleanCodesTime), func() {
 		op := "sheduler.CleanExpiredVerifyCodes"
 		log := s.Logger.AddOp(op)
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second*time.Duration(s.ShedulerConfig.CleanCodesTimeout))
+		ctx, cancel := context.WithTimeout(context.Background(), s.ShedulerConfig.CleanCodesTimeout)
 		defer cancel()
 		log.Log.Info("cleaning expired verify codes")
 		if err := s.VerificationRepo.DeleteExpired(ctx); err != nil {
@@ -51,10 +50,10 @@ func (s *Sheduler) Start() {
 	}); err != nil {
 		panic(fmt.Errorf("failed to start CleanExpiredVerifyCodes sheduler: %w", err))
 	}
-	if _, err := s.Cron.AddFunc(fmt.Sprintf("@every %dm", s.ShedulerConfig.WidgetBulkTime), func() {
+	if _, err := s.Cron.AddFunc(fmt.Sprintf("@every %s", s.ShedulerConfig.WidgetBulkTime), func() {
 		op := "sheduler.BulkWidgetsData"
 		log := s.Logger.AddOp(op)
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second*time.Duration(s.ShedulerConfig.WidgetBulkTimeout))
+		ctx, cancel := context.WithTimeout(context.Background(), s.ShedulerConfig.WidgetBulkTimeout)
 		defer cancel()
 		log.Log.Info("bulking widgets data")
 		if err := s.WidgetRepo.MustBulk(ctx, s.SearchConfig); err != nil {
@@ -65,10 +64,10 @@ func (s *Sheduler) Start() {
 	}); err != nil {
 		panic(fmt.Errorf("failed to start BulkWidgetsData sheduler: %w", err))
 	}
-	if _, err := s.Cron.AddFunc(fmt.Sprintf("@every %dm", s.ShedulerConfig.TemplateBulkTime), func() {
+	if _, err := s.Cron.AddFunc(fmt.Sprintf("@every %s", s.ShedulerConfig.TemplateBulkTime), func() {
 		op := "sheduler.BulkTemplatesData"
 		log := s.Logger.AddOp(op)
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second*time.Duration(s.ShedulerConfig.TemplateBulkTimeout))
+		ctx, cancel := context.WithTimeout(context.Background(), s.ShedulerConfig.TemplateBulkTimeout)
 		defer cancel()
 		log.Log.Info("bulking templates data")
 		if err := s.TemplateRepo.MustBulk(ctx, s.SearchConfig); err != nil {

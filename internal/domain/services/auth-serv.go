@@ -124,20 +124,21 @@ func (as *authServ) Login(ctx context.Context, login, password string) (*loginRe
 		log.Log.Info("invalid credentials", logger.Err(err))
 		return nil, errs.NewAppError(op, err)
 	}
-	t := time.Now().Add(time.Duration(int(time.Second) * as.AuthConfig.TokenTTL))
+	now := time.Now()
+	t := now.Add(as.AuthConfig.TokenTTL)
 	ttl := jwt.NewNumericDate(t)
-	iat := jwt.NewNumericDate(t)
+	iat := jwt.NewNumericDate(now)
 	jti := uuid.New().String()
-	claims := jwt.MapClaims{
-		"sub": user.Id.String(),
-		"exp": ttl,
-		"iat": iat,
-		"jti": jti,
-		"iss": "readmeow",
-		"aud": "readmeow-users",
+	claims := jwt.RegisteredClaims{
+		Subject:   user.Id.String(),
+		ExpiresAt: ttl,
+		IssuedAt:  iat,
+		ID:        jti,
+		Issuer:    "readmeow",
+		Audience:  []string{"readmeow-users"},
 	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS512, claims)
-	jwt, err := token.SignedString([]byte(as.AuthConfig.Secret))
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	jwtToken, err := token.SignedString([]byte(as.AuthConfig.Secret))
 	if err != nil {
 		log.Log.Error("failed to sign token", logger.Err(err))
 		return nil, errs.NewAppError(op, err)
@@ -146,9 +147,10 @@ func (as *authServ) Login(ctx context.Context, login, password string) (*loginRe
 		Id:       user.Id,
 		Nickname: user.Login,
 		Avatar:   user.Avatar,
-		JWT:      jwt,
+		JWT:      jwtToken,
 		TTL:      t,
 	}
+
 	log.Log.Info("token generated successfully")
 	return loginResponce, nil
 }
@@ -158,7 +160,7 @@ func (as *authServ) GetId(ctx context.Context, cookie string) (string, error) {
 	log := as.Logger.AddOp(op)
 	log.Log.Info("id receiving")
 	token, err := jwt.ParseWithClaims(cookie, &jwt.RegisteredClaims{}, func(t *jwt.Token) (any, error) {
-		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+		if t.Method.Alg() != jwt.SigningMethodHS256.Alg() {
 			return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
 		}
 		return []byte(as.AuthConfig.Secret), nil
@@ -201,7 +203,7 @@ func (as *authServ) SendVerifyCode(ctx context.Context, email, login, nickname, 
 			log.Log.Info("failed to generate password hash", logger.Err(err))
 			return nil, errs.NewAppError(op, err)
 		}
-		codeTTL := time.Now().Add(time.Second * time.Duration(as.AuthConfig.CodeTTL))
+		codeTTL := time.Now().Add(as.AuthConfig.CodeTTL)
 		if err := as.VerificationRepo.AddCode(c, email, login, nickname, passwordHash, codeHash[:], codeTTL, as.AuthConfig.CodeAttempts); err != nil {
 			log.Log.Info("failed to add code", logger.Err(err))
 			return nil, errs.NewAppError(op, err)

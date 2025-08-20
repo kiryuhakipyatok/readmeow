@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"readmeow/internal/config"
-	"time"
 
 	es "github.com/elastic/go-elasticsearch/v9"
 )
@@ -22,7 +21,7 @@ func MustConnect(cfg config.SearchConfig) *SearchClient {
 	if err != nil {
 		panic(fmt.Errorf("failed to connect to elasticsearch: %w", err))
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*time.Duration(cfg.PingTimeout))
+	ctx, cancel := context.WithTimeout(context.Background(), cfg.PingTimeout)
 	defer cancel()
 	if _, err := client.Ping().Do(ctx); err != nil {
 		panic(fmt.Errorf("failed to ping elasticsearch: %w", err))

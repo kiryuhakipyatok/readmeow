@@ -35,7 +35,7 @@ func ParseAndValidateRequest[T any](c *fiber.Ctx, request *T, requestType Reques
 }
 
 func SuccessResponse(c *fiber.Ctx) error {
-	return c.JSON(fiber.Map{
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"message": "success",
 	})
 }

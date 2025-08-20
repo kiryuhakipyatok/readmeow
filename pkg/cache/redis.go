@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"readmeow/internal/config"
-	"time"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -24,7 +23,7 @@ func MustConnect(cfg config.CacheConfig) *Cache {
 		PoolSize: 10,
 	})
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*time.Duration(cfg.ConnectTimeout))
+	ctx, cancel := context.WithTimeout(context.Background(), cfg.PingTimeout)
 	defer cancel()
 	if err := redis.Ping(ctx).Err(); err != nil {
 		panic(fmt.Errorf("failed to ping redis client: %w", err))

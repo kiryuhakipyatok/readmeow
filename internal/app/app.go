@@ -29,7 +29,6 @@ func Run() {
 		panic("failed to load .env" + err.Error())
 	}
 	cfg := config.MustLoadConfig(os.Getenv("CONFIG_PATH"))
-
 	log := logger.NewLogger(os.Getenv("APP_ENV"), cfg.App)
 
 	log.Log.Info("config loaded")
@@ -53,7 +52,7 @@ func Run() {
 	search := search.MustConnect(cfg.Search)
 	log.Log.Info("connected to elasticsearch")
 
-	server := server.NewServer(cfg.Server, cfg.Auth)
+	server := server.NewServer(cfg.Server, cfg.Auth, cfg.App)
 	defer func() {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second*time.Duration(cfg.Server.CloseTimeout))
 		defer cancel()

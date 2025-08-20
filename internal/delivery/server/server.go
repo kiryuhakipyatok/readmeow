@@ -17,18 +17,19 @@ type Server struct {
 	App *fiber.App
 }
 
-func NewServer(scfg config.ServerConfig, acfg config.AuthConfig) *Server {
+func NewServer(scfg config.ServerConfig, acfg config.AuthConfig, apcfg config.AppConfig) *Server {
 	app := fiber.New(fiber.Config{
-		ReadTimeout:  time.Duration(int(time.Second) * scfg.ReadTimeout),
-		WriteTimeout: time.Duration(int(time.Second) * scfg.WriteTimeout),
-		IdleTimeout:  time.Duration(int(time.Second) * scfg.IdleTimeout),
+		ReadTimeout:  time.Duration(scfg.ReadTimeout),
+		WriteTimeout: time.Duration(scfg.WriteTimeout),
+		IdleTimeout:  time.Duration(scfg.IdleTimeout),
+		AppName:      apcfg.Name,
 		ErrorHandler: errorHandler,
 	})
 	app.Use(
 		cors.New(cors.Config{}),
 		authMiddleware(acfg),
 		rateLimiterMiddleware(scfg),
-		requestTimeoutMiddleware(time.Duration(scfg.RequestTimeout*int(time.Second))),
+		requestTimeoutMiddleware(acfg.TokenTTL),
 	)
 
 	return &Server{App: app}
@@ -60,9 +61,8 @@ func authMiddleware(acfg config.AuthConfig) fiber.Handler {
 			SigningKey:  []byte(acfg.Secret),
 			TokenLookup: "cookie:jwt",
 			ErrorHandler: func(c *fiber.Ctx, err error) error {
-				c.Status(fiber.StatusUnauthorized)
-				return c.JSON(fiber.Map{
-					"message": "unauthorized",
+				return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+					"message": "unauthorized" + err.Error(),
 				})
 			},
 		})(c)

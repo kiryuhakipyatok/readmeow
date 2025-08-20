@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/spf13/viper"
 )
@@ -26,50 +27,50 @@ type AppConfig struct {
 }
 
 type ServerConfig struct {
-	Host           string `mapstructure:"host"`
-	Port           string `mapstructure:"port"`
-	WriteTimeout   int    `mapstructure:"writeTimeout"`
-	ReadTimeout    int    `mapstructure:"readTimeout"`
-	IdleTimeout    int    `mapstructure:"idleTimeout"`
-	RequestTimeout int    `mapstructure:"requestTimeout"`
-	CloseTimeout   int    `mapstructure:"closeTimeout"`
-	RateLimit      int    `mapstructure:"rateLimit"`
-	Burst          int    `mapstructure:"burst"`
+	Host           string        `mapstructure:"host"`
+	Port           string        `mapstructure:"port"`
+	WriteTimeout   time.Duration `mapstructure:"writeTimeout"`
+	ReadTimeout    time.Duration `mapstructure:"readTimeout"`
+	IdleTimeout    time.Duration `mapstructure:"idleTimeout"`
+	RequestTimeout time.Duration `mapstructure:"requestTimeout"`
+	CloseTimeout   time.Duration `mapstructure:"closeTimeout"`
+	RateLimit      int           `mapstructure:"rateLimit"`
+	Burst          int           `mapstructure:"burst"`
 }
 
 type AuthConfig struct {
-	Secret       string `mapstructure:"secret"`
-	CodeTTL      int    `mapstructure:"codeTTL"`
-	CodeAttempts int    `mapstructure:"codeAttempts"`
-	TokenTTL     int    `mapstructure:"tokenTTL"`
+	Secret       string        `mapstructure:"secret"`
+	CodeTTL      time.Duration `mapstructure:"codeTTL"`
+	CodeAttempts int           `mapstructure:"codeAttempts"`
+	TokenTTL     time.Duration `mapstructure:"tokenTTL"`
 }
 
 type StorageConfig struct {
-	User           string `mapstructure:"user"`
-	Password       string `mapstructure:"password"`
-	Database       string `mapstructure:"database"`
-	Timezone       string `mapstructure:"timezone"`
-	Host           string `mapstructure:"host"`
-	Port           string `mapstructure:"port"`
-	SSLMode        string `mapstructure:"sslMode"`
-	ConnectTimeout int    `mapstructure:"connectTimeout"`
-	AmountOfConns  int32  `mapstructure:"amountOfConns"`
+	User           string        `mapstructure:"user"`
+	Password       string        `mapstructure:"password"`
+	Database       string        `mapstructure:"database"`
+	Timezone       string        `mapstructure:"timezone"`
+	Host           string        `mapstructure:"host"`
+	Port           string        `mapstructure:"port"`
+	SSLMode        string        `mapstructure:"sslMode"`
+	ConnectTimeout time.Duration `mapstructure:"connectTimeout"`
+	PingTimeout    time.Duration `mapstructure:"pingTimeout"`
+	AmountOfConns  int32         `mapstructure:"amountOfConns"`
 }
 
 type CacheConfig struct {
-	Host           string `mapstructure:"host"`
-	Port           string `mapstructure:"port"`
-	Password       string `mapstructure:"password"`
-	ConnectTimeout int    `mapstructure:"connectTimeout"`
+	Host        string        `mapstructure:"host"`
+	Port        string        `mapstructure:"port"`
+	Password    string        `mapstructure:"password"`
+	PingTimeout time.Duration `mapstructure:"pingTimeout"`
 }
 
 type SearchConfig struct {
-	Host        string `mapstructure:"host"`
-	Port        string `mapstructure:"port"`
-	User        string `mapstructure:"user"`
-	Password    string `mapstructure:"password"`
-	Timeout     int    `mapstructure:"timeout"`
-	PingTimeout int    `mapstructure:"pingTimeout"`
+	Host        string        `mapstructure:"host"`
+	Port        string        `mapstructure:"port"`
+	User        string        `mapstructure:"user"`
+	Password    string        `mapstructure:"password"`
+	PingTimeout time.Duration `mapstructure:"pingTimeout"`
 }
 
 type EmailConfig struct {
@@ -81,12 +82,12 @@ type EmailConfig struct {
 }
 
 type ShedulerConfig struct {
-	WidgetBulkTime      int `mapstructure:"widgetBulkTime"`
-	WidgetBulkTimeout   int `mapstructure:"widgetBulkTimeout"`
-	TemplateBulkTime    int `mapstructure:"templateBulkTime"`
-	TemplateBulkTimeout int `mapstructure:"templateBulkTimeout"`
-	CleanCodesTime      int `mapstructure:"cleanCodesTime"`
-	CleanCodesTimeout   int `mapstructure:"cleanCodesTimeout"`
+	WidgetBulkTime      time.Duration `mapstructure:"widgetBulkTime"`
+	WidgetBulkTimeout   time.Duration `mapstructure:"widgetBulkTimeout"`
+	TemplateBulkTime    time.Duration `mapstructure:"templateBulkTime"`
+	TemplateBulkTimeout time.Duration `mapstructure:"templateBulkTimeout"`
+	CleanCodesTime      time.Duration `mapstructure:"cleanCodesTime"`
+	CleanCodesTimeout   time.Duration `mapstructure:"cleanCodesTimeout"`
 }
 
 func MustLoadConfig(path string) *Config {
