@@ -31,7 +31,7 @@ func (rh *ReadmeHandl) CreateReadme(c *fiber.Ctx) error {
 	req := dto.CreateReadmeRequest{}
 	uid, err := rh.AuthServ.GetId(ctx, cookie)
 	if err != nil {
-		return err
+		return helpers.ToApiError(err)
 	}
 
 	req.TemplateId = c.FormValue("template_id")
@@ -39,7 +39,7 @@ func (rh *ReadmeHandl) CreateReadme(c *fiber.Ctx) error {
 	req.Title = c.FormValue("title")
 	form, err := c.MultipartForm()
 	if err != nil {
-		return err
+		return helpers.ToApiError(err)
 	}
 	renderOrder := form.Value["render_order"]
 	req.RenderOrder = renderOrder
@@ -62,13 +62,13 @@ func (rh *ReadmeHandl) CreateReadme(c *fiber.Ctx) error {
 	}
 	image, err := c.FormFile("image")
 	if err != nil && err.Error() != "there is no uploaded file associated with the given key" {
-		return err
+		return helpers.ToApiError(err)
 	}
 	if image != nil {
 		req.Image = image
 	}
 	if err := rh.Validator.Validate.Struct(req); err != nil {
-		return err
+		return helpers.InvalidRequest()
 	}
 
 	if err := rh.ReadmeServ.Create(ctx, req.TemplateId, uid, req.Title, req.Image, req.Text, req.Links, req.RenderOrder, req.Widgets); err != nil {
@@ -127,7 +127,7 @@ func (rh *ReadmeHandl) UpdateReadme(c *fiber.Ctx) error {
 
 	image, err := c.FormFile("image")
 	if err != nil && err.Error() != "there is no uploaded file associated with the given key" {
-		return err
+		return helpers.ToApiError(err)
 	}
 	if image != nil {
 		updates["image"] = image

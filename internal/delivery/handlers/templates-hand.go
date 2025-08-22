@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"encoding/json"
-	"fmt"
 	"readmeow/internal/delivery/handlers/helpers"
 	"readmeow/internal/domain/services"
 	"readmeow/internal/dto"
@@ -31,13 +30,13 @@ func (th *TemplateHandl) CreateTemplate(c *fiber.Ctx) error {
 	req := dto.CreateTemplateRequest{}
 	oid, err := th.AuthServ.GetId(ctx, cookie)
 	if err != nil {
-		return err
+		return helpers.ToApiError(err)
 	}
 	req.Title = c.FormValue("title")
 	req.Description = c.FormValue("description")
 	form, err := c.MultipartForm()
 	if err != nil {
-		return err
+		return helpers.ToApiError(err)
 	}
 	req.RenderOrder = form.Value["render_order"]
 	req.Text = []string{}
@@ -53,25 +52,24 @@ func (th *TemplateHandl) CreateTemplate(c *fiber.Ctx) error {
 	if widgetsData != "" {
 		widgets := make([]map[string]string, 0)
 		if err := json.Unmarshal([]byte(widgetsData), &widgets); err != nil {
-			return err
+			return helpers.ToApiError(err)
 		}
 		req.Widgets = widgets
 	}
 
 	image, err := c.FormFile("image")
 	if err != nil {
-		return err
+		return helpers.ToApiError(err)
 	}
 	if image != nil {
 		req.Image = image
 	}
 
 	if err := th.Validator.Validate.Struct(req); err != nil {
-		return err
+		return helpers.InvalidRequest()
 	}
-	fmt.Println(req)
 	if err := th.TemplateServ.Create(ctx, oid, req.Title, req.Description, req.Image, req.Links, req.RenderOrder, req.Text, req.Widgets); err != nil {
-		return err
+		return helpers.ToApiError(err)
 	}
 	return helpers.SuccessResponse(c)
 }
@@ -105,7 +103,7 @@ func (th *TemplateHandl) UpdateTemplate(c *fiber.Ctx) error {
 	if widgetsData != "" {
 		widgets := make([]map[string]string, 0)
 		if err := json.Unmarshal([]byte(widgetsData), &widgets); err != nil {
-			return err
+			return helpers.ToApiError(err)
 		}
 
 		updates["widgets"] = widgets
@@ -113,7 +111,7 @@ func (th *TemplateHandl) UpdateTemplate(c *fiber.Ctx) error {
 
 	image, err := c.FormFile("image")
 	if err != nil && err.Error() != "there is no uploaded file associated with the given key" {
-		return err
+		return helpers.ToApiError(err)
 	}
 	if image != nil {
 		updates["image"] = image
@@ -127,7 +125,7 @@ func (th *TemplateHandl) UpdateTemplate(c *fiber.Ctx) error {
 	}
 
 	if err := th.TemplateServ.Update(ctx, req.Updates, req.Id); err != nil {
-		return err
+		return helpers.ToApiError(err)
 	}
 	return helpers.SuccessResponse(c)
 }
