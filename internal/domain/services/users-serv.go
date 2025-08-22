@@ -2,11 +2,16 @@ package services
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"mime/multipart"
 	"readmeow/internal/domain/models"
 	"readmeow/internal/domain/repositories"
+	"readmeow/pkg/cloudstorage"
 	"readmeow/pkg/errs"
 	"readmeow/pkg/logger"
 	"readmeow/pkg/storage"
+	"time"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -19,16 +24,18 @@ type UserServ interface {
 }
 
 type userServ struct {
-	UserRepo   repositories.UserRepo
-	Transactor storage.Transactor
-	Logger     *logger.Logger
+	UserRepo     repositories.UserRepo
+	CloudStorage cloudstorage.CloudStorage
+	Transactor   storage.Transactor
+	Logger       *logger.Logger
 }
 
-func NewUserServ(ur repositories.UserRepo, t storage.Transactor, l *logger.Logger) UserServ {
+func NewUserServ(ur repositories.UserRepo, cs cloudstorage.CloudStorage, t storage.Transactor, l *logger.Logger) UserServ {
 	return &userServ{
-		UserRepo:   ur,
-		Transactor: t,
-		Logger:     l,
+		UserRepo:     ur,
+		CloudStorage: cs,
+		Transactor:   t,
+		Logger:       l,
 	}
 }
 
@@ -36,9 +43,53 @@ func (us *userServ) Update(ctx context.Context, updates map[string]any, id strin
 	op := "userServ.Update"
 	log := us.Logger.AddOp(op)
 	log.Log.Info("updating user info")
+	fileAnyH, ok := updates["avatar"]
+	var (
+		newPid string
+		oldURL string
+	)
+	if ok {
+		fileH := fileAnyH.(*multipart.FileHeader)
+		file, err := fileH.Open()
+		if err != nil {
+			log.Log.Error("failed to open file of avatar", logger.Err(err))
+			return errs.NewAppError(op, err)
+		}
+		defer file.Close()
+		folder := "avatars"
+		unow := time.Now().Unix()
+		filename := fmt.Sprintf("%s-%d", id, unow)
+		oldURL, err = us.UserRepo.GetAvatar(ctx, id)
+		if err != nil {
+			log.Log.Error("failed to get user avatar", logger.Err(err))
+			return errs.NewAppError(op, err)
+		}
+		var url string
+		url, newPid, err = us.CloudStorage.UploadImage(ctx, file, filename, folder)
+		if err != nil {
+			log.Log.Error("failed to upload avatar", logger.Err(err))
+			return errs.NewAppError(op, err)
+		}
+		updates["avatar"] = url
+	}
 	if err := us.UserRepo.Update(ctx, updates, id); err != nil {
 		log.Log.Error("failed to update user info", logger.Err(err))
+		if cerr := us.CloudStorage.DeleteImage(ctx, newPid); cerr != nil {
+			log.Log.Error("failed to delete user avatar", logger.Err(cerr))
+			return fmt.Errorf("%w : %w", err, cerr)
+		}
 		return errs.NewAppError(op, err)
+	}
+	if ok {
+		pId := us.CloudStorage.GetPIdFromURL(oldURL)
+		if pId == "" {
+			log.Log.Error("failed to get pid from url")
+			return errs.NewAppError(op, errors.New("failed to get pid from url"))
+		}
+		if err := us.CloudStorage.DeleteImage(ctx, pId); err != nil {
+			log.Log.Error("failed to delete user avatar", logger.Err(err))
+			return errs.NewAppError(op, err)
+		}
 	}
 	log.Log.Info("user info updated successfully")
 	return nil

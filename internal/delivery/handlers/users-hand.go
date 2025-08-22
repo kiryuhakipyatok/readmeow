@@ -19,6 +19,7 @@ type UserHandl struct {
 func NewUserHandl(us services.UserServ, as services.AuthServ, v *validator.Validator) *UserHandl {
 	return &UserHandl{
 		UserServ:  us,
+		AuthServ:  as,
 		Validator: v,
 	}
 }
@@ -38,11 +39,32 @@ func (uh *UserHandl) GetUser(c *fiber.Ctx) error {
 
 func (uh *UserHandl) Update(c *fiber.Ctx) error {
 	ctx := c.UserContext()
-	req := dto.UpdateUserRequest{}
-	if err := helpers.ParseAndValidateRequest(c, &req, helpers.Body{}, uh.Validator); err != nil {
+
+	cookie := c.Cookies("jwt")
+	id, err := uh.AuthServ.GetId(ctx, cookie)
+	if err != nil {
+		return helpers.ToApiError(err)
+	}
+	updates := make(map[string]any)
+	nickname := c.FormValue("nickname")
+	if nickname != "" {
+		updates["nickname"] = nickname
+	}
+	avatar, err := c.FormFile("avatar")
+	if err != nil && err.Error() != "there is no uploaded file associated with the given key" {
 		return err
 	}
-	if err := uh.UserServ.Update(ctx, req.Updates, req.Id); err != nil {
+	if avatar != nil {
+		updates["avatar"] = avatar
+	}
+	req := dto.UpdateUserRequest{
+		Updates: updates,
+		Id:      id,
+	}
+	if err := uh.Validator.Validate.Struct(req); err != nil {
+		return helpers.InvalidRequest()
+	}
+	if err := uh.UserServ.Update(ctx, req.Updates, id); err != nil {
 		return helpers.ToApiError(err)
 	}
 	return helpers.SuccessResponse(c)

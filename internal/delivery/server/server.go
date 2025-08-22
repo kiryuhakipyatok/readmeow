@@ -23,7 +23,7 @@ func NewServer(scfg config.ServerConfig, acfg config.AuthConfig, apcfg config.Ap
 		WriteTimeout: time.Duration(scfg.WriteTimeout),
 		IdleTimeout:  time.Duration(scfg.IdleTimeout),
 		AppName:      apcfg.Name,
-		ErrorHandler: errorHandler,
+		//ErrorHandler: errorHandler,
 	})
 	app.Use(
 		cors.New(cors.Config{}),
@@ -62,7 +62,7 @@ func authMiddleware(acfg config.AuthConfig) fiber.Handler {
 			TokenLookup: "cookie:jwt",
 			ErrorHandler: func(c *fiber.Ctx, err error) error {
 				return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-					"message": "unauthorized" + err.Error(),
+					"message": "unauthorized",
 				})
 			},
 		})(c)

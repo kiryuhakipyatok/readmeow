@@ -11,19 +11,21 @@ import (
 )
 
 type Config struct {
-	App      AppConfig      `mapstructure:"app"`
-	Server   ServerConfig   `mapstructure:"server"`
-	Auth     AuthConfig     `mapstructure:"auth"`
-	Storage  StorageConfig  `mapstructure:"storage"`
-	Cache    CacheConfig    `mapstructure:"cache"`
-	Search   SearchConfig   `mapstructure:"search"`
-	Email    EmailConfig    `mapstructure:"email"`
-	Sheduler ShedulerConfig `mapstructure:"sheduler"`
+	App          AppConfig          `mapstructure:"app"`
+	Server       ServerConfig       `mapstructure:"server"`
+	Auth         AuthConfig         `mapstructure:"auth"`
+	Storage      StorageConfig      `mapstructure:"storage"`
+	Cache        CacheConfig        `mapstructure:"cache"`
+	Search       SearchConfig       `mapstructure:"search"`
+	Email        EmailConfig        `mapstructure:"email"`
+	Sheduler     ShedulerConfig     `mapstructure:"sheduler"`
+	CloudStorage CloudStorageConfig `mapstructure:"cloudstorage"`
 }
 
 type AppConfig struct {
 	Name    string `mapstructure:"name"`
 	Version string `mapstructure:"version"`
+	Env     string `mapstructure:"env"`
 }
 
 type ServerConfig struct {
@@ -88,6 +90,11 @@ type ShedulerConfig struct {
 	TemplateBulkTimeout time.Duration `mapstructure:"templateBulkTimeout"`
 	CleanCodesTime      time.Duration `mapstructure:"cleanCodesTime"`
 	CleanCodesTimeout   time.Duration `mapstructure:"cleanCodesTimeout"`
+}
+
+type CloudStorageConfig struct {
+	CloudURL string        `mapstructure:"cloudURL"`
+	Timeout  time.Duration `mapstructure:"timeout"`
 }
 
 func MustLoadConfig(path string) *Config {

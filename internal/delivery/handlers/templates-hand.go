@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"encoding/json"
+	"fmt"
 	"readmeow/internal/delivery/handlers/helpers"
 	"readmeow/internal/domain/services"
 	"readmeow/internal/dto"
@@ -25,29 +27,107 @@ func NewTemplateHandl(ts services.TemplateServ, as services.AuthServ, v *validat
 
 func (th *TemplateHandl) CreateTemplate(c *fiber.Ctx) error {
 	ctx := c.UserContext()
-	req := dto.CreateTemplateRequest{}
-	if err := helpers.ParseAndValidateRequest(c, &req, helpers.Body{}, th.Validator); err != nil {
-		return err
-	}
 	cookie := c.Cookies("jwt")
+	req := dto.CreateTemplateRequest{}
 	oid, err := th.AuthServ.GetId(ctx, cookie)
 	if err != nil {
-		return helpers.ToApiError(err)
+		return err
 	}
-	if err := th.TemplateServ.Create(ctx, oid, req.Title, req.Image, req.Description, req.Text, req.Links, req.Order, req.Widgets); err != nil {
-		return helpers.ToApiError(err)
+	req.Title = c.FormValue("title")
+	req.Description = c.FormValue("description")
+	form, err := c.MultipartForm()
+	if err != nil {
+		return err
+	}
+	req.RenderOrder = form.Value["render_order"]
+	req.Text = []string{}
+	if text, ok := form.Value["text"]; ok {
+		req.Text = text
+	}
+	req.Links = []string{}
+	if links, ok := form.Value["links"]; ok {
+		req.Links = links
+	}
+	widgetsData := c.FormValue("widgets")
+	req.Widgets = []map[string]string{}
+	if widgetsData != "" {
+		widgets := make([]map[string]string, 0)
+		if err := json.Unmarshal([]byte(widgetsData), &widgets); err != nil {
+			return err
+		}
+		req.Widgets = widgets
+	}
+
+	image, err := c.FormFile("image")
+	if err != nil {
+		return err
+	}
+	if image != nil {
+		req.Image = image
+	}
+
+	if err := th.Validator.Validate.Struct(req); err != nil {
+		return err
+	}
+	fmt.Println(req)
+	if err := th.TemplateServ.Create(ctx, oid, req.Title, req.Description, req.Image, req.Links, req.RenderOrder, req.Text, req.Widgets); err != nil {
+		return err
 	}
 	return helpers.SuccessResponse(c)
 }
 
 func (th *TemplateHandl) UpdateTemplate(c *fiber.Ctx) error {
 	ctx := c.UserContext()
-	req := dto.UpdateTemplateRequest{}
-	if err := helpers.ParseAndValidateRequest(c, &req, helpers.Body{}, th.Validator); err != nil {
+	updates := make(map[string]any)
+	id := c.FormValue("id")
+	title := c.FormValue("title")
+	if title != "" {
+		updates["title"] = title
+	}
+	description := c.FormValue("description")
+	if description != "" {
+		updates["description"] = description
+	}
+	form, err := c.MultipartForm()
+	if err != nil {
+		return helpers.ToApiError(err)
+	}
+	if renderOrder, ok := form.Value["render_order"]; ok {
+		updates["render_order"] = renderOrder
+	}
+	if text, ok := form.Value["text"]; ok {
+		updates["text"] = text
+	}
+	if links, ok := form.Value["links"]; ok {
+		updates["links"] = links
+	}
+	widgetsData := c.FormValue("widgets")
+	if widgetsData != "" {
+		widgets := make([]map[string]string, 0)
+		if err := json.Unmarshal([]byte(widgetsData), &widgets); err != nil {
+			return err
+		}
+
+		updates["widgets"] = widgets
+	}
+
+	image, err := c.FormFile("image")
+	if err != nil && err.Error() != "there is no uploaded file associated with the given key" {
 		return err
 	}
+	if image != nil {
+		updates["image"] = image
+	}
+	req := dto.UpdateTemplateRequest{
+		Updates: updates,
+		Id:      id,
+	}
+	if err := th.Validator.Validate.Struct(req); err != nil {
+		return helpers.InvalidRequest()
+	}
+
 	if err := th.TemplateServ.Update(ctx, req.Updates, req.Id); err != nil {
-		return helpers.ToApiError(err)
+		return err
 	}
 	return helpers.SuccessResponse(c)
 }

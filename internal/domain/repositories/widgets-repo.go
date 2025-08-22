@@ -103,8 +103,8 @@ func (wr *widgetRepo) FetchFavorite(ctx context.Context, id string, amount, page
 			&widget.Type,
 			&widget.Link,
 			&widget.NumOfUsers,
-			&widget.Tags,
 			&widget.Likes,
+			&widget.Tags,
 		); err != nil {
 			return nil, errs.NewAppError(op, err)
 		}
@@ -270,6 +270,7 @@ func (wr *widgetRepo) Search(ctx context.Context, amount, page uint, query strin
 }
 
 func (wr *widgetRepo) GetByIds(ctx context.Context, ids []string) ([]models.Widget, error) {
+	fmt.Println(ids)
 	op := "widgetRepo.SearchPreparing.GetByIds"
 	query := "SELECT * FROM widgets WHERE id = ANY($1)"
 	widgets := make([]models.Widget, 0, len(ids))
@@ -277,9 +278,6 @@ func (wr *widgetRepo) GetByIds(ctx context.Context, ids []string) ([]models.Widg
 	if tx, ok := storage.GetTx(ctx); ok {
 		rows, err := tx.Query(ctx, query, ids)
 		if err != nil {
-			if errors.Is(err, storage.ErrNotFound()) {
-				return nil, errs.ErrNotFound(op)
-			}
 			return nil, errs.NewAppError(op, err)
 		}
 		defer rows.Close()
@@ -291,10 +289,10 @@ func (wr *widgetRepo) GetByIds(ctx context.Context, ids []string) ([]models.Widg
 				&widget.Image,
 				&widget.Description,
 				&widget.Type,
-				&widget.Link,
-				&widget.NumOfUsers,
 				&widget.Tags,
+				&widget.Link,
 				&widget.Likes,
+				&widget.NumOfUsers,
 			); err != nil {
 				return nil, errs.NewAppError(op, err)
 			}
@@ -317,13 +315,16 @@ func (wr *widgetRepo) GetByIds(ctx context.Context, ids []string) ([]models.Widg
 				&widget.Type,
 				&widget.Link,
 				&widget.NumOfUsers,
-				&widget.Tags,
 				&widget.Likes,
+				&widget.Tags,
 			); err != nil {
 				return nil, errs.NewAppError(op, err)
 			}
 			byId[widget.Id.String()] = widget
 		}
+	}
+	if len(byId) == 0 {
+		return nil, errs.ErrNotFound(op)
 	}
 	for _, id := range ids {
 		if w, ok := byId[id]; ok {
@@ -339,9 +340,6 @@ func (wr *widgetRepo) getAll(ctx context.Context) ([]models.Widget, error) {
 	widgets := []models.Widget{}
 	rows, err := wr.Storage.Pool.Query(ctx, query)
 	if err != nil {
-		if errors.Is(err, storage.ErrNotFound()) {
-			return nil, errs.ErrNotFound(op)
-		}
 		return nil, errs.NewAppError(op, err)
 	}
 	defer rows.Close()
@@ -360,6 +358,9 @@ func (wr *widgetRepo) getAll(ctx context.Context) ([]models.Widget, error) {
 			return nil, errs.NewAppError(op, err)
 		}
 		widgets = append(widgets, widget)
+	}
+	if len(widgets) == 0 {
+		return nil, errs.ErrNotFound(op)
 	}
 	return widgets, nil
 }

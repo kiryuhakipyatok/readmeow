@@ -1,5 +1,7 @@
 package dto
 
+import "mime/multipart"
+
 type VerifyRequest struct {
 	Nickname string `json:"nickname" validate:"required,max=80"`
 	Login    string `json:"login" validate:"required,max=80"`
@@ -24,21 +26,21 @@ type PaginationRequest struct {
 
 type SearchWidgetRequest struct {
 	PaginationRequest
-	Query  string              `json:"query"`
-	Sort   map[string]string   `json:"sort" validate:"dive,keys,oneof=Likes NumOfUsers,endkeys"`
-	Filter map[string][]string `json:"filter" validate:"dive,keys,oneof=Types Tags,endkeys"`
+	Query  string              `json:"query" validate:"omitempty"`
+	Sort   map[string]string   `json:"sort" validate:"omitempty,dive,keys,oneof=Likes NumOfUsers,endkeys"`
+	Filter map[string][]string `json:"filter" validate:"omitempty,dive,keys,oneof=Types Tags,endkeys"`
 }
 
 type SearchTemplateRequest struct {
 	PaginationRequest
-	Query  string            `json:"query"`
-	Sort   map[string]string `json:"sort" validate:"dive,keys,oneof=Likes NumOfUsers LastUpdateTime,endkeys"`
-	Filter map[string]bool   `json:"filter" validate:"dive,keys,oneof=isOfficial,endkeys"`
+	Query  string            `json:"query" validate:"omitempty"`
+	Sort   map[string]string `json:"sort" validate:"omitempty,dive,keys,oneof=Likes NumOfUsers LastUpdateTime,endkeys"`
+	Filter map[string]bool   `json:"filter" validate:"omitempty,dive,keys,oneof=isOfficial,endkeys"`
 }
 
 type UpdateUserRequest struct {
 	Id      string         `json:"id" validate:"required,uuid"`
-	Updates map[string]any `json:"updates" validate:"required,dive,keys,oneof=login email avatar,endkeys,required"`
+	Updates map[string]any `json:"updates" validate:"required,dive,keys,oneof=nickname avatar,endkeys,required"`
 }
 
 type DeleteUserRequest struct {
@@ -51,33 +53,33 @@ type ChangePasswordRequest struct {
 }
 
 type CreateTemplateRequest struct {
-	Title       string              `json:"title" validate:"required,max=50"`
-	Image       string              `json:"image" validate:"required"`
-	Description string              `json:"description" validate:"required,min=1,max=1000"`
-	Order       []string            `json:"order" validate:"required"`
-	Text        []string            `json:"text"`
-	Links       []string            `json:"links"`
-	Widgets     []map[string]string `json:"widgets" validate:"dive,dive,keys,uuid,endkeys"`
+	Title       string                `json:"title" validate:"required,min=1,max=50"`
+	Image       *multipart.FileHeader `json:"image" validate:"required"`
+	Description string                `json:"description" validate:"required,min=1,max=1000"`
+	RenderOrder []string              `json:"render_order" validate:"required"`
+	Text        []string              `json:"text" validate:"omitempty"`
+	Links       []string              `json:"links" validate:"omitempty"`
+	Widgets     []map[string]string   `json:"widgets" validate:"omitempty,dive,dive,keys,uuid,endkeys"`
 }
 
 type UpdateTemplateRequest struct {
 	Id      string         `json:"id" validate:"required,uuid"`
-	Updates map[string]any `json:"updates" validate:"required,dive,keys,oneof=title text links widgets order,endkeys,required"`
+	Updates map[string]any `json:"updates" validate:"required,dive,keys,oneof=title image description text links widgets render_order,endkeys,required"`
 }
 
 type CreateReadmeRequest struct {
-	TemplateId string              `json:"template_id" validate:"uuid"`
-	Image      string              `json:"image" validate:"required"`
-	Title      string              `json:"title" validate:"required,max=80"`
-	Order      []string            `json:"order" validate:"required"`
-	Text       []string            `json:"text"`
-	Links      []string            `json:"links"`
-	Widgets    []map[string]string `json:"widgets" validate:"dive,dive,keys,uuid,endkeys,required"`
+	TemplateId  string                `json:"template_id" validate:"omitempty,uuid"`
+	Image       *multipart.FileHeader `json:"image" validate:"required"`
+	Title       string                `json:"title" validate:"required,max=80"`
+	RenderOrder []string              `json:"render_order" validate:"required"`
+	Text        []string              `json:"text" validate:"omitempty"`
+	Links       []string              `json:"links" validate:"omitempty"`
+	Widgets     []map[string]string   `json:"widgets" validate:"omitempty,dive,dive,keys,uuid,endkeys"`
 }
 
 type UpdateReadmeRequest struct {
 	Id      string         `json:"id" validate:"required,uuid"`
-	Updates map[string]any `json:"updates" validate:"required,dive,keys,oneof=title text links widgets render_order,endkeys,required"`
+	Updates map[string]any `json:"updates" validate:"required,dive,keys,oneof=title image text links widgets render_order,endkeys,required"`
 }
 
 type SendNewCodeRequest struct {

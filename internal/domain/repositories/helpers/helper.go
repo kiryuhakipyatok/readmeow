@@ -112,7 +112,7 @@ func (qd QueryData) QueryRowWithTx(entity any) error {
 			&e.Title,
 			&e.Text,
 			&e.Links,
-			&e.Order,
+			&e.RenderOrder,
 			&e.CreateTime,
 			&e.LastUpdateTime,
 			&e.Widgets,
@@ -130,12 +130,12 @@ func (qd QueryData) QueryRowWithTx(entity any) error {
 			&e.Description,
 			&e.Text,
 			&e.Links,
+			&e.Widgets,
+			&e.Likes,
 			&e.RenderOrder,
 			&e.CreateTime,
 			&e.LastUpdateTime,
 			&e.NumOfUsers,
-			&e.Widgets,
-			&e.Likes,
 		}
 		if err := qd.queryRow(templateData...); err != nil {
 			return err
@@ -159,9 +159,9 @@ func (qd QueryData) QueryRowWithTx(entity any) error {
 		return nil
 	case *models.Credentials:
 		credentialsData := []any{
-			&e.Email,
-			&e.Login,
 			&e.Nickname,
+			&e.Login,
+			&e.Email,
 			&e.Password,
 		}
 		if err := qd.queryRow(credentialsData...); err != nil {
@@ -174,6 +174,11 @@ func (qd QueryData) QueryRowWithTx(entity any) error {
 		}
 		return nil
 	case []byte:
+		if err := qd.queryRow(e); err != nil {
+			return err
+		}
+		return nil
+	case *string:
 		if err := qd.queryRow(e); err != nil {
 			return err
 		}

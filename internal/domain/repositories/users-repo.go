@@ -19,6 +19,7 @@ type UserRepo interface {
 	Update(ctx context.Context, updates map[string]any, id string) error
 	Delete(ctx context.Context, id string) error
 	IdCheck(ctx context.Context, id string) (bool, error)
+	GetAvatar(ctx context.Context, id string) (string, error)
 	ExistanceCheck(ctx context.Context, login, email, nickname string) (bool, error)
 	ChangePassword(ctx context.Context, id string, password []byte) error
 	GetPassword(ctx context.Context, id string) ([]byte, error)
@@ -80,6 +81,17 @@ func (ur *userRepo) GetByIds(ctx context.Context, ids []string) ([]models.User, 
 	return users, nil
 }
 
+func (ur *userRepo) GetAvatar(ctx context.Context, id string) (string, error) {
+	op := "userRepo.GetImage"
+	query := "SELECT avatar FROM users WHERE id = $1"
+	var url string
+	qd := helpers.NewQueryData(ctx, ur.Storage, op, query, id)
+	if err := qd.QueryRowWithTx(&url); err != nil {
+		return "", err
+	}
+	return url, nil
+}
+
 func (ur *userRepo) GetByLogin(ctx context.Context, login string) (*models.User, error) {
 	op := "userRepo.GetByLogin"
 	query := "SELECT id, nickname, login, email, password, avatar, time_of_register, num_of_templates, num_of_readmes FROM users WHERE login = $1"
@@ -94,12 +106,22 @@ func (ur *userRepo) GetByLogin(ctx context.Context, login string) (*models.User,
 func (ur *userRepo) ExistanceCheck(ctx context.Context, login, email, nickname string) (bool, error) {
 	op := "userRepo.ExistanceCheck"
 	query := "SELECT 1 FROM users WHERE login = $1 OR email = $2 OR nickname = $3"
-	var res int
-	qd := helpers.NewQueryData(ctx, ur.Storage, op, query, login, email, nickname)
-	if err := qd.QueryRowWithTx(&res); err != nil {
-		return false, err
+	if tx, ok := storage.GetTx(ctx); ok {
+		if err := tx.QueryRow(ctx, query, login, email, nickname).Scan(); err != nil {
+			if errors.Is(err, storage.ErrNotFound()) {
+				return false, nil
+			}
+			return false, errs.NewAppError(op, err)
+		}
+		return true, nil
 	}
-	return res == 1, nil
+	if err := ur.Storage.Pool.QueryRow(ctx, query, login, email, nickname).Scan(); err != nil {
+		if errors.Is(err, storage.ErrNotFound()) {
+			return false, nil
+		}
+		return false, errs.NewAppError(op, err)
+	}
+	return true, nil
 }
 
 func (ur *userRepo) IdCheck(ctx context.Context, id string) (bool, error) {
@@ -129,9 +151,7 @@ func (ur *userRepo) Delete(ctx context.Context, id string) error {
 func (ur *userRepo) Update(ctx context.Context, updates map[string]any, id string) error {
 	op := "userRepo.Update"
 	validFields := map[string]bool{
-		"login":            true,
 		"nickname":         true,
-		"email":            true,
 		"avatar":           true,
 		"num_of_readmes":   true,
 		"num_of_templates": true,
@@ -139,16 +159,29 @@ func (ur *userRepo) Update(ctx context.Context, updates map[string]any, id strin
 	str := []string{}
 	args := []any{}
 	i := 1
+	validValuesForNumOfTemplsAndNumOfReadmes := map[string]bool{
+		"+": true,
+		"-": true,
+	}
 	for k, v := range updates {
 		if !validFields[k] {
 			return errs.ErrInvalidFields(op)
 		}
-		str = append(str, fmt.Sprintf(" %s = $%d", k, i))
-		args = append(args, v)
-		i++
+		if k == "num_of_readmes" || k == "num_of_templates" {
+			val := v.(string)
+			if !validValuesForNumOfTemplsAndNumOfReadmes[val] {
+				return errs.ErrInvalidFields(op)
+			}
+			str = append(str, fmt.Sprintf(" %s = GREATEST(%s %s 1, 0)", k, k, val))
+		} else {
+			str = append(str, fmt.Sprintf(" %s = $%d", k, i))
+			args = append(args, v)
+			i++
+		}
 	}
 	args = append(args, id)
 	query := fmt.Sprintf("UPDATE users SET%s WHERE id = $%d", strings.Join(str, ","), i)
+	fmt.Println(query)
 	qd := helpers.NewQueryData(ctx, ur.Storage, op, query, args...)
 	if err := qd.DeleteOrUpdateWithTx(); err != nil {
 		return err

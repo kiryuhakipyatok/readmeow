@@ -1,6 +1,7 @@
 app:
   name: "READMEOW"
   version: "1.0.0"
+  env: "${APP_ENV}"
 
 server:
   host: "0.0.0.0"
@@ -46,7 +47,7 @@ search:
 
 email:
   name: "Readmeow Register System"
-  address: "${EMAIL}"
+  address: "${EMAIL_ADDRESS}"
   password: "${EMAIL_PASSWORD}"
   smtpAddress: "smtp.gmail.com"
   smtpServerAddress: "smtp.gmail.com:587"
@@ -58,3 +59,7 @@ sheduler:
   templateBulkTimeout: 5s
   cleanCodesTime: 1m
   cleanCodesTimeout: 5s
+
+cloudstorage:
+  cloudURL: "${CLOUDINARY_URL}"
+  timeout: 30s

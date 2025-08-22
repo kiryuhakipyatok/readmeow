@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"readmeow/internal/config"
 	"readmeow/internal/domain/models"
@@ -25,9 +24,10 @@ import (
 
 type TemplateRepo interface {
 	Create(ctx context.Context, template *models.Template) error
-	Update(ctx context.Context, fields map[string]any, id string) error
+	Update(ctx context.Context, updates map[string]any, id string) error
 	Delete(ctx context.Context, id string) error
 	Get(ctx context.Context, id string) (*models.Template, error)
+	GetImage(ctx context.Context, id string) (string, error)
 	Like(ctx context.Context, id, uid string) error
 	Dislike(ctx context.Context, id, uid string) error
 	FetchFavorite(ctx context.Context, id string, amount, page uint) ([]models.Template, error)
@@ -51,7 +51,7 @@ func NewTemplateRepo(s *storage.Storage, c *cache.Cache, sc *search.SearchClient
 
 func (tr *templateRepo) Create(ctx context.Context, template *models.Template) error {
 	op := "templateRepo.Create"
-	query := "INSERT INTO templates (id, owner_id, title, image,description, text, links, widgets,num_of_users, render_order, create_time, last_update_time) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)"
+	query := "INSERT INTO templates (id, owner_id, title, image, description, text, links, widgets,num_of_users, render_order, create_time, last_update_time) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)"
 	qd := helpers.NewQueryData(ctx, tr.Storage, op, query, template.Id, template.OwnerId, template.Title, template.Image, template.Description, template.Text, template.Links, template.Widgets, template.NumOfUsers, template.RenderOrder, template.CreateTime, template.LastUpdateTime)
 	if err := qd.InsertWithTx(); err != nil {
 		return err
@@ -63,10 +63,12 @@ func (tr *templateRepo) Update(ctx context.Context, updates map[string]any, id s
 	op := "templateRepo.Update"
 	validFields := map[string]bool{
 		"title":            true,
+		"image":            true,
 		"text":             true,
 		"links":            true,
+		"description":      true,
 		"widgets":          true,
-		"order":            true,
+		"render_order":     true,
 		"num_of_users":     true,
 		"likes":            true,
 		"last_update_time": true,
@@ -95,7 +97,9 @@ func (tr *templateRepo) Update(ctx context.Context, updates map[string]any, id s
 		}
 	}
 	args = append(args, id)
-	query := fmt.Sprintf("UPDATE templates SET %s WHERE id = $%d", strings.Join(str, ","), i)
+	query := fmt.Sprintf("UPDATE templates SET%s WHERE id = $%d", strings.Join(str, ","), i)
+	fmt.Println(query)
+	fmt.Println(args...)
 	qd := helpers.NewQueryData(ctx, tr.Storage, op, query, args...)
 	if err := qd.DeleteOrUpdateWithTx(); err != nil {
 		return err
@@ -104,6 +108,17 @@ func (tr *templateRepo) Update(ctx context.Context, updates map[string]any, id s
 		return errs.NewAppError(op, err)
 	}
 	return nil
+}
+
+func (tr *templateRepo) GetImage(ctx context.Context, id string) (string, error) {
+	op := "templateRepo.GetImage"
+	query := "SELECT image FROM templates WHERE id = $1"
+	var url string
+	qd := helpers.NewQueryData(ctx, tr.Storage, op, query, id)
+	if err := qd.QueryRowWithTx(&url); err != nil {
+		return "", err
+	}
+	return url, nil
 }
 
 func (tr *templateRepo) Like(ctx context.Context, id, uid string) error {
@@ -184,9 +199,6 @@ func (tr *templateRepo) FetchFavorite(ctx context.Context, id string, amount, pa
 	templates := []models.Template{}
 	rows, err := tr.Storage.Pool.Query(ctx, query, id, amount*page-amount, amount)
 	if err != nil {
-		if errors.Is(err, storage.ErrNotFound()) {
-			return nil, errs.ErrNotFound(op)
-		}
 		return nil, errs.NewAppError(op, err)
 	}
 	defer rows.Close()
@@ -340,9 +352,6 @@ func (tr *templateRepo) getByIds(ctx context.Context, ids []string) ([]models.Te
 	templates := make([]models.Template, 0, len(ids))
 	rows, err := tr.Storage.Pool.Query(ctx, query, ids)
 	if err != nil {
-		if errors.Is(err, storage.ErrNotFound()) {
-			return nil, errs.ErrNotFound(op)
-		}
 		return nil, errs.NewAppError(op, err)
 	}
 	defer rows.Close()
@@ -368,6 +377,9 @@ func (tr *templateRepo) getByIds(ctx context.Context, ids []string) ([]models.Te
 		}
 		byId[template.Id.String()] = template
 	}
+	if len(byId) == 0 {
+		return nil, errs.ErrNotFound(op)
+	}
 	for _, id := range ids {
 		if t, ok := byId[id]; ok {
 			templates = append(templates, t)
@@ -382,9 +394,6 @@ func (tr *templateRepo) getAll(ctx context.Context) ([]models.Template, error) {
 	templates := []models.Template{}
 	rows, err := tr.Storage.Pool.Query(ctx, query)
 	if err != nil {
-		if errors.Is(err, storage.ErrNotFound()) {
-			return nil, errs.ErrNotFound(op)
-		}
 		return nil, errs.NewAppError(op, err)
 	}
 	defer rows.Close()
@@ -403,6 +412,9 @@ func (tr *templateRepo) getAll(ctx context.Context) ([]models.Template, error) {
 			return nil, errs.NewAppError(op, err)
 		}
 		templates = append(templates, template)
+	}
+	if len(templates) == 0 {
+		return nil, errs.ErrNotFound(op)
 	}
 	return templates, nil
 }

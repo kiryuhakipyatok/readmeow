@@ -2,6 +2,7 @@
 -- +goose StatementBegin
 CREATE TABLE IF NOT EXISTS users(
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    nickname VARCHAR(80) UNIQUE NOT NULL,
     login VARCHAR(80) UNIQUE NOT NULL,
     email VARCHAR(256) UNIQUE NOT NULL,
     avatar TEXT NOT NULL,

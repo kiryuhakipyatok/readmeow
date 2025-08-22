@@ -1,11 +1,11 @@
 -- +goose Up
 -- +goose StatementBegin
 ALTER TABLE IF EXISTS widgets
-DROP COLUMN likes
+ADD COLUMN IF NOT EXISTS tags JSONB NOT NULL DEFAULT '{}'
 -- +goose StatementEnd
 
 -- +goose Down
 -- +goose StatementBegin
 ALTER TABLE IF EXISTS widgets
-ADD COLUMN likes INTEGER NOT NULL DEFAULT 0
+DROP COLUMN IF EXISTS tags 
 -- +goose StatementEnd

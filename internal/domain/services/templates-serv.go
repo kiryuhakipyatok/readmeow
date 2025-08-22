@@ -2,9 +2,13 @@ package services
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"mime/multipart"
 	"readmeow/internal/domain/models"
 	"readmeow/internal/domain/repositories"
 	"readmeow/internal/dto"
+	"readmeow/pkg/cloudstorage"
 	"readmeow/pkg/errs"
 	"readmeow/pkg/logger"
 	"readmeow/pkg/storage"
@@ -14,8 +18,8 @@ import (
 )
 
 type TemplateServ interface {
-	Create(ctx context.Context, oid, title, image, description string, text, links, order []string, widgets []map[string]string) error
-	Update(ctx context.Context, fields map[string]any, id string) error
+	Create(ctx context.Context, oid, title, description string, image *multipart.FileHeader, links, order, text []string, widgets []map[string]string) error
+	Update(ctx context.Context, updates map[string]any, id string) error
 	Delete(ctx context.Context, id string) error
 	Get(ctx context.Context, id string) (*models.Template, error)
 	FetchFavorite(ctx context.Context, id string, amount, page uint) ([]dto.TemplateResponse, error)
@@ -29,20 +33,22 @@ type templateServ struct {
 	UserRepo     repositories.UserRepo
 	WidgetRepo   repositories.WidgetRepo
 	Transactor   storage.Transactor
+	CloudStorage cloudstorage.CloudStorage
 	Logger       *logger.Logger
 }
 
-func NewTemplateServ(tr repositories.TemplateRepo, ur repositories.UserRepo, wr repositories.WidgetRepo, t storage.Transactor, l *logger.Logger) TemplateServ {
+func NewTemplateServ(tr repositories.TemplateRepo, ur repositories.UserRepo, wr repositories.WidgetRepo, t storage.Transactor, cs cloudstorage.CloudStorage, l *logger.Logger) TemplateServ {
 	return &templateServ{
 		TemplateRepo: tr,
 		UserRepo:     ur,
 		WidgetRepo:   wr,
 		Transactor:   t,
+		CloudStorage: cs,
 		Logger:       l,
 	}
 }
 
-func (ts *templateServ) Create(ctx context.Context, oid, title, image, description string, text, links, order []string, widgets []map[string]string) error {
+func (ts *templateServ) Create(ctx context.Context, oid, title, description string, image *multipart.FileHeader, links, order, text []string, widgets []map[string]string) error {
 	op := "templateServ.Create"
 	log := ts.Logger.AddOp(op)
 	log.Log.Info("creating template")
@@ -50,23 +56,11 @@ func (ts *templateServ) Create(ctx context.Context, oid, title, image, descripti
 		user, err := ts.UserRepo.Get(c, oid)
 		if err != nil {
 			log.Log.Error("failed to get user", logger.Err(err))
-			return nil, err
+			return nil, errs.NewAppError(op, err)
 		}
-		template := &models.Template{
-			Id:             uuid.New(),
-			OwnerId:        user.Id,
-			Title:          title,
-			Image:          image,
-			Description:    description,
-			Text:           text,
-			Links:          links,
-			Widgets:        widgets,
-			Likes:          0,
-			NumOfUsers:     0,
-			RenderOrder:    order,
-			CreateTime:     time.Now(),
-			LastUpdateTime: time.Now(),
-		}
+
+		id := uuid.New()
+
 		keys := make([]string, 0, len(widgets))
 		for _, w := range widgets {
 			for k := range w {
@@ -91,10 +85,6 @@ func (ts *templateServ) Create(ctx context.Context, oid, title, image, descripti
 			}
 
 		}
-		if err := ts.TemplateRepo.Create(c, template); err != nil {
-			log.Log.Error("failed to create template", logger.Err(err))
-			return nil, err
-		}
 		update := map[string]any{
 			"num_of_templates": "+",
 		}
@@ -102,6 +92,49 @@ func (ts *templateServ) Create(ctx context.Context, oid, title, image, descripti
 			log.Log.Error("failed to update user info", logger.Err(err))
 			return nil, err
 		}
+		file, err := image.Open()
+		if err != nil {
+			log.Log.Error("failed to open file", logger.Err(err))
+			return nil, errs.NewAppError(op, err)
+		}
+		defer file.Close()
+		now := time.Now()
+		unow := now.Unix()
+		filename := fmt.Sprintf("%s-%d", id, unow)
+		var (
+			url string
+			pid string
+		)
+		folder := "templates"
+		url, pid, err = ts.CloudStorage.UploadImage(ctx, file, filename, folder)
+		if err != nil {
+			log.Log.Error("failed to upload template image", logger.Err(err))
+			return nil, err
+		}
+		template := &models.Template{
+			Id:             id,
+			OwnerId:        user.Id,
+			Title:          title,
+			Image:          url,
+			Description:    description,
+			Text:           text,
+			Links:          links,
+			Widgets:        widgets,
+			Likes:          0,
+			NumOfUsers:     0,
+			RenderOrder:    order,
+			CreateTime:     now,
+			LastUpdateTime: now,
+		}
+		if err := ts.TemplateRepo.Create(c, template); err != nil {
+			log.Log.Error("failed to create template", logger.Err(err))
+			if cerr := ts.CloudStorage.DeleteImage(ctx, pid); cerr != nil {
+				log.Log.Error("failed to delete template iamge", logger.Err(cerr))
+				return nil, fmt.Errorf("%w : %w", err, cerr)
+			}
+			return nil, err
+		}
+
 		return nil, nil
 	})
 	if err != nil {
@@ -112,14 +145,62 @@ func (ts *templateServ) Create(ctx context.Context, oid, title, image, descripti
 	return nil
 }
 
-func (ts *templateServ) Update(ctx context.Context, fields map[string]any, id string) error {
+func (ts *templateServ) Update(ctx context.Context, updates map[string]any, id string) error {
 	op := "templateServ.Update"
 	log := ts.Logger.AddOp(op)
 	log.Log.Info("updating template")
-	if err := ts.TemplateRepo.Update(ctx, fields, id); err != nil {
+	fileAnyH, ok := updates["image"]
+	now := time.Now()
+	var (
+		newPid string
+		oldURL string
+	)
+	if ok {
+		fileH := fileAnyH.(*multipart.FileHeader)
+		file, err := fileH.Open()
+		if err != nil {
+			log.Log.Error("failed to open file of template image", logger.Err(err))
+			return errs.NewAppError(op, err)
+		}
+		defer file.Close()
+		oldURL, err = ts.TemplateRepo.GetImage(ctx, id)
+		if err != nil {
+			log.Log.Error("failed to get old template image", logger.Err(err))
+			return errs.NewAppError(op, err)
+		}
+		folder := "templates"
+		unow := now.Unix()
+		filename := fmt.Sprintf("%s-%d", id, unow)
+		var url string
+		url, newPid, err = ts.CloudStorage.UploadImage(ctx, file, filename, folder)
+		if err != nil {
+			log.Log.Error("failed to upload template image", logger.Err(err))
+			return errs.NewAppError(op, err)
+		}
+		updates["image"] = url
+	}
+	updates["last_update_time"] = now
+	fmt.Println(updates)
+	if err := ts.TemplateRepo.Update(ctx, updates, id); err != nil {
+		if cerr := ts.CloudStorage.DeleteImage(ctx, newPid); cerr != nil {
+			log.Log.Error("failed to delete template iamge", logger.Err(cerr))
+			return fmt.Errorf("%w : %w", err, cerr)
+		}
 		log.Log.Error("failed to update template", logger.Err(err))
 		return errs.NewAppError(op, err)
 	}
+	if ok {
+		pId := ts.CloudStorage.GetPIdFromURL(oldURL)
+		if pId == "" {
+			log.Log.Error("failed to get pid from url")
+			return errs.NewAppError(op, errors.New("failed to get pid from url"))
+		}
+		if err := ts.CloudStorage.DeleteImage(ctx, pId); err != nil {
+			log.Log.Error("failed to delete template image", logger.Err(err))
+			return errs.NewAppError(op, err)
+		}
+	}
+
 	log.Log.Info("template updated successfully")
 	return nil
 }

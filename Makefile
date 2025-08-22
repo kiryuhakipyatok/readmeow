@@ -42,17 +42,11 @@ docker-migrate-down:
 create:
 	@goose -dir=$(MIGRATIONS_PATH) create $(NAME) sql
 
-up:
-	@goose -dir=$(MIGRATIONS_PATH) up
-
-down:
-	@goose -dir=$(MIGRATIONS_PATH) down
-
 down-to:
-	@goose -dir=$(MIGRATIONS_PATH) down-to $(VERSION)
+	@docker-compose run --rm migrate down-to $(VERSION)
 
 status:
-	@goose -dir=$(MIGRATIONS_PATH) status
+	@docker-compose run --rm migrate status
 
 reset:
-	@goose -dir=$(MIGRATIONS_PATH) reset
+	@docker-compose run --rm migrate reset

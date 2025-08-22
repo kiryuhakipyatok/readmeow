@@ -1,8 +1,10 @@
 package services
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
+	_ "embed"
 	"errors"
 	"fmt"
 	"math/rand"
@@ -10,6 +12,7 @@ import (
 	"readmeow/internal/domain/models"
 	"readmeow/internal/domain/repositories"
 	em "readmeow/internal/email"
+	"readmeow/pkg/cloudstorage"
 	"readmeow/pkg/errs"
 	"readmeow/pkg/logger"
 	"readmeow/pkg/storage"
@@ -33,20 +36,25 @@ type authServ struct {
 	VerificationRepo repositories.VerificationRepo
 	Transactor       storage.Transactor
 	AuthConfig       config.AuthConfig
+	CloudStorage     cloudstorage.CloudStorage
 	EmailSender      em.EmailSender
 	Logger           *logger.Logger
 }
 
-func NewAuthServ(ur repositories.UserRepo, vr repositories.VerificationRepo, t storage.Transactor, es em.EmailSender, l *logger.Logger, cfg config.AuthConfig) AuthServ {
+func NewAuthServ(ur repositories.UserRepo, vr repositories.VerificationRepo, cs cloudstorage.CloudStorage, t storage.Transactor, es em.EmailSender, l *logger.Logger, cfg config.AuthConfig) AuthServ {
 	return &authServ{
 		UserRepo:         ur,
 		VerificationRepo: vr,
 		Transactor:       t,
 		Logger:           l,
 		EmailSender:      es,
+		CloudStorage:     cs,
 		AuthConfig:       cfg,
 	}
 }
+
+//go:embed assets/default-ava.jpg
+var defaultAvatar []byte
 
 func (as *authServ) Register(ctx context.Context, email, code string) error {
 	op := "authServ.Register"
@@ -68,25 +76,35 @@ func (as *authServ) Register(ctx context.Context, email, code string) error {
 			log.Log.Error("failed to get user credentials", logger.Err(err))
 			return nil, errs.NewAppError(op, err)
 		}
+		now := time.Now()
+		unow := now.Unix()
+		folder := "avatars"
+		id := uuid.New()
+		filename := fmt.Sprintf("%s-%d", id, unow)
+		file := bytes.NewReader(defaultAvatar)
+		url, pid, err := as.CloudStorage.UploadImage(ctx, file, filename, folder)
 		user := models.User{
-			Id: uuid.New(),
+			Id: id,
 			Credentials: models.Credentials{
 				Nickname: credentials.Nickname,
 				Login:    credentials.Login,
 				Email:    credentials.Email,
 				Password: credentials.Password,
 			},
-			Avatar:         "empty",
-			TimeOfRegister: time.Now(),
+			Avatar:         url,
+			TimeOfRegister: now,
 			NumOfTemplates: 0,
 			NumOfReadmes:   0,
 		}
 
 		if err := as.UserRepo.Create(c, &user); err != nil {
 			log.Log.Error("failed to create user", logger.Err(err))
+			if cerr := as.CloudStorage.DeleteImage(ctx, pid); cerr != nil {
+				log.Log.Error("failed to delete user avatar", logger.Err(cerr))
+				return nil, fmt.Errorf("%w : %w", err, cerr)
+			}
 			return nil, errs.NewAppError(op, err)
 		}
-
 		if err := as.VerificationRepo.Delete(c, user.Email); err != nil {
 			log.Log.Error("failed to delete data from verifications", logger.Err(err))
 			return nil, errs.NewAppError(op, err)
@@ -173,9 +191,11 @@ func (as *authServ) GetId(ctx context.Context, cookie string) (string, error) {
 	id := claims.Subject
 	exist, err := as.UserRepo.IdCheck(ctx, id)
 	if err != nil {
+		log.Log.Error("failed to check user id", logger.Err(err))
 		return "", errs.NewAppError(op, err)
 	}
 	if !exist {
+		log.Log.Error("user not found", logger.Err(err))
 		return "", errs.ErrNotFound(op)
 	}
 	log.Log.Info("id received successfully")
@@ -220,7 +240,6 @@ func (as *authServ) SendVerifyCode(ctx context.Context, email, login, nickname, 
 		}
 		return nil, nil
 	}); err != nil {
-		log.Log.Error("failed to send verify code", logger.Err(err))
 		return errs.NewAppError(op, err)
 	}
 	log.Log.Info("code sended successfully")

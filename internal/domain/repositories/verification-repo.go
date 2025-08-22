@@ -3,6 +3,7 @@ package repositories
 import (
 	"context"
 	"errors"
+	"readmeow/internal/domain/models"
 	"readmeow/internal/domain/repositories/helpers"
 	"readmeow/pkg/errs"
 	"readmeow/pkg/storage"
@@ -12,7 +13,7 @@ import (
 type VerificationRepo interface {
 	AddCode(ctx context.Context, email, login, nickname string, password []byte, code []byte, ttl time.Time, attempts int) error
 	CodeCheck(ctx context.Context, email string, code []byte) (bool, error)
-	GetCredentials(ctx context.Context, email string) (*Credentials, error)
+	GetCredentials(ctx context.Context, email string) (*models.Credentials, error)
 	SendNewCode(ctx context.Context, email string, code []byte, ttl time.Time, attempts int) error
 	DeleteExpired(ctx context.Context) error
 	Delete(ctx context.Context, email string) error
@@ -26,13 +27,6 @@ func NewVerificationRepo(s *storage.Storage) VerificationRepo {
 	return &verificationRepo{
 		Storage: s,
 	}
-}
-
-type Credentials struct {
-	Email    string
-	Login    string
-	Nickname string
-	Password []byte
 }
 
 func (vr *verificationRepo) AddCode(ctx context.Context, email, login, nickname string, password []byte, code []byte, ttl time.Time, attempts int) error {
@@ -127,10 +121,10 @@ func (vr *verificationRepo) CodeCheck(ctx context.Context, email string, code []
 	return true, nil
 }
 
-func (vr *verificationRepo) GetCredentials(ctx context.Context, email string) (*Credentials, error) {
+func (vr *verificationRepo) GetCredentials(ctx context.Context, email string) (*models.Credentials, error) {
 	op := "verificationRepo.FetchCredentials"
-	query := "SELECT email,login,nickname,password FROM verifications WHERE email = $1"
-	creds := &Credentials{}
+	query := "SELECT nickname,login,email,password FROM verifications WHERE email = $1"
+	creds := &models.Credentials{}
 	qd := helpers.NewQueryData(ctx, vr.Storage, op, query, email)
 	if err := qd.QueryRowWithTx(creds); err != nil {
 		return nil, err

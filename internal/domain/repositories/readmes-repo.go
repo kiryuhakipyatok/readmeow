@@ -2,15 +2,12 @@ package repositories
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"readmeow/internal/domain/models"
 	"readmeow/internal/domain/repositories/helpers"
 	"readmeow/pkg/errs"
 	"readmeow/pkg/storage"
 	"strings"
-
-	"github.com/google/uuid"
 )
 
 type ReadmeRepo interface {
@@ -18,6 +15,7 @@ type ReadmeRepo interface {
 	Delete(ctx context.Context, id string) error
 	Update(ctx context.Context, updates map[string]any, id string) error
 	Get(ctx context.Context, id string) (*models.Readme, error)
+	GetImage(ctx context.Context, id string) (string, error)
 	FetchByUser(ctx context.Context, amount, page uint, uid string) ([]models.Readme, error)
 }
 
@@ -33,14 +31,8 @@ func NewReadmeStorage(s *storage.Storage) ReadmeRepo {
 
 func (rr *readmeRepo) Create(ctx context.Context, readme *models.Readme) error {
 	op := "readmeRepo.Create"
-	var tId any
-	if readme.TemplateId == uuid.Nil {
-		tId = nil
-	} else {
-		tId = readme.TemplateId
-	}
 	query := "INSERT INTO readmes (id, owner_id, template_id, image, title, text, links, widgets, render_order, create_time, last_update_time) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)"
-	qd := helpers.NewQueryData(ctx, rr.Storage, op, query, readme.Id, readme.OwnerId, tId, readme.Title, readme.Image, readme.Text, readme.Links, readme.Widgets, readme.Order, readme.CreateTime, readme.LastUpdateTime)
+	qd := helpers.NewQueryData(ctx, rr.Storage, op, query, readme.Id, readme.OwnerId, readme.TemplateId, readme.Image, readme.Title, readme.Text, readme.Links, readme.Widgets, readme.RenderOrder, readme.CreateTime, readme.LastUpdateTime)
 	if err := qd.InsertWithTx(); err != nil {
 		return err
 	}
@@ -64,6 +56,7 @@ func (rr *readmeRepo) Update(ctx context.Context, updates map[string]any, id str
 	op := "readmeRepo.Update"
 	validFields := map[string]bool{
 		"title":            true,
+		"image":            true,
 		"text":             true,
 		"links":            true,
 		"widgets":          true,
@@ -90,6 +83,17 @@ func (rr *readmeRepo) Update(ctx context.Context, updates map[string]any, id str
 	return nil
 }
 
+func (rr *readmeRepo) GetImage(ctx context.Context, id string) (string, error) {
+	op := "readmeRepo.GetImage"
+	query := "SELECT image FROM readmes WHERE id = $1"
+	var url string
+	qd := helpers.NewQueryData(ctx, rr.Storage, op, query, id)
+	if err := qd.QueryRowWithTx(&url); err != nil {
+		return "", err
+	}
+	return url, nil
+}
+
 func (rr *readmeRepo) Get(ctx context.Context, id string) (*models.Readme, error) {
 	op := "readmeRepo.Get"
 	query := "SELECT * FROM readmes WHERE id = $1"
@@ -106,9 +110,6 @@ func (rr *readmeRepo) FetchByUser(ctx context.Context, amount, page uint, uid st
 	query := "SELECT * FROM readmes WHERE owner_id = $1 OFFSET $2 LIMIT $3"
 	rows, err := rr.Storage.Pool.Query(ctx, query, uid, amount*page-amount, amount)
 	if err != nil {
-		if errors.Is(err, storage.ErrNotFound()) {
-			return nil, errs.ErrNotFound(op)
-		}
 		return nil, errs.NewAppError(op, err)
 	}
 	defer rows.Close()
@@ -123,7 +124,7 @@ func (rr *readmeRepo) FetchByUser(ctx context.Context, amount, page uint, uid st
 			&readme.Title,
 			&readme.Text,
 			&readme.Links,
-			&readme.Order,
+			&readme.RenderOrder,
 			&readme.CreateTime,
 			&readme.LastUpdateTime,
 			&readme.Widgets,

@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS widgets(
     image TEXT NOT NULL UNIQUE,
     description TEXT NOT NULL UNIQUE,
     type VARCHAR(50) NOT NULL,
+    tags JSONB NOT NULL DEFAULT '{}',
     link TEXT NOT NULL UNIQUE,
     likes INTEGER NOT NULL CHECK(likes>=0) DEFAULT 0,
     num_of_users INTEGER NOT NULL DEFAULT 0

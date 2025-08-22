@@ -37,8 +37,8 @@ func (rc *RouteConfig) SetupRoutes() {
 func (rc *RouteConfig) UsersRoutes() {
 	userGroup := rc.App.Group("/api/users")
 	userGroup.Get("/:user", rc.UserHandl.GetUser)
-	userGroup.Patch("/password", rc.UserHandl.ChangeUserPassword)
 	userGroup.Patch("", rc.UserHandl.Update)
+	userGroup.Patch("/password", rc.UserHandl.ChangeUserPassword)
 	userGroup.Delete("", rc.UserHandl.Delete)
 }
 
@@ -77,9 +77,10 @@ func (rc *RouteConfig) TemplatesRoutes() {
 	templateGroup.Get("/favorite", rc.TemplateHandl.FetchFavoriteTemplates)
 	templateGroup.Get("/:template", rc.TemplateHandl.GetTemplate)
 
+	templateGroup.Patch("", rc.TemplateHandl.UpdateTemplate)
 	templateGroup.Patch("/like/:template", rc.TemplateHandl.Like)
 	templateGroup.Patch("/dislike/:template", rc.TemplateHandl.Dislike)
-	templateGroup.Patch("", rc.TemplateHandl.UpdateTemplate)
+
 }
 
 func (rc *RouteConfig) ReadmesRoutes() {

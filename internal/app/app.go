@@ -14,6 +14,7 @@ import (
 	"readmeow/internal/email"
 	"readmeow/internal/scheduler"
 	"readmeow/pkg/cache"
+	"readmeow/pkg/cloudstorage"
 	"readmeow/pkg/logger"
 	"readmeow/pkg/search"
 	stor "readmeow/pkg/storage"
@@ -29,7 +30,7 @@ func Run() {
 		panic("failed to load .env" + err.Error())
 	}
 	cfg := config.MustLoadConfig(os.Getenv("CONFIG_PATH"))
-	log := logger.NewLogger(os.Getenv("APP_ENV"), cfg.App)
+	log := logger.NewLogger(cfg.App)
 
 	log.Log.Info("config loaded")
 
@@ -63,6 +64,9 @@ func Run() {
 
 	smtpAuth := smtp.PlainAuth("", cfg.Email.Address, cfg.Email.Password, cfg.Email.SmtpAddress)
 
+	cloudStorage := cloudstorage.MustConnect(cfg.CloudStorage)
+	log.Log.Info("connected to cloudinary")
+
 	userRepo := repositories.NewUserRepo(storage)
 	widgetRepo := repositories.NewWidgetRepo(storage, cache, search)
 	readmeRepo := repositories.NewReadmeStorage(storage)
@@ -71,11 +75,11 @@ func Run() {
 	transactor := stor.NewTransactor(storage)
 	emailSendler := email.NewEmailSender(smtpAuth, cfg.Email)
 
-	authServ := services.NewAuthServ(userRepo, verificationRepo, transactor, emailSendler, log, cfg.Auth)
-	readmeServ := services.NewReadmeServ(readmeRepo, userRepo, templateRepo, widgetRepo, transactor, log)
+	authServ := services.NewAuthServ(userRepo, verificationRepo, cloudStorage, transactor, emailSendler, log, cfg.Auth)
+	readmeServ := services.NewReadmeServ(readmeRepo, userRepo, templateRepo, widgetRepo, transactor, cloudStorage, log)
 	widgetServ := services.NewWidgetServ(widgetRepo, userRepo, transactor, log)
-	templateServ := services.NewTemplateServ(templateRepo, userRepo, widgetRepo, transactor, log)
-	userServ := services.NewUserServ(userRepo, transactor, log)
+	templateServ := services.NewTemplateServ(templateRepo, userRepo, widgetRepo, transactor, cloudStorage, log)
+	userServ := services.NewUserServ(userRepo, cloudStorage, transactor, log)
 
 	authHandl := handlers.NewAuthHandle(authServ, userServ, validator)
 	readmeHandl := handlers.NewReadmeHandl(readmeServ, authServ, validator)

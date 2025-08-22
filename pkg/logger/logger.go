@@ -16,8 +16,9 @@ type Logger struct {
 	Log *slog.Logger
 }
 
-func NewLogger(env string, acfg config.AppConfig) *Logger {
+func NewLogger(acfg config.AppConfig) *Logger {
 	var log *slog.Logger
+	env := acfg.Env
 	switch env {
 	case localEnv:
 		log = slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}))

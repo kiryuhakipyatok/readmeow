@@ -15,7 +15,7 @@ type Readme struct {
 	Text           []string            `json:"text"`
 	Links          []string            `json:"links"`
 	Widgets        []map[string]string `json:"widgets"`
-	Order          []string            `json:"order"`
+	RenderOrder    []string            `json:"render_order"`
 	CreateTime     time.Time           `json:"create_time"`
 	LastUpdateTime time.Time           `json:"last_update_time"`
 }
