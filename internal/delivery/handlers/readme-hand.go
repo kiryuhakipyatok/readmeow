@@ -39,10 +39,11 @@ func (rh *ReadmeHandl) CreateReadme(c *fiber.Ctx) error {
 	req.Title = c.FormValue("title")
 	form, err := c.MultipartForm()
 	if err != nil {
-		return helpers.ToApiError(err)
+		return helpers.InvalidRequest()
 	}
-	renderOrder := form.Value["render_order"]
-	req.RenderOrder = renderOrder
+	if renderOrder, ok := form.Value["render_order"]; ok {
+		req.RenderOrder = renderOrder
+	}
 	req.Text = []string{}
 	if text, ok := form.Value["text"]; ok {
 		req.Text = text
@@ -60,15 +61,12 @@ func (rh *ReadmeHandl) CreateReadme(c *fiber.Ctx) error {
 		}
 		req.Widgets = widgets
 	}
-	image, err := c.FormFile("image")
-	if err != nil && err.Error() != "there is no uploaded file associated with the given key" {
-		return helpers.ToApiError(err)
-	}
-	if image != nil {
+	if image, _ := c.FormFile("image"); image != nil {
 		req.Image = image
 	}
-	if err := rh.Validator.Validate.Struct(req); err != nil {
-		return helpers.InvalidRequest()
+
+	if errs := helpers.ValidateStruct(c, req, rh.Validator); len(errs) > 0 {
+		return helpers.InvalidJSON(c, errs)
 	}
 
 	if err := rh.ReadmeServ.Create(ctx, req.TemplateId, uid, req.Title, req.Image, req.Text, req.Links, req.RenderOrder, req.Widgets); err != nil {
@@ -105,7 +103,7 @@ func (rh *ReadmeHandl) UpdateReadme(c *fiber.Ctx) error {
 	}
 	form, err := c.MultipartForm()
 	if err != nil {
-		return helpers.ToApiError(err)
+		return helpers.InvalidRequest()
 	}
 	widgetsData := c.FormValue("widgets")
 	if widgetsData != "" {
@@ -125,19 +123,15 @@ func (rh *ReadmeHandl) UpdateReadme(c *fiber.Ctx) error {
 		updates["render_order"] = render_order
 	}
 
-	image, err := c.FormFile("image")
-	if err != nil && err.Error() != "there is no uploaded file associated with the given key" {
-		return helpers.ToApiError(err)
-	}
-	if image != nil {
+	if image, _ := c.FormFile("image"); image != nil {
 		updates["image"] = image
 	}
 	req := dto.UpdateReadmeRequest{
 		Updates: updates,
 		Id:      id,
 	}
-	if err := rh.Validator.Validate.Struct(req); err != nil {
-		return helpers.InvalidRequest()
+	if errs := helpers.ValidateStruct(c, req, rh.Validator); len(errs) > 0 {
+		return helpers.InvalidJSON(c, errs)
 	}
 	if err := rh.ReadmeServ.Update(ctx, req.Updates, req.Id); err != nil {
 		return helpers.ToApiError(err)

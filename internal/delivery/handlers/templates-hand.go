@@ -36,9 +36,11 @@ func (th *TemplateHandl) CreateTemplate(c *fiber.Ctx) error {
 	req.Description = c.FormValue("description")
 	form, err := c.MultipartForm()
 	if err != nil {
-		return helpers.ToApiError(err)
+		return helpers.InvalidRequest()
 	}
-	req.RenderOrder = form.Value["render_order"]
+	if renderOrder, ok := form.Value["render_order"]; ok {
+		req.RenderOrder = renderOrder
+	}
 	req.Text = []string{}
 	if text, ok := form.Value["text"]; ok {
 		req.Text = text
@@ -57,16 +59,12 @@ func (th *TemplateHandl) CreateTemplate(c *fiber.Ctx) error {
 		req.Widgets = widgets
 	}
 
-	image, err := c.FormFile("image")
-	if err != nil {
-		return helpers.ToApiError(err)
-	}
-	if image != nil {
+	if image, _ := c.FormFile("image"); image != nil {
 		req.Image = image
 	}
 
-	if err := th.Validator.Validate.Struct(req); err != nil {
-		return helpers.InvalidRequest()
+	if errs := helpers.ValidateStruct(c, req, th.Validator); len(errs) > 0 {
+		return helpers.InvalidJSON(c, errs)
 	}
 	if err := th.TemplateServ.Create(ctx, oid, req.Title, req.Description, req.Image, req.Links, req.RenderOrder, req.Text, req.Widgets); err != nil {
 		return helpers.ToApiError(err)
@@ -88,7 +86,7 @@ func (th *TemplateHandl) UpdateTemplate(c *fiber.Ctx) error {
 	}
 	form, err := c.MultipartForm()
 	if err != nil {
-		return helpers.ToApiError(err)
+		return helpers.InvalidRequest()
 	}
 	if renderOrder, ok := form.Value["render_order"]; ok {
 		updates["render_order"] = renderOrder
@@ -109,19 +107,15 @@ func (th *TemplateHandl) UpdateTemplate(c *fiber.Ctx) error {
 		updates["widgets"] = widgets
 	}
 
-	image, err := c.FormFile("image")
-	if err != nil && err.Error() != "there is no uploaded file associated with the given key" {
-		return helpers.ToApiError(err)
-	}
-	if image != nil {
+	if image, _ := c.FormFile("image"); image != nil {
 		updates["image"] = image
 	}
 	req := dto.UpdateTemplateRequest{
 		Updates: updates,
 		Id:      id,
 	}
-	if err := th.Validator.Validate.Struct(req); err != nil {
-		return helpers.InvalidRequest()
+	if errs := helpers.ValidateStruct(c, req, th.Validator); len(errs) > 0 {
+		return helpers.InvalidJSON(c, errs)
 	}
 
 	if err := th.TemplateServ.Update(ctx, req.Updates, req.Id); err != nil {

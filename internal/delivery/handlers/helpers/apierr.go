@@ -40,6 +40,8 @@ func ToApiError(err error) ApiErr {
 		return AlreadyExists()
 	case errors.Is(err, errs.ErrInvalidFieldsBase):
 		return InvalidRequest()
+	case errors.Is(err, errs.ErrInvalidValuesBase):
+		return InvalidRequest()
 	default:
 		return InternalServerError()
 	}
@@ -51,10 +53,6 @@ func InternalServerError() ApiErr {
 
 func InvalidRequest() ApiErr {
 	return NewApiError(fiber.StatusUnprocessableEntity, ErrBadRequest)
-}
-
-func InvalidJSON() ApiErr {
-	return NewApiError(fiber.StatusBadRequest, ErrInvalidJSON)
 }
 
 func NotFound() ApiErr {

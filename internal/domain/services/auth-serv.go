@@ -96,7 +96,10 @@ func (as *authServ) Register(ctx context.Context, email, code string) error {
 			NumOfTemplates: 0,
 			NumOfReadmes:   0,
 		}
-
+		if err := as.VerificationRepo.Delete(c, user.Email); err != nil {
+			log.Log.Error("failed to delete data from verifications", logger.Err(err))
+			return nil, errs.NewAppError(op, err)
+		}
 		if err := as.UserRepo.Create(c, &user); err != nil {
 			log.Log.Error("failed to create user", logger.Err(err))
 			if cerr := as.CloudStorage.DeleteImage(ctx, pid); cerr != nil {
@@ -105,10 +108,7 @@ func (as *authServ) Register(ctx context.Context, email, code string) error {
 			}
 			return nil, errs.NewAppError(op, err)
 		}
-		if err := as.VerificationRepo.Delete(c, user.Email); err != nil {
-			log.Log.Error("failed to delete data from verifications", logger.Err(err))
-			return nil, errs.NewAppError(op, err)
-		}
+
 		return nil, nil
 	}); err != nil {
 		log.Log.Error("failed to register user", logger.Err(err))
@@ -213,7 +213,7 @@ func (as *authServ) SendVerifyCode(ctx context.Context, email, login, nickname, 
 			return nil, errs.NewAppError(op, err)
 		}
 		if exist {
-			return nil, fmt.Errorf("%s : %w", op, errors.New("user with same credentials already exists"))
+			return nil, errs.ErrAlreadyExists(op, err)
 		}
 		r := rand.New(rand.NewSource(time.Now().UnixNano()))
 		code := fmt.Sprintf("%06d", r.Intn(1000000))
@@ -235,7 +235,7 @@ func (as *authServ) SendVerifyCode(ctx context.Context, email, login, nickname, 
 			return nil, errs.NewAppError(op, err)
 		}
 		if err := as.EmailSender.SendMessage(c, subject, []byte(content), []string{email}, nil); err != nil {
-			log.Log.Error("failed to send verify code", logger.Err(err))
+			log.Log.Error("failed to send message to user", logger.Err(err))
 			return nil, errs.NewAppError(op, err)
 		}
 		return nil, nil
@@ -266,7 +266,7 @@ func (as *authServ) SendNewCode(ctx context.Context, email string) error {
 			return nil, errs.NewAppError(op, err)
 		}
 		if err := as.EmailSender.SendMessage(c, subject, []byte(content), []string{email}, nil); err != nil {
-			log.Log.Error("failed to send new verify code", logger.Err(err))
+			log.Log.Error("failed to send message to user", logger.Err(err))
 			return nil, errs.NewAppError(op, err)
 		}
 		return nil, nil

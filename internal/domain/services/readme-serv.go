@@ -139,7 +139,7 @@ func (rs *readmeServ) Create(ctx context.Context, tid, oid, title string, image 
 		if err := rs.ReadmeRepo.Create(c, readme); err != nil {
 			log.Log.Error("failed to create readme", logger.Err(err))
 			if cerr := rs.CloudStorage.DeleteImage(ctx, pid); cerr != nil {
-				log.Log.Error("failed to delete readme iamge", logger.Err(cerr))
+				log.Log.Error("failed to delete readme image", logger.Err(cerr))
 				return nil, fmt.Errorf("%w : %w", err, cerr)
 			}
 			return nil, err
@@ -148,10 +148,10 @@ func (rs *readmeServ) Create(ctx context.Context, tid, oid, title string, image 
 		return nil, nil
 	})
 	if err != nil {
-		log.Log.Error("failed to create readme", logger.Err(err))
+		log.Log.Error("failed to create new readme", logger.Err(err))
 		return errs.NewAppError(op, err)
 	}
-	log.Log.Info("readme created successfully")
+	log.Log.Info("new readme created successfully")
 	return nil
 }
 

@@ -76,7 +76,7 @@ func (us *userServ) Update(ctx context.Context, updates map[string]any, id strin
 		log.Log.Error("failed to update user info", logger.Err(err))
 		if cerr := us.CloudStorage.DeleteImage(ctx, newPid); cerr != nil {
 			log.Log.Error("failed to delete user avatar", logger.Err(cerr))
-			return fmt.Errorf("%w : %w", err, cerr)
+			return errs.NewAppError(op, fmt.Errorf("%w : %w", err, cerr))
 		}
 		return errs.NewAppError(op, err)
 	}

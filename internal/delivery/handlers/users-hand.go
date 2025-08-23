@@ -50,19 +50,15 @@ func (uh *UserHandl) Update(c *fiber.Ctx) error {
 	if nickname != "" {
 		updates["nickname"] = nickname
 	}
-	avatar, err := c.FormFile("avatar")
-	if err != nil && err.Error() != "there is no uploaded file associated with the given key" {
-		return err
-	}
-	if avatar != nil {
-		updates["avatar"] = avatar
+	if image, _ := c.FormFile("avatar"); image != nil {
+		updates["avatar"] = image
 	}
 	req := dto.UpdateUserRequest{
 		Updates: updates,
 		Id:      id,
 	}
-	if err := uh.Validator.Validate.Struct(req); err != nil {
-		return helpers.InvalidRequest()
+	if errs := helpers.ValidateStruct(c, req, uh.Validator); len(errs) > 0 {
+		return helpers.InvalidJSON(c, errs)
 	}
 	if err := uh.UserServ.Update(ctx, req.Updates, id); err != nil {
 		return helpers.ToApiError(err)

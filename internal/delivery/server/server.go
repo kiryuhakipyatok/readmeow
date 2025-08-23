@@ -23,7 +23,7 @@ func NewServer(scfg config.ServerConfig, acfg config.AuthConfig, apcfg config.Ap
 		WriteTimeout: time.Duration(scfg.WriteTimeout),
 		IdleTimeout:  time.Duration(scfg.IdleTimeout),
 		AppName:      apcfg.Name,
-		//ErrorHandler: errorHandler,
+		ErrorHandler: errorHandler,
 	})
 	app.Use(
 		cors.New(cors.Config{}),

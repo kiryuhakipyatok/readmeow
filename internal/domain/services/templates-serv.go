@@ -56,7 +56,7 @@ func (ts *templateServ) Create(ctx context.Context, oid, title, description stri
 		user, err := ts.UserRepo.Get(c, oid)
 		if err != nil {
 			log.Log.Error("failed to get user", logger.Err(err))
-			return nil, errs.NewAppError(op, err)
+			return nil, err
 		}
 
 		id := uuid.New()
@@ -95,7 +95,7 @@ func (ts *templateServ) Create(ctx context.Context, oid, title, description stri
 		file, err := image.Open()
 		if err != nil {
 			log.Log.Error("failed to open file", logger.Err(err))
-			return nil, errs.NewAppError(op, err)
+			return nil, err
 		}
 		defer file.Close()
 		now := time.Now()
@@ -184,7 +184,7 @@ func (ts *templateServ) Update(ctx context.Context, updates map[string]any, id s
 	if err := ts.TemplateRepo.Update(ctx, updates, id); err != nil {
 		if cerr := ts.CloudStorage.DeleteImage(ctx, newPid); cerr != nil {
 			log.Log.Error("failed to delete template iamge", logger.Err(cerr))
-			return fmt.Errorf("%w : %w", err, cerr)
+			return errs.NewAppError(op, fmt.Errorf("%w : %w", err, cerr))
 		}
 		log.Log.Error("failed to update template", logger.Err(err))
 		return errs.NewAppError(op, err)
@@ -265,7 +265,9 @@ func (ts *templateServ) FetchFavorite(ctx context.Context, id string, amount, pa
 	for _, t := range templs {
 		owner, ok := userMap[t.OwnerId.String()]
 		if !ok {
-			log.Log.Error("undefind template owner", logger.Err(err))
+			err := errors.New("undefind template owner")
+			log.Log.Error("failed to get template owner", logger.Err(err))
+			return nil, errs.NewAppError(op, err)
 		}
 		template := dto.TemplateResponse{
 			Id:             t.Id.String(),
@@ -287,7 +289,7 @@ func (ts *templateServ) FetchFavorite(ctx context.Context, id string, amount, pa
 func (ts *templateServ) Search(ctx context.Context, amount, page uint, query string, filter map[string]bool, sort map[string]string) ([]dto.TemplateResponse, error) {
 	op := "templateServ.Search"
 	log := ts.Logger.AddOp(op)
-	log.Log.Info("fetchin searched templates")
+	log.Log.Info("fetching searched templates")
 	templs, err := ts.TemplateRepo.Search(ctx, amount, page, query, filter, sort)
 	if err != nil {
 		log.Log.Error("failed to fetch searched templates", logger.Err(err))
@@ -311,7 +313,9 @@ func (ts *templateServ) Search(ctx context.Context, amount, page uint, query str
 	for _, t := range templs {
 		owner, ok := userMap[t.OwnerId.String()]
 		if !ok {
-			log.Log.Error("undefind template owner", logger.Err(err))
+			err := errors.New("undefind template owner")
+			log.Log.Error("failed to get template owner", logger.Err(err))
+			return nil, errs.NewAppError(op, err)
 		}
 		template := dto.TemplateResponse{
 			Id:             t.Id.String(),

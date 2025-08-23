@@ -51,7 +51,9 @@ func (ah *AuthHandl) VerifyEmail(c *fiber.Ctx) error {
 func (ah *AuthHandl) Login(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	if c.Cookies("jwt") != "" {
-		return helpers.AlreadyExists()
+		return c.Status(fiber.StatusOK).JSON(fiber.Map{
+			"message": "user already loggined",
+		})
 	}
 	req := dto.LoginRequest{}
 	if err := helpers.ParseAndValidateRequest(c, &req, helpers.Body{}, ah.Validator); err != nil {
