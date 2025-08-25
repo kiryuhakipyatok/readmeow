@@ -64,17 +64,15 @@ func (as *authServ) Register(ctx context.Context, email, code string) error {
 		codeHash := sha256.Sum256([]byte(code))
 		res, err := as.VerificationRepo.CodeCheck(c, email, codeHash[:])
 		if err != nil {
-			log.Log.Error("failed to check code", logger.Err(err))
-			return nil, errs.NewAppError(op, err)
+			return nil, err
 		}
 		if !res {
-			log.Log.Info("invalid code")
-			return nil, errs.NewAppError(op, errors.New("invalid code"))
+			err := errors.New("invalid code")
+			return nil, err
 		}
 		credentials, err := as.VerificationRepo.GetCredentials(c, email)
 		if err != nil {
-			log.Log.Error("failed to get user credentials", logger.Err(err))
-			return nil, errs.NewAppError(op, err)
+			return nil, err
 		}
 		now := time.Now()
 		unow := now.Unix()
@@ -97,16 +95,13 @@ func (as *authServ) Register(ctx context.Context, email, code string) error {
 			NumOfReadmes:   0,
 		}
 		if err := as.VerificationRepo.Delete(c, user.Email); err != nil {
-			log.Log.Error("failed to delete data from verifications", logger.Err(err))
-			return nil, errs.NewAppError(op, err)
+			return nil, err
 		}
 		if err := as.UserRepo.Create(c, &user); err != nil {
-			log.Log.Error("failed to create user", logger.Err(err))
 			if cerr := as.CloudStorage.DeleteImage(ctx, pid); cerr != nil {
-				log.Log.Error("failed to delete user avatar", logger.Err(cerr))
 				return nil, fmt.Errorf("%w : %w", err, cerr)
 			}
-			return nil, errs.NewAppError(op, err)
+			return nil, err
 		}
 
 		return nil, nil
@@ -209,8 +204,7 @@ func (as *authServ) SendVerifyCode(ctx context.Context, email, login, nickname, 
 	if _, err := as.Transactor.WithinTransaction(ctx, func(c context.Context) (any, error) {
 		exist, err := as.UserRepo.ExistanceCheck(c, login, email, nickname)
 		if err != nil {
-			log.Log.Error("failed to check existance", logger.Err(err))
-			return nil, errs.NewAppError(op, err)
+			return nil, err
 		}
 		if exist {
 			return nil, errs.ErrAlreadyExists(op, err)
@@ -220,26 +214,23 @@ func (as *authServ) SendVerifyCode(ctx context.Context, email, login, nickname, 
 		codeHash := sha256.Sum256([]byte(code))
 		passwordHash, err := bcrypt.GenerateFromPassword([]byte(password), 12)
 		if err != nil {
-			log.Log.Info("failed to generate password hash", logger.Err(err))
-			return nil, errs.NewAppError(op, err)
+			return nil, err
 		}
 		codeTTL := time.Now().Add(as.AuthConfig.CodeTTL)
 		if err := as.VerificationRepo.AddCode(c, email, login, nickname, passwordHash, codeHash[:], codeTTL, as.AuthConfig.CodeAttempts); err != nil {
-			log.Log.Info("failed to add code", logger.Err(err))
-			return nil, errs.NewAppError(op, err)
+			return nil, err
 		}
 		subject := "Email Verifying"
 		content, err := em.BuildEmailLetter(code)
 		if err != nil {
-			log.Log.Error("failed to build email letter", logger.Err(err))
-			return nil, errs.NewAppError(op, err)
+			return nil, err
 		}
 		if err := as.EmailSender.SendMessage(c, subject, []byte(content), []string{email}, nil); err != nil {
-			log.Log.Error("failed to send message to user", logger.Err(err))
-			return nil, errs.NewAppError(op, err)
+			return nil, err
 		}
 		return nil, nil
 	}); err != nil {
+		log.Log.Error("failed to send verification code", logger.Err(err))
 		return errs.NewAppError(op, err)
 	}
 	log.Log.Info("code sended successfully")
@@ -256,18 +247,15 @@ func (as *authServ) SendNewCode(ctx context.Context, email string) error {
 		codeHash := sha256.Sum256([]byte(code))
 		codeTTL := time.Now().Add(as.AuthConfig.CodeTTL)
 		if err := as.VerificationRepo.SendNewCode(c, email, codeHash[:], codeTTL, as.AuthConfig.CodeAttempts); err != nil {
-			log.Log.Info("failed to send new code", logger.Err(err))
-			return nil, errs.NewAppError(op, err)
+			return nil, err
 		}
-		subject := "Email Verifying"
+		subject := "Repeated Email Verifying"
 		content, err := em.BuildEmailLetter(code)
 		if err != nil {
-			log.Log.Error("failed to build email letter", logger.Err(err))
-			return nil, errs.NewAppError(op, err)
+			return nil, err
 		}
 		if err := as.EmailSender.SendMessage(c, subject, []byte(content), []string{email}, nil); err != nil {
-			log.Log.Error("failed to send message to user", logger.Err(err))
-			return nil, errs.NewAppError(op, err)
+			return nil, err
 		}
 		return nil, nil
 	}); err != nil {

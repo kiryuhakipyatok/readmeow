@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"mime/multipart"
 	"readmeow/internal/domain/repositories"
@@ -43,54 +42,55 @@ func (us *userServ) Update(ctx context.Context, updates map[string]any, id strin
 	op := "userServ.Update"
 	log := us.Logger.AddOp(op)
 	log.Log.Info("updating user info")
-	fileAnyH, ok := updates["avatar"]
-	var (
-		newPid string
-		oldURL string
-	)
-	if ok {
-		fileH := fileAnyH.(*multipart.FileHeader)
-		file, err := fileH.Open()
-		if err != nil {
-			log.Log.Error("failed to open file of avatar", logger.Err(err))
-			return errs.NewAppError(op, err)
+	if _, err := us.Transactor.WithinTransaction(ctx, func(c context.Context) (any, error) {
+		fileAnyH, ok := updates["avatar"]
+		var (
+			newPid string
+			oldURL string
+		)
+		if ok {
+			fileH := fileAnyH.(*multipart.FileHeader)
+			file, err := fileH.Open()
+			if err != nil {
+				return nil, err
+			}
+			defer file.Close()
+			folder := "avatars"
+			unow := time.Now().Unix()
+			filename := fmt.Sprintf("%s-%d", id, unow)
+			oldURL, err = us.UserRepo.GetAvatar(c, id)
+			if err != nil {
+				return nil, err
+			}
+			var url string
+			url, newPid, err = us.CloudStorage.UploadImage(c, file, filename, folder)
+			if err != nil {
+				return nil, err
+			}
+			updates["avatar"] = url
 		}
-		defer file.Close()
-		folder := "avatars"
-		unow := time.Now().Unix()
-		filename := fmt.Sprintf("%s-%d", id, unow)
-		oldURL, err = us.UserRepo.GetAvatar(ctx, id)
-		if err != nil {
-			log.Log.Error("failed to get user avatar", logger.Err(err))
-			return errs.NewAppError(op, err)
+		if err := us.UserRepo.Update(c, updates, id); err != nil {
+			if cerr := us.CloudStorage.DeleteImage(c, newPid); cerr != nil {
+
+				return nil, fmt.Errorf("%w : %w", err, cerr)
+			}
+			return nil, err
 		}
-		var url string
-		url, newPid, err = us.CloudStorage.UploadImage(ctx, file, filename, folder)
-		if err != nil {
-			log.Log.Error("failed to upload avatar", logger.Err(err))
-			return errs.NewAppError(op, err)
+		if ok {
+			pId, err := us.CloudStorage.GetPIdFromURL(oldURL)
+			if err != nil {
+				return nil, err
+			}
+			if err := us.CloudStorage.DeleteImage(c, pId); err != nil {
+				return nil, err
+			}
 		}
-		updates["avatar"] = url
-	}
-	if err := us.UserRepo.Update(ctx, updates, id); err != nil {
-		log.Log.Error("failed to update user info", logger.Err(err))
-		if cerr := us.CloudStorage.DeleteImage(ctx, newPid); cerr != nil {
-			log.Log.Error("failed to delete user avatar", logger.Err(cerr))
-			return errs.NewAppError(op, fmt.Errorf("%w : %w", err, cerr))
-		}
+		return nil, nil
+	}); err != nil {
+		log.Log.Error("failed to update user", logger.Err(err))
 		return errs.NewAppError(op, err)
 	}
-	if ok {
-		pId := us.CloudStorage.GetPIdFromURL(oldURL)
-		if pId == "" {
-			log.Log.Error("failed to get pid from url")
-			return errs.NewAppError(op, errors.New("failed to get pid from url"))
-		}
-		if err := us.CloudStorage.DeleteImage(ctx, pId); err != nil {
-			log.Log.Error("failed to delete user avatar", logger.Err(err))
-			return errs.NewAppError(op, err)
-		}
-	}
+
 	log.Log.Info("user info updated successfully")
 	return nil
 }
@@ -102,19 +102,17 @@ func (us *userServ) Delete(ctx context.Context, id, password string) error {
 	if _, err := us.Transactor.WithinTransaction(ctx, func(c context.Context) (any, error) {
 		userPassword, err := us.UserRepo.GetPassword(c, id)
 		if err != nil {
-			log.Log.Error("failed to get user password", logger.Err(err))
 			return nil, err
 		}
 		if err := bcrypt.CompareHashAndPassword(userPassword, []byte(password)); err != nil {
-			log.Log.Error("user and entered passwords are not equal", logger.Err(err))
 			return nil, err
 		}
 		if err := us.UserRepo.Delete(c, id); err != nil {
-			log.Log.Error("failed to delete user", logger.Err(err))
 			return nil, err
 		}
 		return nil, nil
 	}); err != nil {
+		log.Log.Error("failed to delete user", logger.Err(err))
 		return errs.NewAppError(op, err)
 	}
 
@@ -129,27 +127,24 @@ func (us *userServ) ChangePassword(ctx context.Context, id string, oldPassword, 
 	if _, err := us.Transactor.WithinTransaction(ctx, func(c context.Context) (any, error) {
 		userPassword, err := us.UserRepo.GetPassword(c, id)
 		if err != nil {
-			log.Log.Error("failed to get user password", logger.Err(err))
 			return nil, err
 		}
 
 		if err := bcrypt.CompareHashAndPassword(userPassword, []byte(oldPassword)); err != nil {
-			log.Log.Error("old and entered passwords are not equal", logger.Err(err))
 			return nil, err
 		}
 
 		newHashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPasswrod), 12)
 		if err != nil {
-			log.Log.Error("failed to hash password", logger.Err(err))
 			return nil, err
 		}
 
 		if err := us.UserRepo.ChangePassword(c, id, newHashedPassword); err != nil {
-			log.Log.Error("failed to change user password", logger.Err(err))
 			return nil, err
 		}
 		return nil, nil
 	}); err != nil {
+		log.Log.Error("failed to change user password", logger.Err(err))
 		return errs.NewAppError(op, err)
 	}
 

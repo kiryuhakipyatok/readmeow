@@ -57,7 +57,7 @@ func (rh *ReadmeHandl) CreateReadme(c *fiber.Ctx) error {
 	if widgetsData != "" {
 		widgets := make([]map[string]string, 0)
 		if err := json.Unmarshal([]byte(widgetsData), &widgets); err != nil {
-			return err
+			return helpers.ToApiError(err)
 		}
 		req.Widgets = widgets
 	}
@@ -66,7 +66,7 @@ func (rh *ReadmeHandl) CreateReadme(c *fiber.Ctx) error {
 	}
 
 	if errs := helpers.ValidateStruct(req, rh.Validator); len(errs) > 0 {
-		return err
+		return helpers.ValidationError(errs)
 	}
 
 	if err := rh.ReadmeServ.Create(ctx, req.TemplateId, uid, req.Title, req.Image, req.Text, req.Links, req.RenderOrder, req.Widgets); err != nil {
@@ -131,7 +131,7 @@ func (rh *ReadmeHandl) UpdateReadme(c *fiber.Ctx) error {
 		Id:      id,
 	}
 	if errs := helpers.ValidateStruct(req, rh.Validator); len(errs) > 0 {
-		return err
+		return helpers.ValidationError(errs)
 	}
 	if err := rh.ReadmeServ.Update(ctx, req.Updates, req.Id); err != nil {
 		return helpers.ToApiError(err)

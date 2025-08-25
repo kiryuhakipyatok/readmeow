@@ -78,18 +78,17 @@ func (ws *widgetServ) Like(ctx context.Context, id, uid string) error {
 	log.Log.Info("liking widget")
 	if _, err := ws.Transactor.WithinTransaction(ctx, func(c context.Context) (any, error) {
 		if err := ws.WidgetRepo.Like(c, uid, id); err != nil {
-			log.Log.Error("failed to like widget", logger.Err(err))
 			return nil, err
 		}
 		update := map[string]string{
 			"likes": "+",
 		}
 		if err := ws.WidgetRepo.Update(c, update, id); err != nil {
-			log.Log.Error("failed to update widget", logger.Err(err))
 			return nil, err
 		}
 		return nil, nil
 	}); err != nil {
+		log.Log.Error("failed to like widget", logger.Err(err))
 		return errs.NewAppError(op, err)
 	}
 
@@ -103,18 +102,17 @@ func (ws *widgetServ) Dislike(ctx context.Context, id, uid string) error {
 	log.Log.Info("disliking widget")
 	if _, err := ws.Transactor.WithinTransaction(ctx, func(c context.Context) (any, error) {
 		if err := ws.WidgetRepo.Dislike(c, uid, id); err != nil {
-			log.Log.Error("failed to dislike widget", logger.Err(err))
 			return nil, err
 		}
 		update := map[string]string{
 			"likes": "-",
 		}
 		if err := ws.WidgetRepo.Update(c, update, id); err != nil {
-			log.Log.Error("failed to update widget", logger.Err(err))
 			return nil, err
 		}
 		return nil, nil
 	}); err != nil {
+		log.Log.Error("failed to dislike widget", logger.Err(err))
 		return errs.NewAppError(op, err)
 	}
 	log.Log.Info("widget disliked successfully")

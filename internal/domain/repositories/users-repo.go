@@ -181,7 +181,6 @@ func (ur *userRepo) Update(ctx context.Context, updates map[string]any, id strin
 	}
 	args = append(args, id)
 	query := fmt.Sprintf("UPDATE users SET%s WHERE id = $%d", strings.Join(str, ","), i)
-	fmt.Println(query)
 	qd := helpers.NewQueryData(ctx, ur.Storage, op, query, args...)
 	if err := qd.DeleteOrUpdateWithTx(); err != nil {
 		return err

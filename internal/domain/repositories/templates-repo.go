@@ -98,8 +98,6 @@ func (tr *templateRepo) Update(ctx context.Context, updates map[string]any, id s
 	}
 	args = append(args, id)
 	query := fmt.Sprintf("UPDATE templates SET%s WHERE id = $%d", strings.Join(str, ","), i)
-	fmt.Println(query)
-	fmt.Println(args...)
 	qd := helpers.NewQueryData(ctx, tr.Storage, op, query, args...)
 	if err := qd.DeleteOrUpdateWithTx(); err != nil {
 		return err
@@ -346,7 +344,6 @@ func (tr *templateRepo) Search(ctx context.Context, amount, page uint, query str
 }
 
 func (tr *templateRepo) getByIds(ctx context.Context, ids []string) ([]models.Template, error) {
-	fmt.Println(ids)
 	op := "templateRepo.SearchPreparing.GetByIds"
 	query := "SELECT * FROM templates WHERE id = ANY($1)"
 	templates := make([]models.Template, 0, len(ids))

@@ -270,7 +270,6 @@ func (wr *widgetRepo) Search(ctx context.Context, amount, page uint, query strin
 }
 
 func (wr *widgetRepo) GetByIds(ctx context.Context, ids []string) ([]models.Widget, error) {
-	fmt.Println(ids)
 	op := "widgetRepo.SearchPreparing.GetByIds"
 	query := "SELECT * FROM widgets WHERE id = ANY($1)"
 	widgets := make([]models.Widget, 0, len(ids))

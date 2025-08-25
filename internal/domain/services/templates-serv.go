@@ -59,7 +59,6 @@ func (ts *templateServ) Create(ctx context.Context, oid, title, description stri
 	_, err := ts.Transactor.WithinTransaction(ctx, func(c context.Context) (any, error) {
 		user, err := ts.UserRepo.Get(c, oid)
 		if err != nil {
-			log.Log.Error("failed to get user", logger.Err(err))
 			return nil, err
 		}
 
@@ -74,7 +73,6 @@ func (ts *templateServ) Create(ctx context.Context, oid, title, description stri
 		if len(widgets) != 0 {
 			widgetsData, err := ts.WidgetRepo.GetByIds(c, keys)
 			if err != nil {
-				log.Log.Error("failed to fetch widgets", logger.Err(err))
 				return nil, err
 			}
 
@@ -83,7 +81,6 @@ func (ts *templateServ) Create(ctx context.Context, oid, title, description stri
 					"num_of_users": "+",
 				}
 				if err := ts.WidgetRepo.Update(c, update, w.Id.String()); err != nil {
-					log.Log.Error("failed to update widget info", logger.Err(err))
 					return nil, err
 				}
 			}
@@ -93,12 +90,10 @@ func (ts *templateServ) Create(ctx context.Context, oid, title, description stri
 			"num_of_templates": "+",
 		}
 		if err := ts.UserRepo.Update(c, update, user.Id.String()); err != nil {
-			log.Log.Error("failed to update user info", logger.Err(err))
 			return nil, err
 		}
 		file, err := image.Open()
 		if err != nil {
-			log.Log.Error("failed to open file", logger.Err(err))
 			return nil, err
 		}
 		defer file.Close()
@@ -110,9 +105,8 @@ func (ts *templateServ) Create(ctx context.Context, oid, title, description stri
 			pid string
 		)
 		folder := "templates"
-		url, pid, err = ts.CloudStorage.UploadImage(ctx, file, filename, folder)
+		url, pid, err = ts.CloudStorage.UploadImage(c, file, filename, folder)
 		if err != nil {
-			log.Log.Error("failed to upload template image", logger.Err(err))
 			return nil, err
 		}
 		template := &models.Template{
@@ -131,9 +125,7 @@ func (ts *templateServ) Create(ctx context.Context, oid, title, description stri
 			LastUpdateTime: now,
 		}
 		if err := ts.TemplateRepo.Create(c, template); err != nil {
-			log.Log.Error("failed to create template", logger.Err(err))
-			if cerr := ts.CloudStorage.DeleteImage(ctx, pid); cerr != nil {
-				log.Log.Error("failed to delete template iamge", logger.Err(cerr))
+			if cerr := ts.CloudStorage.DeleteImage(c, pid); cerr != nil {
 				return nil, fmt.Errorf("%w : %w", err, cerr)
 			}
 			return nil, err
@@ -153,56 +145,54 @@ func (ts *templateServ) Update(ctx context.Context, updates map[string]any, id s
 	op := "templateServ.Update"
 	log := ts.Logger.AddOp(op)
 	log.Log.Info("updating template")
-	fileAnyH, ok := updates["image"]
-	now := time.Now()
-	var (
-		newPid string
-		oldURL string
-	)
-	if ok {
-		fileH := fileAnyH.(*multipart.FileHeader)
-		file, err := fileH.Open()
-		if err != nil {
-			log.Log.Error("failed to open file of template image", logger.Err(err))
-			return errs.NewAppError(op, err)
+	if _, err := ts.Transactor.WithinTransaction(ctx, func(c context.Context) (any, error) {
+		fileAnyH, ok := updates["image"]
+		now := time.Now()
+		var (
+			newPid string
+			oldURL string
+		)
+		if ok {
+			fileH := fileAnyH.(*multipart.FileHeader)
+			file, err := fileH.Open()
+			if err != nil {
+				return nil, err
+			}
+			defer file.Close()
+			oldURL, err = ts.TemplateRepo.GetImage(c, id)
+			if err != nil {
+				return nil, err
+			}
+			folder := "templates"
+			unow := now.Unix()
+			filename := fmt.Sprintf("%s-%d", id, unow)
+			var url string
+			url, newPid, err = ts.CloudStorage.UploadImage(c, file, filename, folder)
+			if err != nil {
+				return nil, err
+			}
+			updates["image"] = url
 		}
-		defer file.Close()
-		oldURL, err = ts.TemplateRepo.GetImage(ctx, id)
-		if err != nil {
-			log.Log.Error("failed to get old template image", logger.Err(err))
-			return errs.NewAppError(op, err)
+		updates["last_update_time"] = now
+		if err := ts.TemplateRepo.Update(c, updates, id); err != nil {
+			if cerr := ts.CloudStorage.DeleteImage(c, newPid); cerr != nil {
+				return nil, fmt.Errorf("%w : %w", err, cerr)
+			}
+			return nil, err
 		}
-		folder := "templates"
-		unow := now.Unix()
-		filename := fmt.Sprintf("%s-%d", id, unow)
-		var url string
-		url, newPid, err = ts.CloudStorage.UploadImage(ctx, file, filename, folder)
-		if err != nil {
-			log.Log.Error("failed to upload template image", logger.Err(err))
-			return errs.NewAppError(op, err)
+		if ok {
+			pId, err := ts.CloudStorage.GetPIdFromURL(oldURL)
+			if err != nil {
+				return nil, err
+			}
+			if err := ts.CloudStorage.DeleteImage(c, pId); err != nil {
+				return nil, err
+			}
 		}
-		updates["image"] = url
-	}
-	updates["last_update_time"] = now
-	fmt.Println(updates)
-	if err := ts.TemplateRepo.Update(ctx, updates, id); err != nil {
-		if cerr := ts.CloudStorage.DeleteImage(ctx, newPid); cerr != nil {
-			log.Log.Error("failed to delete template iamge", logger.Err(cerr))
-			return errs.NewAppError(op, fmt.Errorf("%w : %w", err, cerr))
-		}
-		log.Log.Error("failed to update template", logger.Err(err))
+		return nil, nil
+	}); err != nil {
+		log.Log.Error("failed to update tempalte", logger.Err(err))
 		return errs.NewAppError(op, err)
-	}
-	if ok {
-		pId := ts.CloudStorage.GetPIdFromURL(oldURL)
-		if pId == "" {
-			log.Log.Error("failed to get pid from url")
-			return errs.NewAppError(op, errors.New("failed to get pid from url"))
-		}
-		if err := ts.CloudStorage.DeleteImage(ctx, pId); err != nil {
-			log.Log.Error("failed to delete template image", logger.Err(err))
-			return errs.NewAppError(op, err)
-		}
 	}
 
 	log.Log.Info("template updated successfully")
@@ -216,17 +206,14 @@ func (ts *templateServ) Delete(ctx context.Context, id, uid string) error {
 	if _, err := ts.Transactor.WithinTransaction(ctx, func(c context.Context) (any, error) {
 		user, err := ts.UserRepo.Get(c, uid)
 		if err != nil {
-			log.Log.Error("failed to get user", logger.Err(err))
 			return nil, err
 		}
 		template, err := ts.TemplateRepo.Get(c, id)
 		if err != nil {
-			log.Log.Error("failed to get template", logger.Err(err))
 			return nil, err
 		}
 		if template.OwnerId != user.Id {
-			err := errors.New("template owner id and user id are not equal")
-			log.Log.Error("failed to delete tempalte", logger.Err(err))
+			err := errors.New("user is not template owner")
 			return nil, err
 		}
 
@@ -235,18 +222,24 @@ func (ts *templateServ) Delete(ctx context.Context, id, uid string) error {
 		}
 
 		if err := ts.TemplateRepo.Update(c, tupd, baseTemplateId.String()); err != nil {
-			log.Log.Error("failed to update template", logger.Err(err))
 			return nil, err
 		}
 
 		if err := ts.TemplateRepo.Delete(c, id); err != nil {
-			log.Log.Error("failed to delete template", logger.Err(err))
+			return nil, err
+		}
+
+		pid, err := ts.CloudStorage.GetPIdFromURL(template.Image)
+		if err != nil {
+			return nil, err
+		}
+		if err := ts.CloudStorage.DeleteImage(c, pid); err != nil {
 			return nil, err
 		}
 
 		return nil, nil
 	}); err != nil {
-		log.Log.Error("failed to delete tempalte", logger.Err(err))
+		log.Log.Error("failed to delete template", logger.Err(err))
 		return errs.NewAppError(op, err)
 	}
 
@@ -377,18 +370,17 @@ func (ts *templateServ) Like(ctx context.Context, id, uid string) error {
 	log.Log.Info("liking template")
 	if _, err := ts.Transactor.WithinTransaction(ctx, func(c context.Context) (any, error) {
 		if err := ts.TemplateRepo.Like(c, id, uid); err != nil {
-			log.Log.Error("failed to like template", logger.Err(err))
 			return nil, err
 		}
 		update := map[string]any{
 			"likes": "+",
 		}
 		if err := ts.TemplateRepo.Update(c, update, id); err != nil {
-			log.Log.Error("failed to update template", logger.Err(err))
 			return nil, err
 		}
 		return nil, nil
 	}); err != nil {
+		log.Log.Error("failed to like template", logger.Err(err))
 		return errs.NewAppError(op, err)
 	}
 
@@ -402,14 +394,12 @@ func (ts *templateServ) Dislike(ctx context.Context, id, uid string) error {
 	log.Log.Info("disliking template")
 	if _, err := ts.Transactor.WithinTransaction(ctx, func(c context.Context) (any, error) {
 		if err := ts.TemplateRepo.Dislike(c, id, uid); err != nil {
-			log.Log.Error("failed to dislike template", logger.Err(err))
 			return nil, err
 		}
 		update := map[string]any{
 			"likes": "-",
 		}
 		if err := ts.TemplateRepo.Update(c, update, id); err != nil {
-			log.Log.Error("failed to update template", logger.Err(err))
 			return nil, err
 		}
 		return nil, nil
