@@ -58,7 +58,7 @@ func (rs *readmeServ) Create(ctx context.Context, tid, oid, title string, image 
 			return nil, err
 		}
 		if tid == "" {
-			tid = uuid.Nil.String()
+			tid = baseTemplateId.String()
 		}
 		template, err := rs.TemplateRepo.Get(c, tid)
 		if err != nil {
@@ -174,6 +174,29 @@ func (rs *readmeServ) Delete(ctx context.Context, id, uid string) error {
 			log.Log.Error("failed to delete readme", logger.Err(errors.New("readme owner id and user id are not equal")))
 			return nil, err
 		}
+		widgets := make(map[string]struct{})
+		for _, w := range readme.Widgets {
+			for id := range w {
+				widgets[id] = struct{}{}
+			}
+		}
+		wupd := map[string]string{
+			"num_of_users": "-",
+		}
+		for wid := range widgets {
+			if err := rs.WidgetRepo.Update(c, wupd, wid); err != nil {
+				log.Log.Error("failed to update widget", logger.Err(err))
+				return nil, err
+			}
+		}
+		tupd := map[string]any{
+			"num_of_users": "-",
+		}
+		if err := rs.TemplateRepo.Update(c, tupd, readme.TemplateId.String()); err != nil {
+			log.Log.Error("failed to update template", logger.Err(err))
+			return nil, err
+		}
+
 		if err := rs.ReadmeRepo.Delete(c, id); err != nil {
 			log.Log.Error("failed to delete readme", logger.Err(err))
 			return nil, err
@@ -191,56 +214,103 @@ func (rs *readmeServ) Update(ctx context.Context, updates map[string]any, id str
 	op := "readmeServ.Update"
 	log := rs.Logger.AddOp(op)
 	log.Log.Info("updating readme")
-	fileAnyH, ok := updates["image"]
-	now := time.Now()
-	var (
-		newPid string
-		oldURL string
-	)
-	if ok {
-		fileH := fileAnyH.(*multipart.FileHeader)
-		file, err := fileH.Open()
-		if err != nil {
-			log.Log.Error("failed to open file of readme image", logger.Err(err))
-			return errs.NewAppError(op, err)
+	if _, err := rs.Transactor.WithinTransaction(ctx, func(c context.Context) (any, error) {
+		fileAnyH, fOk := updates["image"]
+		widgs, wOk := updates["widgets"]
+		var (
+			newPid string
+			oldURL string
+		)
+		now := time.Now()
+		if fOk || wOk {
+			readme, err := rs.Get(c, id)
+			if err != nil {
+				log.Log.Error("failed to get readme", logger.Err(err))
+				return nil, err
+			}
+
+			if fOk {
+				oldURL = readme.Image
+				fileH := fileAnyH.(*multipart.FileHeader)
+				file, err := fileH.Open()
+				if err != nil {
+					log.Log.Error("failed to open file of readme image", logger.Err(err))
+					return nil, err
+				}
+				defer file.Close()
+				folder := "readmes"
+				unow := now.Unix()
+				filename := fmt.Sprintf("%s-%d", id, unow)
+				var url string
+				url, newPid, err = rs.CloudStorage.UploadImage(c, file, filename, folder)
+				if err != nil {
+					log.Log.Error("failed to upload readme image", logger.Err(err))
+					return nil, err
+				}
+				updates["image"] = url
+			}
+			if wOk {
+				newWidgets := widgs.([]map[string]string)
+				nwids := make(map[string]struct{}, len(newWidgets))
+				rwids := make(map[string]struct{}, len(readme.Widgets))
+				upd := make(map[string]string)
+				for _, nw := range newWidgets {
+					for id := range nw {
+						nwids[id] = struct{}{}
+					}
+				}
+				for _, rw := range readme.Widgets {
+					for id := range rw {
+						rwids[id] = struct{}{}
+					}
+				}
+				for nid := range nwids {
+					if _, ex := rwids[nid]; !ex {
+						upd["num_of_users"] = "+"
+						if err := rs.WidgetRepo.Update(c, upd, nid); err != nil {
+							log.Log.Error("failed to update widget", logger.Err(err))
+							return nil, err
+						}
+					}
+				}
+				for rid := range rwids {
+					if _, ex := nwids[rid]; !ex {
+						upd["num_of_users"] = "-"
+						if err := rs.WidgetRepo.Update(c, upd, rid); err != nil {
+							log.Log.Error("failed to update widget", logger.Err(err))
+							return nil, err
+						}
+					}
+				}
+			}
 		}
-		defer file.Close()
-		oldURL, err = rs.ReadmeRepo.GetImage(ctx, id)
-		if err != nil {
-			log.Log.Error("failed to get readme image", logger.Err(err))
-			return errs.NewAppError(op, err)
+		updates["last_update_time"] = now
+		if err := rs.ReadmeRepo.Update(c, updates, id); err != nil {
+			log.Log.Error("failed to update readme", logger.Err(err))
+			if fOk {
+				if cerr := rs.CloudStorage.DeleteImage(c, newPid); cerr != nil {
+					log.Log.Error("failed to delete readme image", logger.Err(cerr))
+					return nil, fmt.Errorf("%w : %w", err, cerr)
+				}
+			}
+			return nil, err
 		}
-		folder := "readmes"
-		unow := now.Unix()
-		filename := fmt.Sprintf("%s-%d", id, unow)
-		var url string
-		url, newPid, err = rs.CloudStorage.UploadImage(ctx, file, filename, folder)
-		if err != nil {
-			log.Log.Error("failed to upload readme image", logger.Err(err))
-			return errs.NewAppError(op, err)
+		if fOk {
+			pId := rs.CloudStorage.GetPIdFromURL(oldURL)
+			if pId == "" {
+				log.Log.Error("failed to get pid from url")
+				return nil, errors.New("failed to get pid from url")
+			}
+			if err := rs.CloudStorage.DeleteImage(c, pId); err != nil {
+				log.Log.Error("failed to delete readme image", logger.Err(err))
+				return nil, err
+			}
 		}
-		updates["image"] = url
-	}
-	updates["last_update_time"] = now
-	if err := rs.ReadmeRepo.Update(ctx, updates, id); err != nil {
-		log.Log.Error("failed to update readme", logger.Err(err))
-		if cerr := rs.CloudStorage.DeleteImage(ctx, newPid); cerr != nil {
-			log.Log.Error("failed to delete readme image", logger.Err(cerr))
-			return errs.NewAppError(op, fmt.Errorf("%w : %w", err, cerr))
-		}
+		return nil, nil
+	}); err != nil {
 		return errs.NewAppError(op, err)
 	}
-	if ok {
-		pId := rs.CloudStorage.GetPIdFromURL(oldURL)
-		if pId == "" {
-			log.Log.Error("failed to get pid from url")
-			return errs.NewAppError(op, errors.New("failed to get pid from url"))
-		}
-		if err := rs.CloudStorage.DeleteImage(ctx, pId); err != nil {
-			log.Log.Error("failed to delete readme image", logger.Err(err))
-			return errs.NewAppError(op, err)
-		}
-	}
+
 	log.Log.Info("readme updated successfully")
 	return nil
 }

@@ -254,7 +254,7 @@ func (as *authServ) SendNewCode(ctx context.Context, email string) error {
 		r := rand.New(rand.NewSource(time.Now().UnixNano()))
 		code := fmt.Sprintf("%06d", r.Intn(1000000))
 		codeHash := sha256.Sum256([]byte(code))
-		codeTTL := time.Now().Add(time.Second * time.Duration(as.AuthConfig.CodeTTL))
+		codeTTL := time.Now().Add(as.AuthConfig.CodeTTL)
 		if err := as.VerificationRepo.SendNewCode(c, email, codeHash[:], codeTTL, as.AuthConfig.CodeAttempts); err != nil {
 			log.Log.Info("failed to send new code", logger.Err(err))
 			return nil, errs.NewAppError(op, err)

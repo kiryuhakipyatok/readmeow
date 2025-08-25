@@ -17,7 +17,7 @@ type Body struct{}
 func (Query) isRequestType() {}
 func (Body) isRequestType()  {}
 
-func ValidateStruct(c *fiber.Ctx, s any, v *validator.Validator) map[string]string {
+func ValidateStruct(s any, v *validator.Validator) map[string]string {
 	if errs := v.ValidateStruct(s); errs != nil {
 		return errs
 	}
@@ -35,16 +35,10 @@ func ParseAndValidateRequest[T any](c *fiber.Ctx, request *T, requestType Reques
 			return InvalidRequest()
 		}
 	}
-	if errs := ValidateStruct(c, request, v); errs != nil {
-		return InvalidJSON(c, errs)
+	if errs := ValidateStruct(request, v); errs != nil {
+		return ValidationError(errs)
 	}
 	return nil
-}
-
-func InvalidJSON(c *fiber.Ctx, errs map[string]string) error {
-	return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-		"errors": errs,
-	})
 }
 
 func SuccessResponse(c *fiber.Ctx) error {
@@ -58,4 +52,10 @@ func ValidateId(c *fiber.Ctx, id string) error {
 		return InvalidRequest()
 	}
 	return nil
+}
+
+func AlreadyLoggined(c *fiber.Ctx) error {
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"message": "user already loggined",
+	})
 }

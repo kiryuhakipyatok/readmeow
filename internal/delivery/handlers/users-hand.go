@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"readmeow/internal/delivery/handlers/helpers"
 	"readmeow/internal/domain/services"
 	"readmeow/internal/dto"
@@ -57,8 +58,9 @@ func (uh *UserHandl) Update(c *fiber.Ctx) error {
 		Updates: updates,
 		Id:      id,
 	}
-	if errs := helpers.ValidateStruct(c, req, uh.Validator); len(errs) > 0 {
-		return helpers.InvalidJSON(c, errs)
+	fmt.Println(req)
+	if errs := helpers.ValidateStruct(req, uh.Validator); len(errs) > 0 {
+		return err
 	}
 	if err := uh.UserServ.Update(ctx, req.Updates, id); err != nil {
 		return helpers.ToApiError(err)

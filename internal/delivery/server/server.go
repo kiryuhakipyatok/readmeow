@@ -45,6 +45,7 @@ const (
 	login    = "/api/auth/login"
 	register = "/api/auth/register"
 	verify   = "/api/auth/verify"
+	newcode  = "/api/auth/newcode"
 )
 
 func authMiddleware(acfg config.AuthConfig) fiber.Handler {
@@ -53,6 +54,7 @@ func authMiddleware(acfg config.AuthConfig) fiber.Handler {
 			login:    true,
 			register: true,
 			verify:   true,
+			newcode:  true,
 		}
 		if validPaths[c.Path()] {
 			return c.Next()

@@ -47,7 +47,7 @@ func (rc *RouteConfig) AuthRoutes() {
 
 	authGroup.Post("/register", rc.AuthHandl.Register)
 	authGroup.Post("/verify", rc.AuthHandl.VerifyEmail)
-	authGroup.Post("/new-code", rc.AuthHandl.SendNewCode)
+	authGroup.Post("/newcode", rc.AuthHandl.SendNewCode)
 
 	authGroup.Get("/login", rc.AuthHandl.Login)
 	authGroup.Get("/logout", rc.AuthHandl.Logout)

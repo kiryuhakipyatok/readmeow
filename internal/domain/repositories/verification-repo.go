@@ -41,7 +41,7 @@ func (vr *verificationRepo) AddCode(ctx context.Context, email, login, nickname 
 
 func (vr *verificationRepo) SendNewCode(ctx context.Context, email string, code []byte, ttl time.Time, attempts int) error {
 	op := "verificationRepo.SendNewCode"
-	query := "UPDATE verifications SET code = $1, expired_time=$2, attempts=$3 WHERE email = $4"
+	query := "UPDATE verifications SET code = $1, expired_time=$2, attempts=$3 WHERE email = $4 AND (attempts = 0 OR expired_time <= NOW())"
 	qd := helpers.NewQueryData(ctx, vr.Storage, op, query, code, ttl, attempts, email)
 	if err := qd.DeleteOrUpdateWithTx(); err != nil {
 		return err
@@ -78,7 +78,7 @@ func (vr *verificationRepo) minusAttempts(ctx context.Context, email string) err
 			if err := vr.Delete(ctx, email); err != nil {
 				return errs.NewAppError(op, err)
 			}
-			return errs.NewAppError(op, errors.New("attempts are zero"))
+			return errs.ErrZeroAttempts(op)
 		}
 		return errs.NewAppError(op, err)
 	}
@@ -98,7 +98,7 @@ func (vr *verificationRepo) CodeCheck(ctx context.Context, email string, code []
 				if err := vr.minusAttempts(ctx, email); err != nil {
 					return false, errs.NewAppError(op, err)
 				}
-				return false, nil
+				return false, errs.ErrInvalidCode(op)
 			}
 			return false, errs.NewAppError(op, err)
 		}
@@ -110,7 +110,7 @@ func (vr *verificationRepo) CodeCheck(ctx context.Context, email string, code []
 				}
 				return false, nil
 			}
-			return false, errs.NewAppError(op, err)
+			return false, errs.ErrInvalidCode(op)
 		}
 	}
 	if time.Now().After(expired_time) {

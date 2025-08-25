@@ -65,8 +65,8 @@ func (rh *ReadmeHandl) CreateReadme(c *fiber.Ctx) error {
 		req.Image = image
 	}
 
-	if errs := helpers.ValidateStruct(c, req, rh.Validator); len(errs) > 0 {
-		return helpers.InvalidJSON(c, errs)
+	if errs := helpers.ValidateStruct(req, rh.Validator); len(errs) > 0 {
+		return err
 	}
 
 	if err := rh.ReadmeServ.Create(ctx, req.TemplateId, uid, req.Title, req.Image, req.Text, req.Links, req.RenderOrder, req.Widgets); err != nil {
@@ -130,8 +130,8 @@ func (rh *ReadmeHandl) UpdateReadme(c *fiber.Ctx) error {
 		Updates: updates,
 		Id:      id,
 	}
-	if errs := helpers.ValidateStruct(c, req, rh.Validator); len(errs) > 0 {
-		return helpers.InvalidJSON(c, errs)
+	if errs := helpers.ValidateStruct(req, rh.Validator); len(errs) > 0 {
+		return err
 	}
 	if err := rh.ReadmeServ.Update(ctx, req.Updates, req.Id); err != nil {
 		return helpers.ToApiError(err)
@@ -154,14 +154,14 @@ func (rh *ReadmeHandl) GetReadmeById(c *fiber.Ctx) error {
 
 func (rh *ReadmeHandl) FetchReadmesByUser(c *fiber.Ctx) error {
 	ctx := c.UserContext()
-	req := dto.PaginationRequest{}
-	if err := helpers.ParseAndValidateRequest(c, &req, helpers.Query{}, rh.Validator); err != nil {
-		return err
-	}
 	cookie := c.Cookies("jwt")
 	uid, err := rh.AuthServ.GetId(ctx, cookie)
 	if err != nil {
 		return helpers.ToApiError(err)
+	}
+	req := dto.PaginationRequest{}
+	if err := helpers.ParseAndValidateRequest(c, &req, helpers.Query{}, rh.Validator); err != nil {
+		return err
 	}
 	readmes, err := rh.ReadmeServ.FetchByUser(ctx, req.Amount, req.Page, uid)
 	if err != nil {

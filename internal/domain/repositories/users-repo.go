@@ -204,7 +204,7 @@ func (ur *userRepo) GetPassword(ctx context.Context, id string) ([]byte, error) 
 	query := "SELECT password FROM users WHERE id = $1"
 	password := []byte{}
 	qd := helpers.NewQueryData(ctx, ur.Storage, op, query, id)
-	if err := qd.QueryRowWithTx(password); err != nil {
+	if err := qd.QueryRowWithTx(&password); err != nil {
 		return nil, err
 	}
 	return password, nil

@@ -11,8 +11,8 @@ type User struct {
 	Credentials
 	Avatar         string    `json:"avatar"`
 	TimeOfRegister time.Time `json:"time_of_register"`
-	NumOfTemplates uint16    `json:"num_of_templates"`
-	NumOfReadmes   uint16    `json:"num_of_readmes"`
+	NumOfTemplates uint32    `json:"num_of_templates"`
+	NumOfReadmes   uint32    `json:"num_of_readmes"`
 }
 
 type Credentials struct {

@@ -63,8 +63,8 @@ func (th *TemplateHandl) CreateTemplate(c *fiber.Ctx) error {
 		req.Image = image
 	}
 
-	if errs := helpers.ValidateStruct(c, req, th.Validator); len(errs) > 0 {
-		return helpers.InvalidJSON(c, errs)
+	if errs := helpers.ValidateStruct(req, th.Validator); len(errs) > 0 {
+		return err
 	}
 	if err := th.TemplateServ.Create(ctx, oid, req.Title, req.Description, req.Image, req.Links, req.RenderOrder, req.Text, req.Widgets); err != nil {
 		return helpers.ToApiError(err)
@@ -114,8 +114,8 @@ func (th *TemplateHandl) UpdateTemplate(c *fiber.Ctx) error {
 		Updates: updates,
 		Id:      id,
 	}
-	if errs := helpers.ValidateStruct(c, req, th.Validator); len(errs) > 0 {
-		return helpers.InvalidJSON(c, errs)
+	if errs := helpers.ValidateStruct(req, th.Validator); len(errs) > 0 {
+		return err
 	}
 
 	if err := th.TemplateServ.Update(ctx, req.Updates, req.Id); err != nil {
@@ -127,10 +127,15 @@ func (th *TemplateHandl) UpdateTemplate(c *fiber.Ctx) error {
 func (th *TemplateHandl) DeleteTemplate(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	id := c.Params("template")
+	cookie := c.Cookies("jwt")
+	uid, err := th.AuthServ.GetId(ctx, cookie)
+	if err != nil {
+		return helpers.ToApiError(err)
+	}
 	if err := helpers.ValidateId(c, id); err != nil {
 		return err
 	}
-	if err := th.TemplateServ.Delete(ctx, id); err != nil {
+	if err := th.TemplateServ.Delete(ctx, id, uid); err != nil {
 		return helpers.ToApiError(err)
 	}
 	return helpers.SuccessResponse(c)

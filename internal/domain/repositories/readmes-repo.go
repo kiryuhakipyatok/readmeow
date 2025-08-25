@@ -8,6 +8,8 @@ import (
 	"readmeow/pkg/errs"
 	"readmeow/pkg/storage"
 	"strings"
+
+	"github.com/google/uuid"
 )
 
 type ReadmeRepo interface {
@@ -15,8 +17,9 @@ type ReadmeRepo interface {
 	Delete(ctx context.Context, id string) error
 	Update(ctx context.Context, updates map[string]any, id string) error
 	Get(ctx context.Context, id string) (*models.Readme, error)
-	GetImage(ctx context.Context, id string) (string, error)
+	ChangeTemplateToBase(ctx context.Context, id string) error
 	FetchByUser(ctx context.Context, amount, page uint, uid string) ([]models.Readme, error)
+	FetchByTemplate(ctx context.Context, tid string) ([]models.Readme, error)
 }
 
 type readmeRepo struct {
@@ -66,10 +69,12 @@ func (rr *readmeRepo) Update(ctx context.Context, updates map[string]any, id str
 	str := []string{}
 	args := []any{}
 	i := 1
+
 	for k, v := range updates {
 		if !validFields[k] {
 			return errs.ErrInvalidFields(op)
 		}
+
 		str = append(str, fmt.Sprintf(" %s = $%d", k, i))
 		args = append(args, v)
 		i++
@@ -83,15 +88,15 @@ func (rr *readmeRepo) Update(ctx context.Context, updates map[string]any, id str
 	return nil
 }
 
-func (rr *readmeRepo) GetImage(ctx context.Context, id string) (string, error) {
-	op := "readmeRepo.GetImage"
-	query := "SELECT image FROM readmes WHERE id = $1"
-	var url string
-	qd := helpers.NewQueryData(ctx, rr.Storage, op, query, id)
-	if err := qd.QueryRowWithTx(&url); err != nil {
-		return "", err
+func (rr *readmeRepo) ChangeTemplateToBase(ctx context.Context, id string) error {
+	op := "readmeRepo.ChangeTemplateToBase"
+	baseTID := uuid.Nil.String()
+	query := "UPDATE readmes SET template_id = $1 WHERE template_id = $2"
+	qd := helpers.NewQueryData(ctx, rr.Storage, op, query, baseTID, id)
+	if err := qd.DeleteOrUpdateWithTx(); err != nil {
+		return err
 	}
-	return url, nil
+	return nil
 }
 
 func (rr *readmeRepo) Get(ctx context.Context, id string) (*models.Readme, error) {
@@ -124,10 +129,41 @@ func (rr *readmeRepo) FetchByUser(ctx context.Context, amount, page uint, uid st
 			&readme.Title,
 			&readme.Text,
 			&readme.Links,
+			&readme.Widgets,
 			&readme.RenderOrder,
 			&readme.CreateTime,
 			&readme.LastUpdateTime,
+		); err != nil {
+			return nil, errs.NewAppError(op, err)
+		}
+		readmes = append(readmes, readme)
+	}
+	return readmes, nil
+}
+
+func (rr *readmeRepo) FetchByTemplate(ctx context.Context, tid string) ([]models.Readme, error) {
+	op := "readmeRepo.FetchByUser"
+	query := "SELECT * FROM readmes WHERE template_id = $1"
+	rows, err := rr.Storage.Pool.Query(ctx, query, tid)
+	if err != nil {
+		return nil, errs.NewAppError(op, err)
+	}
+	defer rows.Close()
+	readmes := []models.Readme{}
+	for rows.Next() {
+		readme := models.Readme{}
+		if err := rows.Scan(
+			&readme.Id,
+			&readme.OwnerId,
+			&readme.TemplateId,
+			&readme.Image,
+			&readme.Title,
+			&readme.Text,
+			&readme.Links,
 			&readme.Widgets,
+			&readme.RenderOrder,
+			&readme.CreateTime,
+			&readme.LastUpdateTime,
 		); err != nil {
 			return nil, errs.NewAppError(op, err)
 		}

@@ -16,7 +16,7 @@ type RegisterRequest struct {
 
 type LoginRequest struct {
 	Login    string `json:"login" validate:"required,min=1,max=80"`
-	Password string `json:"password" validate:"required"`
+	Password string `json:"password" validate:"required,min=12"`
 }
 
 type PaginationRequest struct {

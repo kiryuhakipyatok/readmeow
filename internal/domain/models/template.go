@@ -17,8 +17,8 @@ type Template struct {
 	Text           []string            `json:"text"`
 	Links          []string            `json:"links"`
 	Widgets        []map[string]string `json:"widgets"`
-	Likes          int32               `json:"likes"`
-	NumOfUsers     int32               `json:"num_of_users"`
+	Likes          uint32              `json:"likes"`
+	NumOfUsers     uint32              `json:"num_of_users"`
 	RenderOrder    []string            `json:"render_order"`
 	CreateTime     time.Time           `json:"create_time"`
 	LastUpdateTime time.Time           `json:"last_update_time"`

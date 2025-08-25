@@ -20,7 +20,7 @@ import (
 type TemplateServ interface {
 	Create(ctx context.Context, oid, title, description string, image *multipart.FileHeader, links, order, text []string, widgets []map[string]string) error
 	Update(ctx context.Context, updates map[string]any, id string) error
-	Delete(ctx context.Context, id string) error
+	Delete(ctx context.Context, id, uid string) error
 	Get(ctx context.Context, id string) (*models.Template, error)
 	FetchFavorite(ctx context.Context, id string, amount, page uint) ([]dto.TemplateResponse, error)
 	Search(ctx context.Context, amount, page uint, query string, filter map[string]bool, sort map[string]string) ([]dto.TemplateResponse, error)
@@ -32,14 +32,16 @@ type templateServ struct {
 	TemplateRepo repositories.TemplateRepo
 	UserRepo     repositories.UserRepo
 	WidgetRepo   repositories.WidgetRepo
+	ReadmeRepo   repositories.ReadmeRepo
 	Transactor   storage.Transactor
 	CloudStorage cloudstorage.CloudStorage
 	Logger       *logger.Logger
 }
 
-func NewTemplateServ(tr repositories.TemplateRepo, ur repositories.UserRepo, wr repositories.WidgetRepo, t storage.Transactor, cs cloudstorage.CloudStorage, l *logger.Logger) TemplateServ {
+func NewTemplateServ(tr repositories.TemplateRepo, rr repositories.ReadmeRepo, ur repositories.UserRepo, wr repositories.WidgetRepo, t storage.Transactor, cs cloudstorage.CloudStorage, l *logger.Logger) TemplateServ {
 	return &templateServ{
 		TemplateRepo: tr,
+		ReadmeRepo:   rr,
 		UserRepo:     ur,
 		WidgetRepo:   wr,
 		Transactor:   t,
@@ -47,6 +49,8 @@ func NewTemplateServ(tr repositories.TemplateRepo, ur repositories.UserRepo, wr 
 		Logger:       l,
 	}
 }
+
+var baseTemplateId = uuid.Nil
 
 func (ts *templateServ) Create(ctx context.Context, oid, title, description string, image *multipart.FileHeader, links, order, text []string, widgets []map[string]string) error {
 	op := "templateServ.Create"
@@ -205,14 +209,47 @@ func (ts *templateServ) Update(ctx context.Context, updates map[string]any, id s
 	return nil
 }
 
-func (ts *templateServ) Delete(ctx context.Context, id string) error {
+func (ts *templateServ) Delete(ctx context.Context, id, uid string) error {
 	op := "templateServ.Delete"
 	log := ts.Logger.AddOp(op)
 	log.Log.Info("deleting template")
-	if err := ts.TemplateRepo.Delete(ctx, id); err != nil {
-		log.Log.Error("failed to delete template", logger.Err(err))
+	if _, err := ts.Transactor.WithinTransaction(ctx, func(c context.Context) (any, error) {
+		user, err := ts.UserRepo.Get(c, uid)
+		if err != nil {
+			log.Log.Error("failed to get user", logger.Err(err))
+			return nil, err
+		}
+		template, err := ts.TemplateRepo.Get(c, id)
+		if err != nil {
+			log.Log.Error("failed to get template", logger.Err(err))
+			return nil, err
+		}
+		if template.OwnerId != user.Id {
+			err := errors.New("template owner id and user id are not equal")
+			log.Log.Error("failed to delete tempalte", logger.Err(err))
+			return nil, err
+		}
+
+		tupd := map[string]any{
+			"num_of_users": "+",
+		}
+
+		if err := ts.TemplateRepo.Update(c, tupd, baseTemplateId.String()); err != nil {
+			log.Log.Error("failed to update template", logger.Err(err))
+			return nil, err
+		}
+
+		if err := ts.TemplateRepo.Delete(c, id); err != nil {
+			log.Log.Error("failed to delete template", logger.Err(err))
+			return nil, err
+		}
+
+		return nil, nil
+	}); err != nil {
+		log.Log.Error("failed to delete tempalte", logger.Err(err))
 		return errs.NewAppError(op, err)
 	}
+
 	log.Log.Info("template deleted successfully")
 	return nil
 }

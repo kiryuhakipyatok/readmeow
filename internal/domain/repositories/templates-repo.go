@@ -195,7 +195,7 @@ func (tr *templateRepo) Get(ctx context.Context, id string) (*models.Template, e
 
 func (tr *templateRepo) FetchFavorite(ctx context.Context, id string, amount, page uint) ([]models.Template, error) {
 	op := "templateRepo.FetchFavorite"
-	query := "SELECT * FROM templates t JOIN favorite_templates ft ON t.id=ft.template_id WHERE ft.user_id=$1 ORDER BY t.num_of_users DESC OFFSET $2 LIMIT $3"
+	query := "SELECT t.* FROM templates t JOIN favorite_templates ft ON t.id=ft.template_id WHERE ft.user_id=$1 ORDER BY t.num_of_users DESC OFFSET $2 LIMIT $3"
 	templates := []models.Template{}
 	rows, err := tr.Storage.Pool.Query(ctx, query, id, amount*page-amount, amount)
 	if err != nil {
@@ -212,12 +212,12 @@ func (tr *templateRepo) FetchFavorite(ctx context.Context, id string, amount, pa
 			&template.Description,
 			&template.Text,
 			&template.Links,
+			&template.Widgets,
+			&template.Likes,
 			&template.RenderOrder,
 			&template.CreateTime,
 			&template.LastUpdateTime,
 			&template.NumOfUsers,
-			&template.Widgets,
-			&template.Likes,
 		); err != nil {
 			return nil, errs.NewAppError(op, err)
 		}
@@ -366,12 +366,12 @@ func (tr *templateRepo) getByIds(ctx context.Context, ids []string) ([]models.Te
 			&template.Description,
 			&template.Text,
 			&template.Links,
+			&template.Widgets,
+			&template.Likes,
 			&template.RenderOrder,
 			&template.CreateTime,
 			&template.LastUpdateTime,
 			&template.NumOfUsers,
-			&template.Widgets,
-			&template.Likes,
 		); err != nil {
 			return nil, errs.NewAppError(op, err)
 		}
@@ -438,8 +438,8 @@ func (tr *templateRepo) MustBulk(ctx context.Context, cfg config.SearchConfig) e
 		OwnerId        string
 		Title          string
 		Description    string
-		Likes          int32
-		NumOfUsers     int32
+		Likes          uint32
+		NumOfUsers     uint32
 		LastUpdateTime time.Time
 	}
 	for _, t := range templates {

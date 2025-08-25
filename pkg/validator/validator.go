@@ -36,7 +36,6 @@ func (v *Validator) ValidateStruct(s any) map[string]string {
 	for _, e := range validationError {
 		errors[e.Field()] = v.translate(e)
 	}
-	fmt.Println(errors)
 	return errors
 }
 

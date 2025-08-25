@@ -26,6 +26,9 @@ func NewAuthHandle(as services.AuthServ, us services.UserServ, v *validator.Vali
 
 func (ah *AuthHandl) Register(c *fiber.Ctx) error {
 	ctx := c.UserContext()
+	if c.Cookies("jwt") != "" {
+		return helpers.AlreadyLoggined(c)
+	}
 	req := dto.RegisterRequest{}
 	if err := helpers.ParseAndValidateRequest(c, &req, helpers.Body{}, ah.Validator); err != nil {
 		return err
@@ -38,6 +41,9 @@ func (ah *AuthHandl) Register(c *fiber.Ctx) error {
 
 func (ah *AuthHandl) VerifyEmail(c *fiber.Ctx) error {
 	ctx := c.UserContext()
+	if c.Cookies("jwt") != "" {
+		return helpers.AlreadyLoggined(c)
+	}
 	req := dto.VerifyRequest{}
 	if err := helpers.ParseAndValidateRequest(c, &req, helpers.Body{}, ah.Validator); err != nil {
 		return err
@@ -51,9 +57,7 @@ func (ah *AuthHandl) VerifyEmail(c *fiber.Ctx) error {
 func (ah *AuthHandl) Login(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	if c.Cookies("jwt") != "" {
-		return c.Status(fiber.StatusOK).JSON(fiber.Map{
-			"message": "user already loggined",
-		})
+		return helpers.AlreadyLoggined(c)
 	}
 	req := dto.LoginRequest{}
 	if err := helpers.ParseAndValidateRequest(c, &req, helpers.Body{}, ah.Validator); err != nil {
@@ -109,6 +113,9 @@ func (ah *AuthHandl) Profile(c *fiber.Ctx) error {
 
 func (ah *AuthHandl) SendNewCode(c *fiber.Ctx) error {
 	ctx := c.UserContext()
+	if c.Cookies("jwt") != "" {
+		return helpers.AlreadyLoggined(c)
+	}
 	req := dto.SendNewCodeRequest{}
 	if err := helpers.ParseAndValidateRequest(c, &req, helpers.Body{}, ah.Validator); err != nil {
 		return err

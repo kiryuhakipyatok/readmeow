@@ -101,10 +101,10 @@ func (wr *widgetRepo) FetchFavorite(ctx context.Context, id string, amount, page
 			&widget.Image,
 			&widget.Description,
 			&widget.Type,
-			&widget.Link,
-			&widget.NumOfUsers,
-			&widget.Likes,
 			&widget.Tags,
+			&widget.Link,
+			&widget.Likes,
+			&widget.NumOfUsers,
 		); err != nil {
 			return nil, errs.NewAppError(op, err)
 		}
@@ -313,10 +313,10 @@ func (wr *widgetRepo) GetByIds(ctx context.Context, ids []string) ([]models.Widg
 				&widget.Image,
 				&widget.Description,
 				&widget.Type,
-				&widget.Link,
-				&widget.NumOfUsers,
-				&widget.Likes,
 				&widget.Tags,
+				&widget.Link,
+				&widget.Likes,
+				&widget.NumOfUsers,
 			); err != nil {
 				return nil, errs.NewAppError(op, err)
 			}
@@ -383,8 +383,8 @@ func (wr *widgetRepo) MustBulk(ctx context.Context, cfg config.SearchConfig) err
 		Title       string
 		Description string
 		Type        string
-		Likes       int32
-		NumOfUsers  int32
+		Likes       uint32
+		NumOfUsers  uint32
 		Tags        map[string]any
 	}
 	for _, w := range widgets {

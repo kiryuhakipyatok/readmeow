@@ -112,10 +112,10 @@ func (qd QueryData) QueryRowWithTx(entity any) error {
 			&e.Title,
 			&e.Text,
 			&e.Links,
+			&e.Widgets,
 			&e.RenderOrder,
 			&e.CreateTime,
 			&e.LastUpdateTime,
-			&e.Widgets,
 		}
 		if err := qd.queryRow(readmeData...); err != nil {
 			return err
@@ -148,10 +148,10 @@ func (qd QueryData) QueryRowWithTx(entity any) error {
 			&e.Image,
 			&e.Description,
 			&e.Type,
-			&e.Link,
-			&e.NumOfUsers,
 			&e.Tags,
+			&e.Link,
 			&e.Likes,
+			&e.NumOfUsers,
 		}
 		if err := qd.queryRow(widgetData...); err != nil {
 			return err
@@ -173,7 +173,7 @@ func (qd QueryData) QueryRowWithTx(entity any) error {
 			return err
 		}
 		return nil
-	case []byte:
+	case *[]byte:
 		if err := qd.queryRow(e); err != nil {
 			return err
 		}

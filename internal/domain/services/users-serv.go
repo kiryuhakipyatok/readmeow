@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"mime/multipart"
-	"readmeow/internal/domain/models"
 	"readmeow/internal/domain/repositories"
+	"readmeow/internal/dto"
 	"readmeow/pkg/cloudstorage"
 	"readmeow/pkg/errs"
 	"readmeow/pkg/logger"
@@ -17,7 +17,7 @@ import (
 )
 
 type UserServ interface {
-	Get(ctx context.Context, id string) (*models.User, error)
+	Get(ctx context.Context, id string) (*dto.UserResponce, error)
 	Update(ctx context.Context, updates map[string]any, id string) error
 	Delete(ctx context.Context, id, password string) error
 	ChangePassword(ctx context.Context, id string, oldPassword, newPasswrod string) error
@@ -157,7 +157,7 @@ func (us *userServ) ChangePassword(ctx context.Context, id string, oldPassword, 
 	return nil
 }
 
-func (us *userServ) Get(ctx context.Context, id string) (*models.User, error) {
+func (us *userServ) Get(ctx context.Context, id string) (*dto.UserResponce, error) {
 	op := "userServ.Get"
 	log := us.Logger.AddOp(op)
 	log.Log.Info("receiving user")
@@ -166,6 +166,14 @@ func (us *userServ) Get(ctx context.Context, id string) (*models.User, error) {
 		log.Log.Error("failed to get user", logger.Err(err))
 		return nil, errs.NewAppError(op, err)
 	}
+	userResp := &dto.UserResponce{
+		Id:             user.Id.String(),
+		Nickname:       user.Nickname,
+		Avatar:         user.Avatar,
+		NumOfReadmes:   user.NumOfReadmes,
+		NumOfTemplates: user.NumOfTemplates,
+		TimeOfRegister: user.TimeOfRegister,
+	}
 	log.Log.Info("user received successfully")
-	return user, nil
+	return userResp, nil
 }

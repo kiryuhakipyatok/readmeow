@@ -9,11 +9,14 @@ import (
 )
 
 var (
-	ErrNotFound       = errors.New("not found")
-	ErrAlreadyExists  = errors.New("alredy exists")
-	ErrBadRequest     = errors.New("bad request")
-	ErrInvalidJSON    = errors.New("invalid request json data")
-	ErrInternalServer = errors.New("internal server error")
+	ErrNotFound          = errors.New("not found")
+	ErrAlreadyExists     = errors.New("alredy exists")
+	ErrBadRequest        = errors.New("bad request")
+	ErrInvalidJSON       = errors.New("invalid request json data")
+	ErrInternalServer    = errors.New("internal server error")
+	ErrInvalidVerifyCode = errors.New("invalid verification code")
+	ErrZeroAttempts      = errors.New("verification code has zero attempts")
+	ErrCodeIsExpired     = errors.New("verification code is expired")
 )
 
 type ApiErr struct {
@@ -32,6 +35,13 @@ func NewApiError(code int, err error) ApiErr {
 	}
 }
 
+func ValidationError(errors map[string]string) ApiErr {
+	return ApiErr{
+		Code:    fiber.StatusBadRequest,
+		Message: errors,
+	}
+}
+
 func ToApiError(err error) ApiErr {
 	switch {
 	case errors.Is(err, errs.ErrNotFoundBase):
@@ -42,6 +52,12 @@ func ToApiError(err error) ApiErr {
 		return InvalidRequest()
 	case errors.Is(err, errs.ErrInvalidValuesBase):
 		return InvalidRequest()
+	case errors.Is(err, errs.ErrInvalidCodeBase):
+		return InvlidVerifyCode()
+	case errors.Is(err, errs.ErrZeroAttemptsBase):
+		return ZeroAttempts()
+	case errors.Is(err, errs.ErrCodeIsExpiredBase):
+		return CodeIsExpired()
 	default:
 		return InternalServerError()
 	}
@@ -61,4 +77,16 @@ func NotFound() ApiErr {
 
 func AlreadyExists() ApiErr {
 	return NewApiError(fiber.StatusConflict, ErrAlreadyExists)
+}
+
+func InvlidVerifyCode() ApiErr {
+	return NewApiError(fiber.StatusOK, ErrInvalidVerifyCode)
+}
+
+func ZeroAttempts() ApiErr {
+	return NewApiError(fiber.StatusOK, ErrZeroAttempts)
+}
+
+func CodeIsExpired() ApiErr {
+	return NewApiError(fiber.StatusOK, ErrCodeIsExpired)
 }
