@@ -18,7 +18,7 @@ import (
 )
 
 type TemplateServ interface {
-	Create(ctx context.Context, oid, title, description string, image *multipart.FileHeader, links, order, text []string, widgets []map[string]string) error
+	Create(ctx context.Context, oid, title, description string, image *multipart.FileHeader, links, order, text []string, widgets []map[string]string, isPublic bool) error
 	Update(ctx context.Context, updates map[string]any, id string) error
 	Delete(ctx context.Context, id, uid string) error
 	Get(ctx context.Context, id string) (*models.Template, error)
@@ -52,7 +52,7 @@ func NewTemplateServ(tr repositories.TemplateRepo, rr repositories.ReadmeRepo, u
 
 var baseTemplateId = uuid.Nil
 
-func (ts *templateServ) Create(ctx context.Context, oid, title, description string, image *multipart.FileHeader, links, order, text []string, widgets []map[string]string) error {
+func (ts *templateServ) Create(ctx context.Context, oid, title, description string, image *multipart.FileHeader, links, order, text []string, widgets []map[string]string, isPublic bool) error {
 	op := "templateServ.Create"
 	log := ts.Logger.AddOp(op)
 	log.Log.Info("creating template")
@@ -123,6 +123,7 @@ func (ts *templateServ) Create(ctx context.Context, oid, title, description stri
 			RenderOrder:    order,
 			CreateTime:     now,
 			LastUpdateTime: now,
+			IsPublic:       isPublic,
 		}
 		if err := ts.TemplateRepo.Create(c, template); err != nil {
 			if cerr := ts.CloudStorage.DeleteImage(c, pid); cerr != nil {

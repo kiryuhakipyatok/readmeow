@@ -66,6 +66,7 @@ type CreateTemplateRequest struct {
 	Text        []string              `json:"text" validate:"omitempty"`
 	Links       []string              `json:"links" validate:"omitempty,dive,url"`
 	Widgets     []map[string]string   `json:"widgets" validate:"omitempty,dive,dive,keys,uuid,endkeys,required,min=1"`
+	IsPublic    bool                  `json:"is_public" validate:"omitempty"`
 }
 
 type CreateTemplateRequestDoc struct {
@@ -76,11 +77,12 @@ type CreateTemplateRequestDoc struct {
 	Text        []string            `json:"text" validate:"omitempty"`
 	Links       []string            `json:"links" validate:"omitempty,dive,url"`
 	Widgets     []map[string]string `json:"widgets" validate:"omitempty,dive,dive,keys,uuid,endkeys,required,min=1"`
+	IsPublic    bool                `json:"is_public" validate:"omitempty"`
 }
 
 type UpdateTemplateRequest struct {
 	Id      string         `json:"id" validate:"required,uuid"`
-	Updates map[string]any `json:"updates" validate:"required,min=1,dive,keys,oneof=title image description text links widgets render_order,endkeys,required"`
+	Updates map[string]any `json:"updates" validate:"required,min=1,dive,keys,oneof=title image is_public description text links widgets render_order,endkeys,required"`
 }
 
 type UpdateTemplateRequestDoc struct {
@@ -92,6 +94,7 @@ type UpdateTemplateRequestDoc struct {
 	Widgets     []map[string]string `json:"widgets" validate:"omitempty,dive,dive,keys,uuid,endkeys,required,min=1"`
 	RenderOrder []string            `json:"render_order" validate:"omitempty"`
 	Image       string              `json:"image" validate:"required" format:"binary"`
+	IsPublic    bool                `json:"is_public" validate:"omitempty"`
 }
 
 type CreateReadmeRequest struct {

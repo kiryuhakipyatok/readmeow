@@ -49,6 +49,6 @@ type UserResponse struct {
 }
 
 type SuccessResponse struct {
-	Code    string `json:"code" example:"200"`
+	Code    int    `json:"code" example:"200"`
 	Message string `json:"message" example:"success"`
 }

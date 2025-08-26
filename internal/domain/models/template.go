@@ -22,4 +22,5 @@ type Template struct {
 	RenderOrder    []string            `json:"render_order"`
 	CreateTime     time.Time           `json:"create_time"`
 	LastUpdateTime time.Time           `json:"last_update_time"`
+	IsPublic       bool                `json:"is_public"`
 }

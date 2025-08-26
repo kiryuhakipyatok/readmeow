@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"errors"
-	"fmt"
 	"readmeow/internal/config"
 	"readmeow/internal/delivery/handlers/helpers"
 	"readmeow/internal/delivery/ratelimiter"
@@ -94,7 +93,6 @@ func authMiddleware(acfg config.AuthConfig) fiber.Handler {
 
 func requestTimeoutMiddleware(timeout time.Duration) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		fmt.Println(c.IP())
 		ctx, cancel := context.WithTimeout(c.UserContext(), timeout)
 		defer cancel()
 		c.SetUserContext(ctx)

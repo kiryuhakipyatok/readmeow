@@ -43,7 +43,10 @@ func ParseAndValidateRequest[T any](c *fiber.Ctx, request *T, requestType Reques
 }
 
 func SuccessResponse(c *fiber.Ctx) error {
-	return c.Status(fiber.StatusOK).JSON(dto.SuccessResponse{})
+	return c.Status(fiber.StatusOK).JSON(dto.SuccessResponse{
+		Code:    fiber.StatusOK,
+		Message: "success",
+	})
 }
 
 func ValidateId(c *fiber.Ctx, id string) error {

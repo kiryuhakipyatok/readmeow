@@ -6,6 +6,7 @@ import (
 	"readmeow/internal/domain/services"
 	"readmeow/internal/dto"
 	"readmeow/pkg/validator"
+	"strconv"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -47,6 +48,12 @@ func (th *TemplateHandl) CreateTemplate(c *fiber.Ctx) error {
 	if err != nil {
 		return helpers.ToApiError(err)
 	}
+	req.IsPublic = true
+	isPublicStr := c.FormValue("is_public")
+	if isPublicStr == "false" {
+		req.IsPublic = false
+	}
+
 	req.Title = c.FormValue("title")
 	req.Description = c.FormValue("description")
 	form, err := c.MultipartForm()
@@ -81,7 +88,7 @@ func (th *TemplateHandl) CreateTemplate(c *fiber.Ctx) error {
 	if errs := helpers.ValidateStruct(req, th.Validator); len(errs) > 0 {
 		return helpers.ValidationError(errs)
 	}
-	if err := th.TemplateServ.Create(ctx, oid, req.Title, req.Description, req.Image, req.Links, req.RenderOrder, req.Text, req.Widgets); err != nil {
+	if err := th.TemplateServ.Create(ctx, oid, req.Title, req.Description, req.Image, req.Links, req.RenderOrder, req.Text, req.Widgets, req.IsPublic); err != nil {
 		return helpers.ToApiError(err)
 	}
 	return helpers.SuccessResponse(c)
@@ -112,6 +119,15 @@ func (th *TemplateHandl) UpdateTemplate(c *fiber.Ctx) error {
 	if description != "" {
 		updates["description"] = description
 	}
+	isPublicStr := c.FormValue("is_public")
+	if isPublicStr != "" {
+		isPublic, err := strconv.ParseBool(isPublicStr)
+		if err != nil {
+			return helpers.ToApiError(err)
+		}
+		updates["is_public"] = isPublic
+	}
+
 	form, err := c.MultipartForm()
 	if err != nil {
 		return helpers.InvalidRequest()

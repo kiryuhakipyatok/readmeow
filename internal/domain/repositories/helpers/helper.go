@@ -136,6 +136,7 @@ func (qd QueryData) QueryRowWithTx(entity any) error {
 			&e.CreateTime,
 			&e.LastUpdateTime,
 			&e.NumOfUsers,
+			&e.IsPublic,
 		}
 		if err := qd.queryRow(templateData...); err != nil {
 			return err

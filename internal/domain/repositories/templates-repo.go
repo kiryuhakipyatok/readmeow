@@ -51,8 +51,8 @@ func NewTemplateRepo(s *storage.Storage, c *cache.Cache, sc *search.SearchClient
 
 func (tr *templateRepo) Create(ctx context.Context, template *models.Template) error {
 	op := "templateRepo.Create"
-	query := "INSERT INTO templates (id, owner_id, title, image, description, text, links, widgets,num_of_users, render_order, create_time, last_update_time) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)"
-	qd := helpers.NewQueryData(ctx, tr.Storage, op, query, template.Id, template.OwnerId, template.Title, template.Image, template.Description, template.Text, template.Links, template.Widgets, template.NumOfUsers, template.RenderOrder, template.CreateTime, template.LastUpdateTime)
+	query := "INSERT INTO templates (id, owner_id, title, image, description, text, links, widgets,num_of_users, render_order, create_time, last_update_time, is_public) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)"
+	qd := helpers.NewQueryData(ctx, tr.Storage, op, query, template.Id, template.OwnerId, template.Title, template.Image, template.Description, template.Text, template.Links, template.Widgets, template.NumOfUsers, template.RenderOrder, template.CreateTime, template.LastUpdateTime, template.IsPublic)
 	if err := qd.InsertWithTx(); err != nil {
 		return err
 	}
@@ -72,6 +72,7 @@ func (tr *templateRepo) Update(ctx context.Context, updates map[string]any, id s
 		"num_of_users":     true,
 		"likes":            true,
 		"last_update_time": true,
+		"is_public":        true,
 	}
 	validValuesForLikesAndNumOfUsers := map[string]bool{
 		"+": true,
@@ -387,7 +388,7 @@ func (tr *templateRepo) getByIds(ctx context.Context, ids []string) ([]models.Te
 
 func (tr *templateRepo) getAll(ctx context.Context) ([]models.Template, error) {
 	op := "templateRepo.SearchPreparing.getAll"
-	query := "SELECT id, owner_id, title, description, likes, num_of_users, last_update_time FROM templates"
+	query := "SELECT id, owner_id, title, description, likes, num_of_users, last_update_time FROM templates WHERE is_public=TRUE"
 	templates := []models.Template{}
 	rows, err := tr.Storage.Pool.Query(ctx, query)
 	if err != nil {
