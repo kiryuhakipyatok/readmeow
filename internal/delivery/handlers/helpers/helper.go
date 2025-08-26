@@ -1,6 +1,7 @@
 package helpers
 
 import (
+	"readmeow/internal/dto"
 	"readmeow/pkg/validator"
 
 	"github.com/gofiber/fiber/v2"
@@ -42,9 +43,7 @@ func ParseAndValidateRequest[T any](c *fiber.Ctx, request *T, requestType Reques
 }
 
 func SuccessResponse(c *fiber.Ctx) error {
-	return c.Status(fiber.StatusOK).JSON(fiber.Map{
-		"message": "success",
-	})
+	return c.Status(fiber.StatusOK).JSON(dto.SuccessResponse{})
 }
 
 func ValidateId(c *fiber.Ctx, id string) error {
@@ -55,7 +54,7 @@ func ValidateId(c *fiber.Ctx, id string) error {
 }
 
 func AlreadyLoggined(c *fiber.Ctx) error {
-	return c.Status(fiber.StatusOK).JSON(fiber.Map{
-		"message": "user already loggined",
+	return c.Status(fiber.StatusOK).JSON(dto.SuccessResponse{
+		Message: "already loggined",
 	})
 }

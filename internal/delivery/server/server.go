@@ -3,14 +3,18 @@ package server
 import (
 	"context"
 	"errors"
+	"fmt"
 	"readmeow/internal/config"
 	"readmeow/internal/delivery/handlers/helpers"
 	"readmeow/internal/delivery/ratelimiter"
 	"time"
 
+	_ "readmeow/docs"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	jwtware "github.com/gofiber/jwt/v3"
+	"github.com/gofiber/swagger"
 )
 
 type Server struct {
@@ -25,8 +29,24 @@ func NewServer(scfg config.ServerConfig, acfg config.AuthConfig, apcfg config.Ap
 		AppName:      apcfg.Name,
 		ErrorHandler: errorHandler,
 	})
+
+	corsMiddleware := cors.New(cors.Config{})
+
+	swaggerGroup := app.Group("/api/swagger")
+
+	validIps := map[string]bool{
+		"172.21.0.1": true,
+	}
+
+	swaggerGroup.Use(
+		corsMiddleware,
+		validIpsMiddleware(validIps),
+	)
+
+	swaggerGroup.Get("/*", swagger.HandlerDefault)
+
 	app.Use(
-		cors.New(cors.Config{}),
+		corsMiddleware,
 		authMiddleware(acfg),
 		rateLimiterMiddleware(scfg),
 		requestTimeoutMiddleware(acfg.TokenTTL),
@@ -59,6 +79,7 @@ func authMiddleware(acfg config.AuthConfig) fiber.Handler {
 		if validPaths[c.Path()] {
 			return c.Next()
 		}
+
 		return jwtware.New(jwtware.Config{
 			SigningKey:  []byte(acfg.Secret),
 			TokenLookup: "cookie:jwt",
@@ -73,6 +94,7 @@ func authMiddleware(acfg config.AuthConfig) fiber.Handler {
 
 func requestTimeoutMiddleware(timeout time.Duration) fiber.Handler {
 	return func(c *fiber.Ctx) error {
+		fmt.Println(c.IP())
 		ctx, cancel := context.WithTimeout(c.UserContext(), timeout)
 		defer cancel()
 		c.SetUserContext(ctx)
@@ -104,6 +126,17 @@ func rateLimiterMiddleware(scfg config.ServerConfig) fiber.Handler {
 		if !limiter.Allow() {
 			return c.Status(fiber.StatusTooManyRequests).JSON(fiber.Map{
 				"error": "too many requests",
+			})
+		}
+		return c.Next()
+	}
+}
+
+func validIpsMiddleware(validIps map[string]bool) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		if _, ok := validIps[c.IP()]; !ok {
+			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+				"message": "forbidden",
 			})
 		}
 		return c.Next()

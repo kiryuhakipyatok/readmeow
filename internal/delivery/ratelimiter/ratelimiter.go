@@ -44,6 +44,5 @@ func RateLimit(ip string, rl, burst int) *rate.Limiter {
 	)
 	user := lim.(*client)
 	user.LastSeenTime = time.Now()
-
 	return user.Limiter
 }

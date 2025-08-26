@@ -24,6 +24,20 @@ func NewAuthHandle(as services.AuthServ, us services.UserServ, v *validator.Vali
 	}
 }
 
+// Register godoc
+// @Summary Register
+// @Description Register a verified user with email and verification code
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param body body dto.RegisterRequest true "Register Request"
+// @Success 200 {object} dto.SuccessResponse "Success response"
+// @Failure 400 {object} helpers.ApiErr "Bad request"
+// @Failure 404 {object} helpers.ApiErr "Not found"
+// @Failure 409 {object} helpers.ApiErr "Already exists"
+// @Failure 422 {object} helpers.ApiErr "Invalid JSON"
+// @Failure 500 {object} helpers.ApiErr "Internal server error"
+// @Router /api/auth/register [post]
 func (ah *AuthHandl) Register(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	if c.Cookies("jwt") != "" {
@@ -39,6 +53,20 @@ func (ah *AuthHandl) Register(c *fiber.Ctx) error {
 	return helpers.SuccessResponse(c)
 }
 
+// VerifyEmail godoc
+// @Summary Verify Email
+// @Description Verifying a user by sending a verification code
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param body body dto.VerifyRequest true "Verification Request"
+// @Success 200 {object} dto.SuccessResponse "Success response"
+// @Failure 400 {object} helpers.ApiErr "Bad request"
+// @Failure 404 {object} helpers.ApiErr "Not found"
+// @Failure 409 {object} helpers.ApiErr "Already exists"
+// @Failure 422 {object} helpers.ApiErr "Invalid JSON"
+// @Failure 500 {object} helpers.ApiErr "Internal server error"
+// @Router /api/auth/verify [post]
 func (ah *AuthHandl) VerifyEmail(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	if c.Cookies("jwt") != "" {
@@ -54,6 +82,20 @@ func (ah *AuthHandl) VerifyEmail(c *fiber.Ctx) error {
 	return helpers.SuccessResponse(c)
 }
 
+// Login godoc
+// @Summary Login
+// @Description Log in a user with login and password
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param body body dto.LoginRequest true "Login Request"
+// @Success 200 {object} dto.LoginResponse "Login response"
+// @Failure 400 {object} helpers.ApiErr "Bad request"
+// @Failure 404 {object} helpers.ApiErr "Not found"
+// @Failure 409 {object} helpers.ApiErr "Already exists"
+// @Failure 422 {object} helpers.ApiErr "Invalid JSON"
+// @Failure 500 {object} helpers.ApiErr "Internal server error"
+// @Router /api/auth/login [post]
 func (ah *AuthHandl) Login(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	if c.Cookies("jwt") != "" {
@@ -84,6 +126,14 @@ func (ah *AuthHandl) Login(c *fiber.Ctx) error {
 	return c.JSON(responce)
 }
 
+// Logout godoc
+// @Summary Logout
+// @Description Logout a user
+// @Tags Auth
+// @Produce json
+// @Success 200 {object} dto.SuccessResponse "Success response"
+// @Security ApiKeyAuth
+// @Router /api/auth/logout [get]
 func (ah *AuthHandl) Logout(c *fiber.Ctx) error {
 	cookie := &fiber.Cookie{
 		Name:     "jwt",
@@ -97,6 +147,16 @@ func (ah *AuthHandl) Logout(c *fiber.Ctx) error {
 	return helpers.SuccessResponse(c)
 }
 
+// Profile godoc
+// @Summary Profile
+// @Description Fetching the logged-in user's info
+// @Tags Auth
+// @Produce json
+// @Success 200 {object} dto.UserResponse "User info response"
+// @Failure 404 {object} helpers.ApiErr "Not found"
+// @Failure 500 {object} helpers.ApiErr "Internal server error"
+// @Security ApiKeyAuth
+// @Router /api/auth/profile [get]
 func (ah *AuthHandl) Profile(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	cookie := c.Cookies("jwt")
@@ -111,6 +171,20 @@ func (ah *AuthHandl) Profile(c *fiber.Ctx) error {
 	return c.JSON(user)
 }
 
+// SendNewCode godoc
+// @Summary Send New Code
+// @Description Sending a new code for user verification
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param body body dto.SendNewCodeRequest true "SendNewCodeRequest Request"
+// @Success 200 {object} dto.SuccessResponse "Success response"
+// @Failure 400 {object} helpers.ApiErr "Bad request"
+// @Failure 404 {object} helpers.ApiErr "Not found"
+// @Failure 409 {object} helpers.ApiErr "Already exists"
+// @Failure 422 {object} helpers.ApiErr "Invalid JSON"
+// @Failure 500 {object} helpers.ApiErr "Internal server error"
+// @Router /api/auth/newcode [post]
 func (ah *AuthHandl) SendNewCode(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	if c.Cookies("jwt") != "" {

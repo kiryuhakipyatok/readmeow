@@ -16,7 +16,7 @@ import (
 )
 
 type UserServ interface {
-	Get(ctx context.Context, id string) (*dto.UserResponce, error)
+	Get(ctx context.Context, id string) (*dto.UserResponse, error)
 	Update(ctx context.Context, updates map[string]any, id string) error
 	Delete(ctx context.Context, id, password string) error
 	ChangePassword(ctx context.Context, id string, oldPassword, newPasswrod string) error
@@ -152,7 +152,7 @@ func (us *userServ) ChangePassword(ctx context.Context, id string, oldPassword, 
 	return nil
 }
 
-func (us *userServ) Get(ctx context.Context, id string) (*dto.UserResponce, error) {
+func (us *userServ) Get(ctx context.Context, id string) (*dto.UserResponse, error) {
 	op := "userServ.Get"
 	log := us.Logger.AddOp(op)
 	log.Log.Info("receiving user")
@@ -161,7 +161,7 @@ func (us *userServ) Get(ctx context.Context, id string) (*dto.UserResponce, erro
 		log.Log.Error("failed to get user", logger.Err(err))
 		return nil, errs.NewAppError(op, err)
 	}
-	userResp := &dto.UserResponce{
+	userResp := &dto.UserResponse{
 		Id:             user.Id.String(),
 		Nickname:       user.Nickname,
 		Avatar:         user.Avatar,

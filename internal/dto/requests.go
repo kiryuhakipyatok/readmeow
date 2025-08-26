@@ -43,6 +43,12 @@ type UpdateUserRequest struct {
 	Updates map[string]any `json:"updates" validate:"required,min=1,dive,keys,oneof=nickname avatar,endkeys,required"`
 }
 
+type UpdateUserRequestDoc struct {
+	Id       string `json:"id" validate:"required,uuid"`
+	Nickname string `json:"nickname" validate:"required,min=1,max=80"`
+	Avatar   string `json:"avatar" validate:"required" format:"binary"`
+}
+
 type DeleteUserRequest struct {
 	Password string `json:"password" validate:"required"`
 }
@@ -53,18 +59,39 @@ type ChangePasswordRequest struct {
 }
 
 type CreateTemplateRequest struct {
-	Title       string                `json:"title" validate:"required,min=1,max=50"`
+	Title       string                `json:"title" validate:"required,min=1,max=255"`
 	Image       *multipart.FileHeader `json:"image" validate:"required"`
 	Description string                `json:"description" validate:"required,min=1,max=1000"`
 	RenderOrder []string              `json:"render_order" validate:"required,min=1"`
 	Text        []string              `json:"text" validate:"omitempty"`
-	Links       []string              `json:"links" validate:"omitempty"`
+	Links       []string              `json:"links" validate:"omitempty,dive,url"`
 	Widgets     []map[string]string   `json:"widgets" validate:"omitempty,dive,dive,keys,uuid,endkeys,required,min=1"`
+}
+
+type CreateTemplateRequestDoc struct {
+	Title       string              `json:"title" validate:"required,min=1,max=255"`
+	Image       string              `json:"image" validate:"required" format:"binary"`
+	Description string              `json:"description" validate:"required,min=1,max=1000"`
+	RenderOrder []string            `json:"render_order" validate:"required,min=1"`
+	Text        []string            `json:"text" validate:"omitempty"`
+	Links       []string            `json:"links" validate:"omitempty,dive,url"`
+	Widgets     []map[string]string `json:"widgets" validate:"omitempty,dive,dive,keys,uuid,endkeys,required,min=1"`
 }
 
 type UpdateTemplateRequest struct {
 	Id      string         `json:"id" validate:"required,uuid"`
 	Updates map[string]any `json:"updates" validate:"required,min=1,dive,keys,oneof=title image description text links widgets render_order,endkeys,required"`
+}
+
+type UpdateTemplateRequestDoc struct {
+	Id          string              `json:"id" validate:"required,uuid"`
+	Title       string              `json:"title" validate:"omitempty,min=1,max=255"`
+	Description string              `json:"description" validate:"omitempty,min=1,max=1000"`
+	Text        string              `json:"text" validate:"omitempty"`
+	Links       []string            `json:"links" validate:"omitempty,dive,url"`
+	Widgets     []map[string]string `json:"widgets" validate:"omitempty,dive,dive,keys,uuid,endkeys,required,min=1"`
+	RenderOrder []string            `json:"render_order" validate:"omitempty"`
+	Image       string              `json:"image" validate:"required" format:"binary"`
 }
 
 type CreateReadmeRequest struct {
@@ -73,13 +100,33 @@ type CreateReadmeRequest struct {
 	Title       string                `json:"title" validate:"required,min=1,max=80"`
 	RenderOrder []string              `json:"render_order" validate:"required,min=1"`
 	Text        []string              `json:"text" validate:"omitempty"`
-	Links       []string              `json:"links" validate:"omitempty"`
+	Links       []string              `json:"links" validate:"omitempty,dive,url"`
 	Widgets     []map[string]string   `json:"widgets" validate:"omitempty,dive,dive,keys,uuid,endkeys,required,min=1"`
+}
+
+type CreateReadmeRequestDoc struct {
+	TemplateId  string              `json:"template_id" validate:"omitempty,uuid"`
+	Image       string              `json:"image" validate:"required" format:"binary"`
+	Title       string              `json:"title" validate:"required,min=1,max=80"`
+	RenderOrder []string            `json:"render_order" validate:"required,min=1"`
+	Text        []string            `json:"text" validate:"omitempty"`
+	Links       []string            `json:"links" validate:"omitempty,dive,url"`
+	Widgets     []map[string]string `json:"widgets" validate:"omitempty,dive,dive,keys,uuid,endkeys,required,min=1"`
 }
 
 type UpdateReadmeRequest struct {
 	Id      string         `json:"id" validate:"required,uuid"`
 	Updates map[string]any `json:"updates" validate:"required,min=1,dive,keys,oneof=title image text links widgets render_order,endkeys,required"`
+}
+
+type UpdateReadmeRequestDoc struct {
+	Id          string              `json:"id" validate:"required,uuid"`
+	Image       string              `json:"image" validate:"required" format:"binary"`
+	Title       string              `json:"title" validate:"required,min=1,max=80"`
+	RenderOrder []string            `json:"render_order" validate:"required,min=1"`
+	Text        []string            `json:"text" validate:"omitempty"`
+	Links       []string            `json:"links" validate:"omitempty,dive,url"`
+	Widgets     []map[string]string `json:"widgets" validate:"omitempty,dive,dive,keys,uuid,endkeys,required,min=1"`
 }
 
 type SendNewCodeRequest struct {

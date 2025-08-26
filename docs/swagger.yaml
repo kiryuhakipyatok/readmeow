@@ -1,0 +1,1428 @@
+basePath: /api/
+definitions:
+  dto.ChangePasswordRequest:
+    properties:
+      new_password:
+        minLength: 12
+        type: string
+      old_password:
+        minLength: 12
+        type: string
+    required:
+    - new_password
+    - old_password
+    type: object
+  dto.DeleteUserRequest:
+    properties:
+      password:
+        type: string
+    required:
+    - password
+    type: object
+  dto.LoginRequest:
+    properties:
+      login:
+        maxLength: 80
+        minLength: 1
+        type: string
+      password:
+        minLength: 12
+        type: string
+    required:
+    - login
+    - password
+    type: object
+  dto.LoginResponse:
+    properties:
+      avatar:
+        type: string
+      id:
+        type: string
+      nickname:
+        type: string
+    required:
+    - avatar
+    - id
+    - nickname
+    type: object
+  dto.ReadmeResponse:
+    properties:
+      create_time:
+        type: string
+      id:
+        type: string
+      image:
+        type: string
+      last_update_time:
+        type: string
+      title:
+        type: string
+    required:
+    - create_time
+    - id
+    - image
+    - last_update_time
+    - title
+    type: object
+  dto.RegisterRequest:
+    properties:
+      code:
+        minLength: 1
+        type: string
+      email:
+        type: string
+    required:
+    - code
+    - email
+    type: object
+  dto.SearchTemplateRequest:
+    properties:
+      amount:
+        minimum: 1
+        type: integer
+      filter:
+        additionalProperties:
+          type: boolean
+        type: object
+      page:
+        minimum: 1
+        type: integer
+      query:
+        type: string
+      sort:
+        additionalProperties:
+          type: string
+        type: object
+    required:
+    - amount
+    - page
+    type: object
+  dto.SearchWidgetRequest:
+    properties:
+      amount:
+        minimum: 1
+        type: integer
+      filter:
+        additionalProperties:
+          items:
+            type: string
+          type: array
+        type: object
+      page:
+        minimum: 1
+        type: integer
+      query:
+        type: string
+      sort:
+        additionalProperties:
+          type: string
+        type: object
+    required:
+    - amount
+    - page
+    type: object
+  dto.SendNewCodeRequest:
+    properties:
+      email:
+        type: string
+    required:
+    - email
+    type: object
+  dto.SuccessResponse:
+    properties:
+      code:
+        example: "200"
+        type: string
+      message:
+        example: success
+        type: string
+    type: object
+  dto.TemplateResponse:
+    properties:
+      id:
+        type: string
+      image:
+        type: string
+      last_update_time:
+        type: string
+      likes:
+        minimum: 0
+        type: integer
+      num_of_users:
+        minimum: 0
+        type: integer
+      owner_avatar:
+        type: string
+      owner_id:
+        type: string
+      owner_nickname:
+        type: string
+      title:
+        type: string
+    required:
+    - id
+    - image
+    - last_update_time
+    - likes
+    - num_of_users
+    - owner_avatar
+    - owner_id
+    - owner_nickname
+    - title
+    type: object
+  dto.UserResponse:
+    properties:
+      avatar:
+        type: string
+      id:
+        type: string
+      nickname:
+        minLength: 1
+        type: string
+      num_of_readmes:
+        minimum: 0
+        type: integer
+      num_of_templates:
+        minimum: 0
+        type: integer
+      time_of_register:
+        type: string
+    required:
+    - avatar
+    - id
+    - nickname
+    - num_of_readmes
+    - num_of_templates
+    - time_of_register
+    type: object
+  dto.VerifyRequest:
+    properties:
+      email:
+        type: string
+      login:
+        maxLength: 80
+        minLength: 1
+        type: string
+      nickname:
+        maxLength: 80
+        minLength: 1
+        type: string
+      password:
+        minLength: 12
+        type: string
+    required:
+    - email
+    - login
+    - nickname
+    - password
+    type: object
+  dto.WidgetResponse:
+    properties:
+      description:
+        type: string
+      id:
+        type: string
+      image:
+        type: string
+      likes:
+        minimum: 0
+        type: integer
+      num_of_users:
+        minimum: 0
+        type: integer
+      title:
+        type: string
+    required:
+    - description
+    - id
+    - image
+    - likes
+    - num_of_users
+    - title
+    type: object
+  helpers.ApiErr:
+    properties:
+      code:
+        type: integer
+      message: {}
+    type: object
+host: localhost:3333
+info:
+  contact:
+    email: readmeow@gmail.com
+    name: READMEOW Support
+  description: Documentation to READMEOW API
+  title: REODMEOW API
+  version: 1.0.0
+paths:
+  /api/auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Log in a user with login and password
+      parameters:
+      - description: Login Request
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Login response
+          schema:
+            $ref: '#/definitions/dto.LoginResponse'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "404":
+          description: Not found
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "409":
+          description: Already exists
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "422":
+          description: Invalid JSON
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+      summary: Login
+      tags:
+      - Auth
+  /api/auth/logout:
+    get:
+      description: Logout a user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success response
+          schema:
+            $ref: '#/definitions/dto.SuccessResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Logout
+      tags:
+      - Auth
+  /api/auth/newcode:
+    post:
+      consumes:
+      - application/json
+      description: Sending a new code for user verification
+      parameters:
+      - description: SendNewCodeRequest Request
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.SendNewCodeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success response
+          schema:
+            $ref: '#/definitions/dto.SuccessResponse'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "404":
+          description: Not found
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "409":
+          description: Already exists
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "422":
+          description: Invalid JSON
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+      summary: Send New Code
+      tags:
+      - Auth
+  /api/auth/profile:
+    get:
+      description: Fetching the logged-in user's info
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User info response
+          schema:
+            $ref: '#/definitions/dto.UserResponse'
+        "404":
+          description: Not found
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+      security:
+      - ApiKeyAuth: []
+      summary: Profile
+      tags:
+      - Auth
+  /api/auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Register a verified user with email and verification code
+      parameters:
+      - description: Register Request
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success response
+          schema:
+            $ref: '#/definitions/dto.SuccessResponse'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "404":
+          description: Not found
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "409":
+          description: Already exists
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "422":
+          description: Invalid JSON
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+      summary: Register
+      tags:
+      - Auth
+  /api/auth/verify:
+    post:
+      consumes:
+      - application/json
+      description: Verifying a user by sending a verification code
+      parameters:
+      - description: Verification Request
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.VerifyRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success response
+          schema:
+            $ref: '#/definitions/dto.SuccessResponse'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "404":
+          description: Not found
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "409":
+          description: Already exists
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "422":
+          description: Invalid JSON
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+      summary: Verify Email
+      tags:
+      - Auth
+  /api/readmes:
+    get:
+      description: Returns list of readmes for the authorized user
+      parameters:
+      - description: Pagination amount
+        in: query
+        name: amount
+        type: integer
+      - description: Pagination page
+        in: query
+        name: page
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success response
+          schema:
+            items:
+              $ref: '#/definitions/dto.ReadmeResponse'
+            type: array
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+      security:
+      - ApiKeyAuth: []
+      summary: Fetch User Readmes
+      tags:
+      - Readmes
+    post:
+      consumes:
+      - multipart/form-data
+      description: Creating a new readme
+      parameters:
+      - format: binary
+        in: formData
+        name: image
+        required: true
+        type: string
+      - collectionFormat: csv
+        in: formData
+        items:
+          type: string
+        name: links
+        type: array
+      - collectionFormat: csv
+        in: formData
+        items:
+          type: string
+        minItems: 1
+        name: render_order
+        required: true
+        type: array
+      - in: formData
+        name: template_id
+        type: string
+      - collectionFormat: csv
+        in: formData
+        items:
+          type: string
+        name: text
+        type: array
+      - in: formData
+        maxLength: 80
+        minLength: 1
+        name: title
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success response
+          schema:
+            $ref: '#/definitions/dto.SuccessResponse'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "404":
+          description: Not found
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "409":
+          description: Already exists
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "422":
+          description: Invalid JSON
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+      security:
+      - ApiKeyAuth: []
+      summary: Create Readme
+      tags:
+      - Readmes
+  /api/readmes/{readme}:
+    delete:
+      description: Deleting a user readme by its id
+      parameters:
+      - description: Readme ID
+        in: path
+        name: readme
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success response
+          schema:
+            $ref: '#/definitions/dto.SuccessResponse'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "404":
+          description: Not found
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+      security:
+      - ApiKeyAuth: []
+      summary: Delete Readme
+      tags:
+      - Readmes
+    get:
+      description: Returns single readme by id
+      parameters:
+      - description: Readme ID
+        in: path
+        name: readme
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success response
+          schema:
+            $ref: '#/definitions/dto.ReadmeResponse'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "404":
+          description: Not found
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+      security:
+      - ApiKeyAuth: []
+      summary: Get Readme by ID
+      tags:
+      - Readmes
+    patch:
+      consumes:
+      - multipart/form-data
+      description: Updating existing readme by id
+      parameters:
+      - in: formData
+        name: id
+        required: true
+        type: string
+      - format: binary
+        in: formData
+        name: image
+        required: true
+        type: string
+      - collectionFormat: csv
+        in: formData
+        items:
+          type: string
+        name: links
+        type: array
+      - collectionFormat: csv
+        in: formData
+        items:
+          type: string
+        minItems: 1
+        name: render_order
+        required: true
+        type: array
+      - collectionFormat: csv
+        in: formData
+        items:
+          type: string
+        name: text
+        type: array
+      - in: formData
+        maxLength: 80
+        minLength: 1
+        name: title
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success response
+          schema:
+            $ref: '#/definitions/dto.SuccessResponse'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "404":
+          description: Not found
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "422":
+          description: Invalid JSON
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+      security:
+      - ApiKeyAuth: []
+      summary: Update Readme
+      tags:
+      - Readmes
+  /api/templates:
+    get:
+      consumes:
+      - application/json
+      description: Search templates with filters and sorting
+      parameters:
+      - description: Search templates request
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.SearchTemplateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of templates
+          schema:
+            items:
+              $ref: '#/definitions/dto.TemplateResponse'
+            type: array
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "404":
+          description: Not found
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "422":
+          description: Invalid JSON
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+      security:
+      - ApiKeyAuth: []
+      summary: Search Templates
+      tags:
+      - Templates
+    patch:
+      description: Updating a user template
+      parameters:
+      - in: formData
+        maxLength: 1000
+        minLength: 1
+        name: description
+        type: string
+      - in: formData
+        name: id
+        required: true
+        type: string
+      - format: binary
+        in: formData
+        name: image
+        required: true
+        type: string
+      - collectionFormat: csv
+        in: formData
+        items:
+          type: string
+        name: links
+        type: array
+      - collectionFormat: csv
+        in: formData
+        items:
+          type: string
+        name: render_order
+        type: array
+      - in: formData
+        name: text
+        type: string
+      - in: formData
+        maxLength: 255
+        minLength: 1
+        name: title
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success response
+          schema:
+            $ref: '#/definitions/dto.SuccessResponse'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "404":
+          description: Not found
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "422":
+          description: Invalid JSON
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+      security:
+      - ApiKeyAuth: []
+      summary: Update Template
+      tags:
+      - Templates
+    post:
+      consumes:
+      - multipart/form-data
+      description: Creating a new template
+      parameters:
+      - in: formData
+        maxLength: 1000
+        minLength: 1
+        name: description
+        required: true
+        type: string
+      - format: binary
+        in: formData
+        name: image
+        required: true
+        type: string
+      - collectionFormat: csv
+        in: formData
+        items:
+          type: string
+        name: links
+        type: array
+      - collectionFormat: csv
+        in: formData
+        items:
+          type: string
+        minItems: 1
+        name: render_order
+        required: true
+        type: array
+      - collectionFormat: csv
+        in: formData
+        items:
+          type: string
+        name: text
+        type: array
+      - in: formData
+        maxLength: 255
+        minLength: 1
+        name: title
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success response
+          schema:
+            $ref: '#/definitions/dto.SuccessResponse'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "404":
+          description: Not found
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "409":
+          description: Already exists
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "422":
+          description: Invalid JSON
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+      security:
+      - ApiKeyAuth: []
+      summary: Create Template
+      tags:
+      - Templates
+  /api/templates/{template}:
+    delete:
+      description: Deleting a user template by its id
+      parameters:
+      - description: Template ID
+        in: path
+        name: template
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success response
+          schema:
+            $ref: '#/definitions/dto.SuccessResponse'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "404":
+          description: Not found
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+      security:
+      - ApiKeyAuth: []
+      summary: Delete Template
+      tags:
+      - Templates
+    get:
+      description: Get template by ID
+      parameters:
+      - description: Template ID
+        in: path
+        name: template
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Template data
+          schema:
+            $ref: '#/definitions/dto.TemplateResponse'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "404":
+          description: Not found
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+      security:
+      - ApiKeyAuth: []
+      summary: Get Template
+      tags:
+      - Templates
+  /api/templates/dislike/{template}:
+    patch:
+      description: Dislike template by ID
+      parameters:
+      - description: Template ID
+        in: path
+        name: template
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success response
+          schema:
+            $ref: '#/definitions/dto.SuccessResponse'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "404":
+          description: Not found
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "409":
+          description: Already disliked
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+      security:
+      - ApiKeyAuth: []
+      summary: Dislike Template
+      tags:
+      - Templates
+  /api/templates/favorite:
+    get:
+      consumes:
+      - application/json
+      description: Fetch favorite templates of current user
+      parameters:
+      - in: query
+        minimum: 1
+        name: amount
+        required: true
+        type: integer
+      - in: query
+        minimum: 1
+        name: page
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of favorite templates
+          schema:
+            items:
+              $ref: '#/definitions/dto.TemplateResponse'
+            type: array
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "404":
+          description: Not found
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "422":
+          description: Invalid JSON
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+      security:
+      - ApiKeyAuth: []
+      summary: Fetch Favorite Templates
+      tags:
+      - Templates
+  /api/templates/like/{template}:
+    patch:
+      description: Like template by ID
+      parameters:
+      - description: Template ID
+        in: path
+        name: template
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success response
+          schema:
+            $ref: '#/definitions/dto.SuccessResponse'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "404":
+          description: Not found
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "409":
+          description: Already liked
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+      security:
+      - ApiKeyAuth: []
+      summary: Like Template
+      tags:
+      - Templates
+  /api/users:
+    delete:
+      consumes:
+      - application/json
+      description: Delete current user account
+      parameters:
+      - description: Delete user request
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.DeleteUserRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success response
+          schema:
+            $ref: '#/definitions/dto.SuccessResponse'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "404":
+          description: Not found
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "422":
+          description: Invalid JSON
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+      security:
+      - ApiKeyAuth: []
+      summary: Delete User
+      tags:
+      - Users
+    patch:
+      consumes:
+      - multipart/form-data
+      description: Update user's profile (nickname, avatar, etc.)
+      parameters:
+      - format: binary
+        in: formData
+        name: avatar
+        required: true
+        type: string
+      - in: formData
+        name: id
+        required: true
+        type: string
+      - in: formData
+        maxLength: 80
+        minLength: 1
+        name: nickname
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success response
+          schema:
+            $ref: '#/definitions/dto.SuccessResponse'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "404":
+          description: Not found
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "422":
+          description: Invalid JSON
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+      security:
+      - ApiKeyAuth: []
+      summary: Update User
+      tags:
+      - Users
+  /api/users/{user}:
+    get:
+      description: Get user by ID
+      parameters:
+      - description: User ID
+        in: path
+        name: user
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User data
+          schema:
+            $ref: '#/definitions/dto.UserResponse'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "404":
+          description: Not found
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+      security:
+      - ApiKeyAuth: []
+      summary: Get User
+      tags:
+      - Users
+  /api/users/password:
+    patch:
+      consumes:
+      - application/json
+      description: Change password for current user
+      parameters:
+      - description: Change password request
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.ChangePasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success response
+          schema:
+            $ref: '#/definitions/dto.SuccessResponse'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "404":
+          description: Not found
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "422":
+          description: Invalid JSON
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+      security:
+      - ApiKeyAuth: []
+      summary: Change User Password
+      tags:
+      - Users
+  /api/widgets:
+    get:
+      consumes:
+      - application/json
+      description: Searching widgets
+      parameters:
+      - description: Search widgets request
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.SearchWidgetRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of widgets
+          schema:
+            items:
+              $ref: '#/definitions/dto.WidgetResponse'
+            type: array
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "404":
+          description: Not found
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "422":
+          description: Invalid JSON
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+      security:
+      - ApiKeyAuth: []
+      summary: Search Widgets
+      tags:
+      - Widgets
+  /api/widgets/{widget}:
+    get:
+      description: Get widget by ID
+      parameters:
+      - description: Widget ID
+        in: path
+        name: widget
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Widget data
+          schema:
+            $ref: '#/definitions/dto.WidgetResponse'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "404":
+          description: Not found
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+      security:
+      - ApiKeyAuth: []
+      summary: Get Widget
+      tags:
+      - Widgets
+  /api/widgets/dislike/{widget}:
+    patch:
+      description: Dislike widget by ID
+      parameters:
+      - description: Widget ID
+        in: path
+        name: widget
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success response
+          schema:
+            $ref: '#/definitions/dto.SuccessResponse'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "404":
+          description: Not found
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "409":
+          description: Already exists
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+      security:
+      - ApiKeyAuth: []
+      summary: Dislike Widget
+      tags:
+      - Widgets
+  /api/widgets/favorite:
+    get:
+      consumes:
+      - application/json
+      description: Fetch favorite widgets of current user
+      parameters:
+      - in: query
+        minimum: 1
+        name: amount
+        required: true
+        type: integer
+      - in: query
+        minimum: 1
+        name: page
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of favorite widgets
+          schema:
+            items:
+              $ref: '#/definitions/dto.WidgetResponse'
+            type: array
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "404":
+          description: Not found
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "422":
+          description: Invalid JSON
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+      security:
+      - ApiKeyAuth: []
+      summary: Fetch Favorite Widgets
+      tags:
+      - Widgets
+  /api/widgets/like/{widget}:
+    patch:
+      description: Like widget by ID
+      parameters:
+      - description: Widget ID
+        in: path
+        name: widget
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success response
+          schema:
+            $ref: '#/definitions/dto.SuccessResponse'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "404":
+          description: Not found
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "409":
+          description: Already exists
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+      security:
+      - ApiKeyAuth: []
+      summary: Like Widget
+      tags:
+      - Widgets
+swagger: "2.0"

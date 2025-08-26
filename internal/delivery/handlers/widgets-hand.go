@@ -23,6 +23,18 @@ func NewWidgetHandl(ws services.WidgetServ, as services.AuthServ, v *validator.V
 	}
 }
 
+// GetWidgetById godoc
+// @Summary      Get Widget
+// @Description  Get widget by ID
+// @Tags         Widgets
+// @Produce      json
+// @Security     ApiKeyAuth
+// @Param        widget path string true "Widget ID"
+// @Success      200 {object} dto.WidgetResponse "Widget data"
+// @Failure      400 {object} helpers.ApiErr "Bad request"
+// @Failure      404 {object} helpers.ApiErr "Not found"
+// @Failure      500 {object} helpers.ApiErr "Internal server error"
+// @Router       /api/widgets/{widget} [get]
 func (wh *WidgetHandl) GetWidgetById(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	id := c.Params("widget")
@@ -36,6 +48,20 @@ func (wh *WidgetHandl) GetWidgetById(c *fiber.Ctx) error {
 	return c.JSON(widget)
 }
 
+// SearchWidgets godoc
+// @Summary      Search Widgets
+// @Description  Searching widgets
+// @Tags         Widgets
+// @Accept       json
+// @Produce      json
+// @Security     ApiKeyAuth
+// @Param        body body dto.SearchWidgetRequest true "Search widgets request"
+// @Success      200 {array} dto.WidgetResponse "List of widgets"
+// @Failure      400 {object} helpers.ApiErr "Bad request"
+// @Failure      404 {object} helpers.ApiErr "Not found"
+// @Failure      422 {object} helpers.ApiErr "Invalid JSON"
+// @Failure      500 {object} helpers.ApiErr "Internal server error"
+// @Router       /api/widgets [get]
 func (wh *WidgetHandl) SearchWidgets(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	req := dto.SearchWidgetRequest{}
@@ -50,6 +76,19 @@ func (wh *WidgetHandl) SearchWidgets(c *fiber.Ctx) error {
 	return c.JSON(widgets)
 }
 
+// LikeWidget godoc
+// @Summary      Like Widget
+// @Description  Like widget by ID
+// @Tags         Widgets
+// @Produce      json
+// @Security     ApiKeyAuth
+// @Param        widget path string true "Widget ID"
+// @Success      200 {object} dto.SuccessResponse "Success response"
+// @Failure      400 {object} helpers.ApiErr "Bad request"
+// @Failure      404 {object} helpers.ApiErr "Not found"
+// @Failure      409 {object} helpers.ApiErr "Already exists"
+// @Failure      500 {object} helpers.ApiErr "Internal server error"
+// @Router       /api/widgets/like/{widget} [patch]
 func (wh *WidgetHandl) Like(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	id := c.Params("widget")
@@ -67,6 +106,19 @@ func (wh *WidgetHandl) Like(c *fiber.Ctx) error {
 	return helpers.SuccessResponse(c)
 }
 
+// DislikeWidget godoc
+// @Summary      Dislike Widget
+// @Description  Dislike widget by ID
+// @Tags         Widgets
+// @Produce      json
+// @Security     ApiKeyAuth
+// @Param        widget path string true "Widget ID"
+// @Success      200 {object} dto.SuccessResponse "Success response"
+// @Failure      400 {object} helpers.ApiErr "Bad request"
+// @Failure      404 {object} helpers.ApiErr "Not found"
+// @Failure      409 {object} helpers.ApiErr "Already exists"
+// @Failure      500 {object} helpers.ApiErr "Internal server error"
+// @Router       /api/widgets/dislike/{widget} [patch]
 func (wh *WidgetHandl) Dislike(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	id := c.Params("widget")
@@ -84,6 +136,20 @@ func (wh *WidgetHandl) Dislike(c *fiber.Ctx) error {
 	return helpers.SuccessResponse(c)
 }
 
+// FetchFavoriteWidgets godoc
+// @Summary      Fetch Favorite Widgets
+// @Description  Fetch favorite widgets of current user
+// @Tags         Widgets
+// @Accept       json
+// @Produce      json
+// @Security     ApiKeyAuth
+// @Param        body query dto.PaginationRequest true "Pagination request"
+// @Success      200 {array} dto.WidgetResponse "List of favorite widgets"
+// @Failure      400 {object} helpers.ApiErr "Bad request"
+// @Failure      404 {object} helpers.ApiErr "Not found"
+// @Failure      422 {object} helpers.ApiErr "Invalid JSON"
+// @Failure      500 {object} helpers.ApiErr "Internal server error"
+// @Router       /api/widgets/favorite [get]
 func (wh *WidgetHandl) FetchFavoriteWidgets(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	req := dto.PaginationRequest{}

@@ -12,7 +12,6 @@ var (
 	ErrNotFound          = errors.New("not found")
 	ErrAlreadyExists     = errors.New("alredy exists")
 	ErrBadRequest        = errors.New("bad request")
-	ErrInvalidJSON       = errors.New("invalid request json data")
 	ErrInternalServer    = errors.New("internal server error")
 	ErrInvalidVerifyCode = errors.New("invalid verification code")
 	ErrZeroAttempts      = errors.New("verification code has zero attempts")
@@ -37,7 +36,7 @@ func NewApiError(code int, err error) ApiErr {
 
 func ValidationError(errors map[string]string) ApiErr {
 	return ApiErr{
-		Code:    fiber.StatusBadRequest,
+		Code:    fiber.StatusUnprocessableEntity,
 		Message: errors,
 	}
 }
@@ -68,7 +67,7 @@ func InternalServerError() ApiErr {
 }
 
 func InvalidRequest() ApiErr {
-	return NewApiError(fiber.StatusUnprocessableEntity, ErrBadRequest)
+	return NewApiError(fiber.StatusBadRequest, ErrBadRequest)
 }
 
 func NotFound() ApiErr {
