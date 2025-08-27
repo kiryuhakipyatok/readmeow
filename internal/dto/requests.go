@@ -11,7 +11,7 @@ type VerifyRequest struct {
 
 type RegisterRequest struct {
 	Email string `json:"email" validate:"required,email"`
-	Code  string `json:"code" validate:"required,min=1"`
+	Code  string `json:"code" validate:"required,min=6"`
 }
 
 type LoginRequest struct {
