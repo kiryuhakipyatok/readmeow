@@ -39,14 +39,14 @@ type ReadmeResponse struct {
 	CreateTime     time.Time `json:"create_time" validate:"required"`
 }
 
-type UserResponse struct {
-	Id             string    `json:"id" validate:"required,uuid"`
-	Nickname       string    `json:"nickname" validate:"required,min=1"`
-	Avatar         string    `json:"avatar" validate:"required"`
-	NumOfReadmes   uint32    `json:"num_of_readmes" validate:"required,min=0"`
-	NumOfTemplates uint32    `json:"num_of_templates" validate:"required,min=0"`
-	TimeOfRegister time.Time `json:"time_of_register" validate:"required"`
-}
+// type UserResponse struct {
+// 	Id             string    `json:"id" validate:"required,uuid"`
+// 	Nickname       string    `json:"nickname" validate:"required,min=1"`
+// 	Avatar         string    `json:"avatar" validate:"required"`
+// 	NumOfReadmes   uint32    `json:"num_of_readmes" validate:"required,min=0"`
+// 	NumOfTemplates uint32    `json:"num_of_templates" validate:"required,min=0"`
+// 	TimeOfRegister time.Time `json:"time_of_register" validate:"required"`
+// }
 
 type SuccessResponse struct {
 	Code    int    `json:"code" example:"200"`

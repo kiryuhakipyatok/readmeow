@@ -30,7 +30,7 @@ func NewWidgetHandl(ws services.WidgetServ, as services.AuthServ, v *validator.V
 // @Produce      json
 // @Security     ApiKeyAuth
 // @Param        widget path string true "Widget ID"
-// @Success      200 {object} dto.WidgetResponse "Widget data"
+// @Success      200 {object} models.Widget "Widget data"
 // @Failure      400 {object} helpers.ApiErr "Bad request"
 // @Failure      404 {object} helpers.ApiErr "Not found"
 // @Failure      500 {object} helpers.ApiErr "Internal server error"

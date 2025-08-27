@@ -45,12 +45,12 @@ type UpdateUserRequest struct {
 
 type UpdateUserRequestDoc struct {
 	Id       string `json:"id" validate:"required,uuid"`
-	Nickname string `json:"nickname" validate:"required,min=1,max=80"`
-	Avatar   string `json:"avatar" validate:"required" format:"binary"`
+	Nickname string `json:"nickname" validate:"omitempty,min=1,max=80"`
+	Avatar   string `json:"avatar" validate:"omitempty" format:"binary"`
 }
 
 type DeleteUserRequest struct {
-	Password string `json:"password" validate:"required"`
+	Password string `json:"password" validate:"required, min=12"`
 }
 
 type ChangePasswordRequest struct {
@@ -66,7 +66,7 @@ type CreateTemplateRequest struct {
 	Text        []string              `json:"text" validate:"omitempty"`
 	Links       []string              `json:"links" validate:"omitempty,dive,url"`
 	Widgets     []map[string]string   `json:"widgets" validate:"omitempty,dive,dive,keys,uuid,endkeys,required,min=1"`
-	IsPublic    bool                  `json:"is_public" validate:"omitempty"`
+	IsPublic    bool                  `json:"is_public" validate:"omitempty,oneof=false"`
 }
 
 type CreateTemplateRequestDoc struct {

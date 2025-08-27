@@ -204,7 +204,7 @@ func (th *TemplateHandl) DeleteTemplate(c *fiber.Ctx) error {
 // @Produce      json
 // @Security     ApiKeyAuth
 // @Param        template path string true "Template ID"
-// @Success      200 {object} dto.TemplateResponse "Template data"
+// @Success      200 {object} models.Template "Template data"
 // @Failure      400 {object} helpers.ApiErr "Bad request"
 // @Failure      404 {object} helpers.ApiErr "Not found"
 // @Failure      500 {object} helpers.ApiErr "Internal server error"

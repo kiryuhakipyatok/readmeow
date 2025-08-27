@@ -32,7 +32,7 @@ func NewUserHandl(us services.UserServ, as services.AuthServ, v *validator.Valid
 // @Produce      json
 // @Security     ApiKeyAuth
 // @Param        user path string true "User ID"
-// @Success      200 {object} dto.UserResponse "User data"
+// @Success      200 {object} models.User "User data"
 // @Failure      400 {object} helpers.ApiErr "Bad request"
 // @Failure      404 {object} helpers.ApiErr "Not found"
 // @Failure      500 {object} helpers.ApiErr "Internal server error"
