@@ -55,7 +55,7 @@ func (wh *WidgetHandl) GetWidgetById(c *fiber.Ctx) error {
 // @Accept       json
 // @Produce      json
 // @Security     ApiKeyAuth
-// @Param        body body dto.SearchWidgetRequest true "Search widgets request"
+// @Param        body body dto.SearchWidgetRequestDoc true "Search widgets request"
 // @Success      200 {array} dto.WidgetResponse "List of widgets"
 // @Failure      400 {object} helpers.ApiErr "Bad request"
 // @Failure      404 {object} helpers.ApiErr "Not found"

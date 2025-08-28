@@ -26,12 +26,13 @@ type TemplateRepo interface {
 	Create(ctx context.Context, template *models.Template) error
 	Update(ctx context.Context, updates map[string]any, id string) error
 	Delete(ctx context.Context, id string) error
-	Get(ctx context.Context, id string) (*models.Template, error)
+	Get(ctx context.Context, id string) (*models.TemplateWithOwner, error)
 	GetImage(ctx context.Context, id string) (string, error)
+	FetchByUser(ctx context.Context, id string) ([]models.Template, error)
 	Like(ctx context.Context, id, uid string) error
 	Dislike(ctx context.Context, id, uid string) error
-	FetchFavorite(ctx context.Context, id string, amount, page uint) ([]models.Template, error)
-	Search(ctx context.Context, amount, page uint, query string, filter map[string]bool, sort map[string]string) ([]models.Template, error)
+	FetchFavorite(ctx context.Context, id string, amount, page uint) ([]models.TemplateWithOwner, error)
+	Search(ctx context.Context, amount, page uint, query string, filter map[string]bool, sort map[string]string) ([]models.TemplateWithOwner, error)
 	MustBulk(ctx context.Context, cfg config.SearchConfig) error
 }
 
@@ -109,6 +110,40 @@ func (tr *templateRepo) Update(ctx context.Context, updates map[string]any, id s
 	return nil
 }
 
+func (tr *templateRepo) FetchByUser(ctx context.Context, id string) ([]models.Template, error) {
+	op := "templateRepo.FetchByUser"
+	query := "SELECT * FROM templates WHERE owner_id = $1 AND is_public = TRUE ORDER BY num_of_users DESC"
+	templates := []models.Template{}
+	rows, err := tr.Storage.Pool.Query(ctx, query, id)
+	if err != nil {
+		return nil, errs.NewAppError(op, err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		template := models.Template{}
+		if err := rows.Scan(
+			&template.Id,
+			&template.OwnerId,
+			&template.Title,
+			&template.Image,
+			&template.Description,
+			&template.Text,
+			&template.Links,
+			&template.Widgets,
+			&template.Likes,
+			&template.RenderOrder,
+			&template.CreateTime,
+			&template.LastUpdateTime,
+			&template.NumOfUsers,
+			&template.IsPublic,
+		); err != nil {
+			return nil, errs.NewAppError(op, err)
+		}
+		templates = append(templates, template)
+	}
+	return templates, nil
+}
+
 func (tr *templateRepo) GetImage(ctx context.Context, id string) (string, error) {
 	op := "templateRepo.GetImage"
 	query := "SELECT image FROM templates WHERE id = $1"
@@ -156,9 +191,9 @@ func (tr *templateRepo) Delete(ctx context.Context, id string) error {
 	return nil
 }
 
-func (tr *templateRepo) Get(ctx context.Context, id string) (*models.Template, error) {
+func (tr *templateRepo) Get(ctx context.Context, id string) (*models.TemplateWithOwner, error) {
 	op := "templateRepo.Get"
-	template := &models.Template{}
+	template := &models.TemplateWithOwner{}
 	cachedTemplate, err := tr.Cache.Redis.Get(ctx, id).Result()
 	if err == nil {
 		if err := json.Unmarshal([]byte(cachedTemplate), template); err != nil {
@@ -170,7 +205,7 @@ func (tr *templateRepo) Get(ctx context.Context, id string) (*models.Template, e
 		return template, nil
 	}
 	if err == cache.EMPTY {
-		query := "SELECT * FROM templates WHERE id = $1"
+		query := "SELECT t.*,u.nickname AS owner_nickname, u.avatar AS owner_avatar FROM templates t JOIN user u ON t.owner_id = u.id WHERE t.id = $1"
 		qd := helpers.NewQueryData(ctx, tr.Storage, op, query, id)
 		if err := qd.QueryRowWithTx(template); err != nil {
 			return nil, err
@@ -192,17 +227,17 @@ func (tr *templateRepo) Get(ctx context.Context, id string) (*models.Template, e
 	return template, nil
 }
 
-func (tr *templateRepo) FetchFavorite(ctx context.Context, id string, amount, page uint) ([]models.Template, error) {
+func (tr *templateRepo) FetchFavorite(ctx context.Context, id string, amount, page uint) ([]models.TemplateWithOwner, error) {
 	op := "templateRepo.FetchFavorite"
-	query := "SELECT t.* FROM templates t JOIN favorite_templates ft ON t.id=ft.template_id WHERE ft.user_id=$1 ORDER BY t.num_of_users DESC OFFSET $2 LIMIT $3"
-	templates := []models.Template{}
+	query := "SELECT t.*,u.nickname as owner_nickname, u.avatar as owner_avatar FROM templates t JOIN favorite_templates ft ON t.id=ft.template_id JOIN users u ON t.owner_id=u.id WHERE ft.user_id=$1 ORDER BY t.num_of_users DESC OFFSET $2 LIMIT $3"
+	templates := []models.TemplateWithOwner{}
 	rows, err := tr.Storage.Pool.Query(ctx, query, id, amount*page-amount, amount)
 	if err != nil {
 		return nil, errs.NewAppError(op, err)
 	}
 	defer rows.Close()
 	for rows.Next() {
-		template := models.Template{}
+		template := models.TemplateWithOwner{}
 		if err := rows.Scan(
 			&template.Id,
 			&template.OwnerId,
@@ -217,6 +252,9 @@ func (tr *templateRepo) FetchFavorite(ctx context.Context, id string, amount, pa
 			&template.CreateTime,
 			&template.LastUpdateTime,
 			&template.NumOfUsers,
+			&template.IsPublic,
+			&template.OwnerNickname,
+			&template.OwnerAvatar,
 		); err != nil {
 			return nil, errs.NewAppError(op, err)
 		}
@@ -225,7 +263,7 @@ func (tr *templateRepo) FetchFavorite(ctx context.Context, id string, amount, pa
 	return templates, nil
 }
 
-func (tr *templateRepo) Search(ctx context.Context, amount, page uint, query string, filter map[string]bool, sort map[string]string) ([]models.Template, error) {
+func (tr *templateRepo) Search(ctx context.Context, amount, page uint, query string, filter map[string]bool, sort map[string]string) ([]models.TemplateWithOwner, error) {
 	op := "templateRepo.Search"
 	var mainQuery types.Query
 	if query != "" {
@@ -344,18 +382,18 @@ func (tr *templateRepo) Search(ctx context.Context, amount, page uint, query str
 	return templates, nil
 }
 
-func (tr *templateRepo) getByIds(ctx context.Context, ids []string) ([]models.Template, error) {
+func (tr *templateRepo) getByIds(ctx context.Context, ids []string) ([]models.TemplateWithOwner, error) {
 	op := "templateRepo.SearchPreparing.GetByIds"
-	query := "SELECT * FROM templates WHERE id = ANY($1)"
-	templates := make([]models.Template, 0, len(ids))
+	query := "SELECT t.*,u.nickname as owner_nickname, u.owner_avatar as owner_avatar FROM templates t JOIN users u ON t.owner_id=u.id  WHERE t.id = ANY($1)"
+	templates := make([]models.TemplateWithOwner, 0, len(ids))
 	rows, err := tr.Storage.Pool.Query(ctx, query, ids)
 	if err != nil {
 		return nil, errs.NewAppError(op, err)
 	}
 	defer rows.Close()
-	byId := map[string]models.Template{}
+	byId := map[string]models.TemplateWithOwner{}
 	for rows.Next() {
-		template := models.Template{}
+		template := models.TemplateWithOwner{}
 		if err := rows.Scan(
 			&template.Id,
 			&template.OwnerId,
@@ -370,6 +408,9 @@ func (tr *templateRepo) getByIds(ctx context.Context, ids []string) ([]models.Te
 			&template.CreateTime,
 			&template.LastUpdateTime,
 			&template.NumOfUsers,
+			&template.IsPublic,
+			&template.OwnerNickname,
+			&template.OwnerAvatar,
 		); err != nil {
 			return nil, errs.NewAppError(op, err)
 		}

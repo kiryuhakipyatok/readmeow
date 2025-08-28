@@ -15,6 +15,7 @@ definitions:
   dto.DeleteUserRequest:
     properties:
       password:
+        minLength: 12
         type: string
     required:
     - password
@@ -67,7 +68,7 @@ definitions:
   dto.RegisterRequest:
     properties:
       code:
-        minLength: 1
+        minLength: 6
         type: string
       email:
         type: string
@@ -75,48 +76,38 @@ definitions:
     - code
     - email
     type: object
-  dto.SearchTemplateRequest:
+  dto.SearchTemplateRequestDoc:
     properties:
       amount:
         minimum: 1
         type: integer
       filter:
-        additionalProperties:
-          type: boolean
-        type: object
+        $ref: '#/definitions/dto.filterTemplatesFields'
       page:
         minimum: 1
         type: integer
       query:
         type: string
       sort:
-        additionalProperties:
-          type: string
-        type: object
+        $ref: '#/definitions/dto.sortTemplatesFields'
     required:
     - amount
     - page
     type: object
-  dto.SearchWidgetRequest:
+  dto.SearchWidgetRequestDoc:
     properties:
       amount:
         minimum: 1
         type: integer
       filter:
-        additionalProperties:
-          items:
-            type: string
-          type: array
-        type: object
+        $ref: '#/definitions/dto.filterWidgetsFields'
       page:
         minimum: 1
         type: integer
       query:
         type: string
       sort:
-        additionalProperties:
-          type: string
-        type: object
+        $ref: '#/definitions/dto.sortWidgetsFields'
     required:
     - amount
     - page
@@ -131,14 +122,46 @@ definitions:
   dto.SuccessResponse:
     properties:
       code:
-        example: "200"
-        type: string
+        example: 200
+        type: integer
       message:
         example: success
         type: string
     type: object
+  dto.TemplateInfo:
+    properties:
+      description:
+        minLength: 1
+        type: string
+      id:
+        type: string
+      image:
+        type: string
+      last_update_time:
+        type: string
+      likes:
+        minimum: 0
+        type: integer
+      num_of_users:
+        minimum: 0
+        type: integer
+      title:
+        minLength: 1
+        type: string
+    required:
+    - description
+    - id
+    - image
+    - last_update_time
+    - likes
+    - num_of_users
+    - title
+    type: object
   dto.TemplateResponse:
     properties:
+      description:
+        minLength: 1
+        type: string
       id:
         type: string
       image:
@@ -158,8 +181,10 @@ definitions:
       owner_nickname:
         type: string
       title:
+        minLength: 1
         type: string
     required:
+    - description
     - id
     - image
     - last_update_time
@@ -174,6 +199,8 @@ definitions:
     properties:
       avatar:
         type: string
+      email:
+        type: string
       id:
         type: string
       nickname:
@@ -185,14 +212,21 @@ definitions:
       num_of_templates:
         minimum: 0
         type: integer
+      templates:
+        items:
+          $ref: '#/definitions/dto.TemplateInfo'
+        minItems: 0
+        type: array
       time_of_register:
         type: string
     required:
     - avatar
+    - email
     - id
     - nickname
     - num_of_readmes
     - num_of_templates
+    - templates
     - time_of_register
     type: object
   dto.VerifyRequest:
@@ -240,11 +274,146 @@ definitions:
     - num_of_users
     - title
     type: object
+  dto.filterTemplatesFields:
+    properties:
+      isOfficial:
+        type: boolean
+    type: object
+  dto.filterWidgetsFields:
+    properties:
+      Tags:
+        items:
+          type: string
+        type: array
+      Types:
+        items:
+          type: string
+        type: array
+    type: object
+  dto.sortTemplatesFields:
+    properties:
+      LastUpdateTime:
+        example: desc/asc
+        type: string
+      Likes:
+        example: desc/asc
+        type: string
+      NumOfUsers:
+        example: desc/asc
+        type: string
+    type: object
+  dto.sortWidgetsFields:
+    properties:
+      Likes:
+        example: desc/asc
+        type: string
+      NumOfUsers:
+        example: desc/asc
+        type: string
+    type: object
   helpers.ApiErr:
     properties:
       code:
         type: integer
       message: {}
+    type: object
+  models.Readme:
+    properties:
+      create_time:
+        type: string
+      id:
+        type: string
+      image:
+        type: string
+      last_update_time:
+        type: string
+      links:
+        items:
+          type: string
+        type: array
+      owner_id:
+        type: string
+      render_order:
+        items:
+          type: string
+        type: array
+      template_id:
+        type: string
+      text:
+        items:
+          type: string
+        type: array
+      title:
+        type: string
+      widgets:
+        items:
+          additionalProperties:
+            type: string
+          type: object
+        type: array
+    type: object
+  models.Template:
+    properties:
+      create_time:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      image:
+        type: string
+      is_public:
+        type: boolean
+      last_update_time:
+        type: string
+      likes:
+        type: integer
+      links:
+        items:
+          type: string
+        type: array
+      num_of_users:
+        type: integer
+      owner_id:
+        type: string
+      render_order:
+        items:
+          type: string
+        type: array
+      text:
+        items:
+          type: string
+        type: array
+      title:
+        type: string
+      widgets:
+        items:
+          additionalProperties:
+            type: string
+          type: object
+        type: array
+    type: object
+  models.Widget:
+    properties:
+      description:
+        type: string
+      id:
+        type: string
+      image:
+        type: string
+      likes:
+        type: integer
+      link:
+        type: string
+      num_of_users:
+        type: integer
+      tags:
+        additionalProperties: {}
+        type: object
+      title:
+        type: string
+      type:
+        type: string
     type: object
 host: localhost:3333
 info:
@@ -613,7 +782,7 @@ paths:
         "200":
           description: Success response
           schema:
-            $ref: '#/definitions/dto.ReadmeResponse'
+            $ref: '#/definitions/models.Readme'
         "400":
           description: Bad request
           schema:
@@ -710,7 +879,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/dto.SearchTemplateRequest'
+          $ref: '#/definitions/dto.SearchTemplateRequestDoc'
       produces:
       - application/json
       responses:
@@ -758,6 +927,9 @@ paths:
         name: image
         required: true
         type: string
+      - in: formData
+        name: is_public
+        type: boolean
       - collectionFormat: csv
         in: formData
         items:
@@ -822,6 +994,9 @@ paths:
         name: image
         required: true
         type: string
+      - in: formData
+        name: is_public
+        type: boolean
       - collectionFormat: csv
         in: formData
         items:
@@ -927,7 +1102,7 @@ paths:
         "200":
           description: Template data
           schema:
-            $ref: '#/definitions/dto.TemplateResponse'
+            $ref: '#/definitions/models.Template'
         "400":
           description: Bad request
           schema:
@@ -1113,7 +1288,6 @@ paths:
       - format: binary
         in: formData
         name: avatar
-        required: true
         type: string
       - in: formData
         name: id
@@ -1123,7 +1297,6 @@ paths:
         maxLength: 80
         minLength: 1
         name: nickname
-        required: true
         type: string
       produces:
       - application/json
@@ -1241,7 +1414,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/dto.SearchWidgetRequest'
+          $ref: '#/definitions/dto.SearchWidgetRequestDoc'
       produces:
       - application/json
       responses:
@@ -1287,7 +1460,7 @@ paths:
         "200":
           description: Widget data
           schema:
-            $ref: '#/definitions/dto.WidgetResponse'
+            $ref: '#/definitions/models.Widget'
         "400":
           description: Bad request
           schema:

@@ -9,8 +9,6 @@ import (
 type Template struct {
 	Id             uuid.UUID           `json:"id"`
 	OwnerId        uuid.UUID           `json:"owner_id"`
-	OwnerAvatar    string              `json:"owner_avatar"`
-	OwnerNickname  string              `json:"owner_nickname"`
 	Title          string              `json:"title"`
 	Image          string              `json:"image"`
 	Description    string              `json:"description"`
@@ -23,4 +21,10 @@ type Template struct {
 	CreateTime     time.Time           `json:"create_time"`
 	LastUpdateTime time.Time           `json:"last_update_time"`
 	IsPublic       bool                `json:"is_public"`
+}
+
+type TemplateWithOwner struct {
+	Template
+	OwnerAvatar   string `json:"owner_avatar"`
+	OwnerNickname string `json:"owner_nickname"`
 }

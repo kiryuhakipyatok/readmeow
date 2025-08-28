@@ -79,7 +79,7 @@ func Run() {
 	readmeServ := services.NewReadmeServ(readmeRepo, userRepo, templateRepo, widgetRepo, transactor, cloudStorage, log)
 	widgetServ := services.NewWidgetServ(widgetRepo, userRepo, transactor, log)
 	templateServ := services.NewTemplateServ(templateRepo, readmeRepo, userRepo, widgetRepo, transactor, cloudStorage, log)
-	userServ := services.NewUserServ(userRepo, cloudStorage, transactor, log)
+	userServ := services.NewUserServ(userRepo, templateRepo, cloudStorage, transactor, log)
 
 	authHandl := handlers.NewAuthHandle(authServ, userServ, validator)
 	readmeHandl := handlers.NewReadmeHandl(readmeServ, authServ, validator)

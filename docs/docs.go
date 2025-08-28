@@ -525,7 +525,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Success response",
                         "schema": {
-                            "$ref": "#/definitions/dto.ReadmeResponse"
+                            "$ref": "#/definitions/models.Readme"
                         }
                     },
                     "400": {
@@ -726,7 +726,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.SearchTemplateRequest"
+                            "$ref": "#/definitions/dto.SearchTemplateRequestDoc"
                         }
                     }
                 ],
@@ -798,6 +798,11 @@ const docTemplate = `{
                         "name": "image",
                         "in": "formData",
                         "required": true
+                    },
+                    {
+                        "type": "boolean",
+                        "name": "is_public",
+                        "in": "formData"
                     },
                     {
                         "type": "array",
@@ -910,6 +915,11 @@ const docTemplate = `{
                         "name": "image",
                         "in": "formData",
                         "required": true
+                    },
+                    {
+                        "type": "boolean",
+                        "name": "is_public",
+                        "in": "formData"
                     },
                     {
                         "type": "array",
@@ -1191,7 +1201,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Template data",
                         "schema": {
-                            "$ref": "#/definitions/dto.TemplateResponse"
+                            "$ref": "#/definitions/models.Template"
                         }
                     },
                     "400": {
@@ -1349,8 +1359,7 @@ const docTemplate = `{
                         "type": "string",
                         "format": "binary",
                         "name": "avatar",
-                        "in": "formData",
-                        "required": true
+                        "in": "formData"
                     },
                     {
                         "type": "string",
@@ -1363,8 +1372,7 @@ const docTemplate = `{
                         "minLength": 1,
                         "type": "string",
                         "name": "nickname",
-                        "in": "formData",
-                        "required": true
+                        "in": "formData"
                     }
                 ],
                 "responses": {
@@ -1547,7 +1555,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.SearchWidgetRequest"
+                            "$ref": "#/definitions/dto.SearchWidgetRequestDoc"
                         }
                     }
                 ],
@@ -1803,7 +1811,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Widget data",
                         "schema": {
-                            "$ref": "#/definitions/dto.WidgetResponse"
+                            "$ref": "#/definitions/models.Widget"
                         }
                     },
                     "400": {
@@ -1853,7 +1861,8 @@ const docTemplate = `{
             ],
             "properties": {
                 "password": {
-                    "type": "string"
+                    "type": "string",
+                    "minLength": 12
                 }
             }
         },
@@ -1930,14 +1939,14 @@ const docTemplate = `{
             "properties": {
                 "code": {
                     "type": "string",
-                    "minLength": 1
+                    "minLength": 6
                 },
                 "email": {
                     "type": "string"
                 }
             }
         },
-        "dto.SearchTemplateRequest": {
+        "dto.SearchTemplateRequestDoc": {
             "type": "object",
             "required": [
                 "amount",
@@ -1949,10 +1958,7 @@ const docTemplate = `{
                     "minimum": 1
                 },
                 "filter": {
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "boolean"
-                    }
+                    "$ref": "#/definitions/dto.filterTemplatesFields"
                 },
                 "page": {
                     "type": "integer",
@@ -1962,14 +1968,11 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "sort": {
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "string"
-                    }
+                    "$ref": "#/definitions/dto.sortTemplatesFields"
                 }
             }
         },
-        "dto.SearchWidgetRequest": {
+        "dto.SearchWidgetRequestDoc": {
             "type": "object",
             "required": [
                 "amount",
@@ -1981,13 +1984,7 @@ const docTemplate = `{
                     "minimum": 1
                 },
                 "filter": {
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        }
-                    }
+                    "$ref": "#/definitions/dto.filterWidgetsFields"
                 },
                 "page": {
                     "type": "integer",
@@ -1997,10 +1994,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "sort": {
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "string"
-                    }
+                    "$ref": "#/definitions/dto.sortWidgetsFields"
                 }
             }
         },
@@ -2019,8 +2013,8 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "code": {
-                    "type": "string",
-                    "example": "200"
+                    "type": "integer",
+                    "example": 200
                 },
                 "message": {
                     "type": "string",
@@ -2028,9 +2022,49 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.TemplateInfo": {
+            "type": "object",
+            "required": [
+                "description",
+                "id",
+                "image",
+                "last_update_time",
+                "likes",
+                "num_of_users",
+                "title"
+            ],
+            "properties": {
+                "description": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "id": {
+                    "type": "string"
+                },
+                "image": {
+                    "type": "string"
+                },
+                "last_update_time": {
+                    "type": "string"
+                },
+                "likes": {
+                    "type": "integer",
+                    "minimum": 0
+                },
+                "num_of_users": {
+                    "type": "integer",
+                    "minimum": 0
+                },
+                "title": {
+                    "type": "string",
+                    "minLength": 1
+                }
+            }
+        },
         "dto.TemplateResponse": {
             "type": "object",
             "required": [
+                "description",
                 "id",
                 "image",
                 "last_update_time",
@@ -2042,6 +2076,10 @@ const docTemplate = `{
                 "title"
             ],
             "properties": {
+                "description": {
+                    "type": "string",
+                    "minLength": 1
+                },
                 "id": {
                     "type": "string"
                 },
@@ -2069,7 +2107,8 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "title": {
-                    "type": "string"
+                    "type": "string",
+                    "minLength": 1
                 }
             }
         },
@@ -2077,14 +2116,19 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "avatar",
+                "email",
                 "id",
                 "nickname",
                 "num_of_readmes",
                 "num_of_templates",
+                "templates",
                 "time_of_register"
             ],
             "properties": {
                 "avatar": {
+                    "type": "string"
+                },
+                "email": {
                     "type": "string"
                 },
                 "id": {
@@ -2101,6 +2145,13 @@ const docTemplate = `{
                 "num_of_templates": {
                     "type": "integer",
                     "minimum": 0
+                },
+                "templates": {
+                    "type": "array",
+                    "minItems": 0,
+                    "items": {
+                        "$ref": "#/definitions/dto.TemplateInfo"
+                    }
                 },
                 "time_of_register": {
                     "type": "string"
@@ -2168,6 +2219,61 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.filterTemplatesFields": {
+            "type": "object",
+            "properties": {
+                "isOfficial": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "dto.filterWidgetsFields": {
+            "type": "object",
+            "properties": {
+                "Tags": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "Types": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "dto.sortTemplatesFields": {
+            "type": "object",
+            "properties": {
+                "LastUpdateTime": {
+                    "type": "string",
+                    "example": "desc/asc"
+                },
+                "Likes": {
+                    "type": "string",
+                    "example": "desc/asc"
+                },
+                "NumOfUsers": {
+                    "type": "string",
+                    "example": "desc/asc"
+                }
+            }
+        },
+        "dto.sortWidgetsFields": {
+            "type": "object",
+            "properties": {
+                "Likes": {
+                    "type": "string",
+                    "example": "desc/asc"
+                },
+                "NumOfUsers": {
+                    "type": "string",
+                    "example": "desc/asc"
+                }
+            }
+        },
         "helpers.ApiErr": {
             "type": "object",
             "properties": {
@@ -2175,6 +2281,154 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "message": {}
+            }
+        },
+        "models.Readme": {
+            "type": "object",
+            "properties": {
+                "create_time": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "image": {
+                    "type": "string"
+                },
+                "last_update_time": {
+                    "type": "string"
+                },
+                "links": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "owner_id": {
+                    "type": "string"
+                },
+                "render_order": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "template_id": {
+                    "type": "string"
+                },
+                "text": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "title": {
+                    "type": "string"
+                },
+                "widgets": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "models.Template": {
+            "type": "object",
+            "properties": {
+                "create_time": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "image": {
+                    "type": "string"
+                },
+                "is_public": {
+                    "type": "boolean"
+                },
+                "last_update_time": {
+                    "type": "string"
+                },
+                "likes": {
+                    "type": "integer"
+                },
+                "links": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "num_of_users": {
+                    "type": "integer"
+                },
+                "owner_id": {
+                    "type": "string"
+                },
+                "render_order": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "text": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "title": {
+                    "type": "string"
+                },
+                "widgets": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "models.Widget": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "image": {
+                    "type": "string"
+                },
+                "likes": {
+                    "type": "integer"
+                },
+                "link": {
+                    "type": "string"
+                },
+                "num_of_users": {
+                    "type": "integer"
+                },
+                "tags": {
+                    "type": "object",
+                    "additionalProperties": {}
+                },
+                "title": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
             }
         }
     }

@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	"mime/multipart"
-	"readmeow/internal/domain/models"
 	"readmeow/internal/domain/repositories"
+	"readmeow/internal/dto"
 	"readmeow/pkg/cloudstorage"
 	"readmeow/pkg/errs"
 	"readmeow/pkg/logger"
@@ -16,7 +16,7 @@ import (
 )
 
 type UserServ interface {
-	Get(ctx context.Context, id string) (*models.User, error)
+	Get(ctx context.Context, id string) (*dto.UserResponse, error)
 	Update(ctx context.Context, updates map[string]any, id string) error
 	Delete(ctx context.Context, id, password string) error
 	ChangePassword(ctx context.Context, id string, oldPassword, newPasswrod string) error
@@ -24,14 +24,16 @@ type UserServ interface {
 
 type userServ struct {
 	UserRepo     repositories.UserRepo
+	TemplateRepo repositories.TemplateRepo
 	CloudStorage cloudstorage.CloudStorage
 	Transactor   storage.Transactor
 	Logger       *logger.Logger
 }
 
-func NewUserServ(ur repositories.UserRepo, cs cloudstorage.CloudStorage, t storage.Transactor, l *logger.Logger) UserServ {
+func NewUserServ(ur repositories.UserRepo, tr repositories.TemplateRepo, cs cloudstorage.CloudStorage, t storage.Transactor, l *logger.Logger) UserServ {
 	return &userServ{
 		UserRepo:     ur,
+		TemplateRepo: tr,
 		CloudStorage: cs,
 		Transactor:   t,
 		Logger:       l,
@@ -152,7 +154,7 @@ func (us *userServ) ChangePassword(ctx context.Context, id string, oldPassword, 
 	return nil
 }
 
-func (us *userServ) Get(ctx context.Context, id string) (*models.User, error) {
+func (us *userServ) Get(ctx context.Context, id string) (*dto.UserResponse, error) {
 	op := "userServ.Get"
 	log := us.Logger.AddOp(op)
 	log.Log.Info("receiving user")
@@ -161,6 +163,34 @@ func (us *userServ) Get(ctx context.Context, id string) (*models.User, error) {
 		log.Log.Error("failed to get user", logger.Err(err))
 		return nil, errs.NewAppError(op, err)
 	}
+	templates, err := us.TemplateRepo.FetchByUser(ctx, id)
+	if err != nil {
+		log.Log.Error("failed to fetch user templates", logger.Err(err))
+		return nil, errs.NewAppError(op, err)
+	}
+	templateInfo := make([]dto.TemplateInfo, 0, len(templates))
+	for _, t := range templates {
+		temlInf := dto.TemplateInfo{
+			Id:             t.Id.String(),
+			Title:          t.Title,
+			Description:    t.Description,
+			Image:          t.Image,
+			LastUpdateTime: t.LastUpdateTime,
+			NumOfUsers:     t.NumOfUsers,
+			Likes:          t.Likes,
+		}
+		templateInfo = append(templateInfo, temlInf)
+	}
+	userResp := &dto.UserResponse{
+		Id:             user.Id.String(),
+		Nickname:       user.Nickname,
+		Email:          user.Email,
+		Avatar:         user.Avatar,
+		NumOfReadmes:   user.NumOfReadmes,
+		NumOfTemplates: user.NumOfTemplates,
+		TimeOfRegister: user.TimeOfRegister,
+		Templates:      templateInfo,
+	}
 	log.Log.Info("user received successfully")
-	return user, nil
+	return userResp, nil
 }

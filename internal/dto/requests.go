@@ -1,6 +1,9 @@
 package dto
 
-import "mime/multipart"
+import (
+	"mime/multipart"
+	"time"
+)
 
 type VerifyRequest struct {
 	Nickname string `json:"nickname" validate:"required,min=1,max=80"`
@@ -24,6 +27,16 @@ type PaginationRequest struct {
 	Page   uint `json:"page" validate:"required,min=1"`
 }
 
+type sortWidgetsFields struct {
+	Likes      string `json:"Likes,omitempty" example:"desc/asc"`
+	NumOfUsers string `json:"NumOfUsers,omitempty" example:"desc/asc"`
+}
+
+type filterWidgetsFields struct {
+	Types []string `json:"Types,omitempty"`
+	Tags  []string `json:"Tags,omitempty"`
+}
+
 type SearchWidgetRequest struct {
 	PaginationRequest
 	Query  string              `json:"query" validate:"omitempty"`
@@ -31,11 +44,35 @@ type SearchWidgetRequest struct {
 	Filter map[string][]string `json:"filter" validate:"omitempty,dive,keys,oneof=Types Tags,endkeys"`
 }
 
+type SearchWidgetRequestDoc struct {
+	PaginationRequest
+	Query               string `json:"query" validate:"omitempty"`
+	sortWidgetsFields   `json:"sort" validate:"omitempty"`
+	filterWidgetsFields `json:"filter" validate:"omitempty"`
+}
+
+type sortTemplatesFields struct {
+	Likes          string     `json:"Likes,omitempty" example:"desc/asc"`
+	NumOfUsers     string     `json:"NumOfUsers,omitempty" example:"desc/asc"`
+	LastUpdateTime *time.Time `json:"LastUpdateTime,omitempty" example:"desc/asc"`
+}
+
+type filterTemplatesFields struct {
+	IsOfficial bool `json:"isOfficial,omitempty"`
+}
+
 type SearchTemplateRequest struct {
 	PaginationRequest
 	Query  string            `json:"query" validate:"omitempty"`
 	Sort   map[string]string `json:"sort" validate:"omitempty,dive,keys,oneof=Likes NumOfUsers LastUpdateTime,endkeys"`
 	Filter map[string]bool   `json:"filter" validate:"omitempty,dive,keys,oneof=isOfficial,endkeys"`
+}
+
+type SearchTemplateRequestDoc struct {
+	PaginationRequest
+	Query                 string `json:"query" validate:"omitempty"`
+	sortTemplatesFields   `json:"sort" validate:"omitempty"`
+	filterTemplatesFields `json:"filter" validate:"omitempty"`
 }
 
 type UpdateUserRequest struct {
@@ -50,7 +87,7 @@ type UpdateUserRequestDoc struct {
 }
 
 type DeleteUserRequest struct {
-	Password string `json:"password" validate:"required, min=12"`
+	Password string `json:"password" validate:"required,min=12"`
 }
 
 type ChangePasswordRequest struct {

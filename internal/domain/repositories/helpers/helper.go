@@ -142,6 +142,29 @@ func (qd QueryData) QueryRowWithTx(entity any) error {
 			return err
 		}
 		return nil
+	case *models.TemplateWithOwner:
+		templateWithOwnerData := []any{
+			&e.Id,
+			&e.OwnerId,
+			&e.Title,
+			&e.Image,
+			&e.Description,
+			&e.Text,
+			&e.Links,
+			&e.Widgets,
+			&e.Likes,
+			&e.RenderOrder,
+			&e.CreateTime,
+			&e.LastUpdateTime,
+			&e.NumOfUsers,
+			&e.IsPublic,
+			&e.OwnerNickname,
+			&e.OwnerAvatar,
+		}
+		if err := qd.queryRow(templateWithOwnerData...); err != nil {
+			return err
+		}
+		return nil
 	case *models.Widget:
 		widgetData := []any{
 			&e.Id,

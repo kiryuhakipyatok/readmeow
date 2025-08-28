@@ -229,7 +229,7 @@ func (th *TemplateHandl) GetTemplate(c *fiber.Ctx) error {
 // @Accept       json
 // @Produce      json
 // @Security     ApiKeyAuth
-// @Param        body body dto.SearchTemplateRequest true "Search templates request"
+// @Param        body body dto.SearchTemplateRequestDoc true "Search templates request"
 // @Success      200 {array} dto.TemplateResponse "List of templates"
 // @Failure      400 {object} helpers.ApiErr "Bad request"
 // @Failure      404 {object} helpers.ApiErr "Not found"

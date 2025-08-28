@@ -187,7 +187,7 @@ func (rh *ReadmeHandl) UpdateReadme(c *fiber.Ctx) error {
 // @Produce      json
 // @Security     ApiKeyAuth
 // @Param        readme path string true "Readme ID"
-// @Success      200 {object} dto.ReadmeResponse "Success response"
+// @Success      200 {object} models.Readme "Success response"
 // @Failure      400 {object} helpers.ApiErr "Bad request"
 // @Failure      404 {object} helpers.ApiErr "Not found"
 // @Failure      500 {object} helpers.ApiErr "Internal server error"
