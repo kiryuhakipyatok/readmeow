@@ -109,6 +109,9 @@ func (ur *userRepo) ExistanceCheck(ctx context.Context, login, email, nickname s
 	var res int
 	qd := helpers.NewQueryData(ctx, ur.Storage, op, query, login, email, nickname)
 	if err := qd.QueryRowWithTx(&res); err != nil {
+		if errors.Is(err, errs.ErrNotFoundBase) {
+			return false, nil
+		}
 		return false, err
 	}
 	return true, nil
