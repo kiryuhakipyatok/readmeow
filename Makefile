@@ -16,7 +16,7 @@ docker-run-infra:
 	@docker-compose up postgres redis es --build
 
 docker-run-app:
-	@docker-compose up app --build
+	@docker-compose up readmeow --build
 
 docker-down:
 	@docker-compose down

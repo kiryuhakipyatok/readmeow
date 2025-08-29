@@ -48,11 +48,13 @@ func (th *TemplateHandl) CreateTemplate(c *fiber.Ctx) error {
 	if err != nil {
 		return helpers.ToApiError(err)
 	}
-	req.IsPublic = true
 	isPublicStr := c.FormValue("is_public")
-	if isPublicStr == "false" {
-		req.IsPublic = false
+
+	b, err := strconv.ParseBool(isPublicStr)
+	if err != nil {
+		return helpers.InvalidRequest()
 	}
+	req.IsPublic = b
 
 	req.Title = c.FormValue("title")
 	req.Description = c.FormValue("description")

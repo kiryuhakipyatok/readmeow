@@ -1,6 +1,6 @@
 services:
   readmeow:
-  #  build: ./
+    build: ./
     image: kiryuhakipyatok/readmeow:latest
     env_file:
       - .env
@@ -72,7 +72,7 @@ services:
     stop_grace_period: 5s
 
   migrate:
-  #  build: ./
+    build: ./
     image: kiryuhakipyatok/migrate:latest
     env_file:
       - .env

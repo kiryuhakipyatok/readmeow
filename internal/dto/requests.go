@@ -103,7 +103,7 @@ type CreateTemplateRequest struct {
 	Text        []string              `json:"text" validate:"omitempty"`
 	Links       []string              `json:"links" validate:"omitempty,dive,url"`
 	Widgets     []map[string]string   `json:"widgets" validate:"omitempty,dive,dive,keys,uuid,endkeys,required,min=1"`
-	IsPublic    bool                  `json:"is_public" validate:"omitempty,oneof=false"`
+	IsPublic    bool                  `json:"is_public" validate:"required"`
 }
 
 type CreateTemplateRequestDoc struct {
@@ -114,7 +114,7 @@ type CreateTemplateRequestDoc struct {
 	Text        []string            `json:"text" validate:"omitempty"`
 	Links       []string            `json:"links" validate:"omitempty,dive,url"`
 	Widgets     []map[string]string `json:"widgets" validate:"omitempty,dive,dive,keys,uuid,endkeys,required,min=1"`
-	IsPublic    bool                `json:"is_public" validate:"omitempty"`
+	IsPublic    bool                `json:"is_public" validate:"required"`
 }
 
 type UpdateTemplateRequest struct {
