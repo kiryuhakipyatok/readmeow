@@ -207,7 +207,7 @@ func (as *authServ) SendVerifyCode(ctx context.Context, email, login, nickname, 
 			return nil, err
 		}
 		if exist {
-			return nil, errs.ErrAlreadyExists(op, err)
+			return nil, errs.ErrAlreadyExists(op, nil)
 		}
 		r := rand.New(rand.NewSource(time.Now().UnixNano()))
 		code := fmt.Sprintf("%06d", r.Intn(1000000))

@@ -106,20 +106,10 @@ func (ur *userRepo) GetByLogin(ctx context.Context, login string) (*models.User,
 func (ur *userRepo) ExistanceCheck(ctx context.Context, login, email, nickname string) (bool, error) {
 	op := "userRepo.ExistanceCheck"
 	query := "SELECT 1 FROM users WHERE login = $1 OR email = $2 OR nickname = $3"
-	if tx, ok := storage.GetTx(ctx); ok {
-		if err := tx.QueryRow(ctx, query, login, email, nickname).Scan(); err != nil {
-			if errors.Is(err, storage.ErrNotFound()) {
-				return false, nil
-			}
-			return false, errs.NewAppError(op, err)
-		}
-		return true, nil
-	}
-	if err := ur.Storage.Pool.QueryRow(ctx, query, login, email, nickname).Scan(); err != nil {
-		if errors.Is(err, storage.ErrNotFound()) {
-			return false, nil
-		}
-		return false, errs.NewAppError(op, err)
+	var res int
+	qd := helpers.NewQueryData(ctx, ur.Storage, op, query, login, email, nickname)
+	if err := qd.QueryRowWithTx(&res); err != nil {
+		return false, err
 	}
 	return true, nil
 }

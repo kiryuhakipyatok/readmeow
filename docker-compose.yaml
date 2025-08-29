@@ -1,6 +1,5 @@
 services:
   app:
-    build: ./
     image: kiryuhakipyatok/app:db60a9307a5fa70fa20df8c87fff701edd523a79
     env_file:
       - .env
@@ -72,7 +71,6 @@ services:
     stop_grace_period: 5s
 
   migrate:
-    build: .
     image: kiryuhakipyatok/app:db60a9307a5fa70fa20df8c87fff701edd523a79
     env_file:
       - .env
