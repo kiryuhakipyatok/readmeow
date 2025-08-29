@@ -16,8 +16,10 @@ type User struct {
 }
 
 type Credentials struct {
-	Nickname string `json:"nickname"`
-	Login    string `json:"login"`
-	Email    string `json:"email"`
-	Password []byte `json:"-"`
+	Nickname   string  `json:"nickname"`
+	Login      *string `json:"login"`
+	Email      string  `json:"email"`
+	Password   []byte  `json:"-"`
+	Provider   string  `json:"provider"`
+	ProviderId *string `json:"provider_id"`
 }

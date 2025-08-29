@@ -63,3 +63,8 @@ sheduler:
 cloudstorage:
   cloudURL: "${CLOUDINARY_URL}"
   timeout: 30s
+
+oauth:
+  clientId: "${OAUTH_CLIENT_ID}"
+  clientSecret: "${OAUTH_CLIENT_SECRET}"
+  redirectGoogleURL: "http://localhost:3333/api/auth/oauth/google/callback"

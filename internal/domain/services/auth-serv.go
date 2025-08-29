@@ -11,6 +11,7 @@ import (
 	"readmeow/internal/config"
 	"readmeow/internal/domain/models"
 	"readmeow/internal/domain/repositories"
+	"readmeow/internal/domain/services/helpers"
 	em "readmeow/internal/email"
 	"readmeow/pkg/cloudstorage"
 	"readmeow/pkg/errs"
@@ -84,10 +85,12 @@ func (as *authServ) Register(ctx context.Context, email, code string) error {
 		user := models.User{
 			Id: id,
 			Credentials: models.Credentials{
-				Nickname: credentials.Nickname,
-				Login:    credentials.Login,
-				Email:    credentials.Email,
-				Password: credentials.Password,
+				Nickname:   credentials.Nickname,
+				Login:      credentials.Login,
+				Email:      credentials.Email,
+				Password:   credentials.Password,
+				Provider:   "local",
+				ProviderId: nil,
 			},
 			Avatar:         url,
 			TimeOfRegister: now,
@@ -137,31 +140,17 @@ func (as *authServ) Login(ctx context.Context, login, password string) (*loginRe
 		log.Log.Info("invalid credentials", logger.Err(err))
 		return nil, errs.NewAppError(op, err)
 	}
-	now := time.Now()
-	t := now.Add(as.AuthConfig.TokenTTL)
-	ttl := jwt.NewNumericDate(t)
-	iat := jwt.NewNumericDate(now)
-	jti := uuid.New().String()
-	claims := jwt.RegisteredClaims{
-		Subject:   user.Id.String(),
-		ExpiresAt: ttl,
-		IssuedAt:  iat,
-		ID:        jti,
-		Issuer:    "readmeow",
-		Audience:  []string{"readmeow-users"},
-	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	jwtToken, err := token.SignedString([]byte(as.AuthConfig.Secret))
+	jwtToken, ttl, err := helpers.GenetateJWT(as.AuthConfig.TokenTTL, user.Id.String(), as.AuthConfig.Secret)
 	if err != nil {
-		log.Log.Error("failed to sign token", logger.Err(err))
+		log.Log.Error("failed to generate jwt token", logger.Err(err))
 		return nil, errs.NewAppError(op, err)
 	}
 	loginResponce := &loginResponce{
 		Id:       user.Id,
-		Nickname: user.Login,
+		Nickname: *user.Login,
 		Avatar:   user.Avatar,
 		JWT:      jwtToken,
-		TTL:      t,
+		TTL:      *ttl,
 	}
 
 	log.Log.Info("token generated successfully")
@@ -264,5 +253,31 @@ func (as *authServ) SendNewCode(ctx context.Context, email string) error {
 	}
 
 	log.Log.Info("new code sended successfully")
+	return nil
+}
+
+func (as *authServ) GoogleAuth(ctx context.Context, nickname, avatar, email, pid string) error {
+	op := "authServ.GoogleAuth"
+	log := as.Logger.AddOp(op)
+	log.Log.Info("google loggining")
+	user := &models.User{
+		Id: uuid.New(),
+		Credentials: models.Credentials{
+			Nickname:   nickname,
+			Login:      nil,
+			Email:      email,
+			Password:   nil,
+			Provider:   "google",
+			ProviderId: &pid,
+		},
+		Avatar:         avatar,
+		TimeOfRegister: time.Now(),
+		NumOfTemplates: 0,
+		NumOfReadmes:   0,
+	}
+	if err := as.UserRepo.Create(ctx, user); err != nil {
+		log.Log.Error("failed create user", logger.Err(err))
+		return errs.NewAppError(op, err)
+	}
 	return nil
 }

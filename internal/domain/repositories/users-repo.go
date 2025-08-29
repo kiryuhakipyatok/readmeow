@@ -37,8 +37,8 @@ func NewUserRepo(s *storage.Storage) UserRepo {
 
 func (ur *userRepo) Create(ctx context.Context, user *models.User) error {
 	op := "userRepo.Create"
-	query := "INSERT INTO users (id, nickname, login, email, avatar, password, time_of_register, num_of_templates, num_of_readmes) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9)"
-	qd := helpers.NewQueryData(ctx, ur.Storage, op, query, user.Id, user.Nickname, user.Login, user.Email, user.Avatar, user.Password, user.TimeOfRegister, user.NumOfTemplates, user.NumOfReadmes)
+	query := "INSERT INTO users (id, nickname, login, email, avatar, password, time_of_register, num_of_templates, num_of_readmes, provider, provider_id) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10,$11)"
+	qd := helpers.NewQueryData(ctx, ur.Storage, op, query, user.Id, user.Nickname, user.Login, user.Email, user.Avatar, user.Password, user.TimeOfRegister, user.NumOfTemplates, user.NumOfReadmes, user.Provider, user.ProviderId)
 	if err := qd.InsertWithTx(); err != nil {
 		return err
 	}
@@ -107,9 +107,20 @@ func (ur *userRepo) ExistanceCheck(ctx context.Context, login, email, nickname s
 	op := "userRepo.ExistanceCheck"
 	query := "SELECT 1 FROM users WHERE login = $1 OR email = $2 OR nickname = $3"
 	var res int
-	qd := helpers.NewQueryData(ctx, ur.Storage, op, query, login, email, nickname)
-	if err := qd.QueryRowWithTx(&res); err != nil {
-		return false, err
+	if tx, ok := storage.GetTx(ctx); ok {
+		if err := tx.QueryRow(ctx, query, login, email, nickname).Scan(&res); err != nil {
+			if errors.Is(err, storage.ErrNotFound()) {
+				return false, nil
+			}
+			return false, errs.NewAppError(op, err)
+		}
+		return true, nil
+	}
+	if err := ur.Storage.Pool.QueryRow(ctx, query, login, email, nickname).Scan(&res); err != nil {
+		if errors.Is(err, storage.ErrNotFound()) {
+			return false, nil
+		}
+		return false, errs.NewAppError(op, err)
 	}
 	return true, nil
 }

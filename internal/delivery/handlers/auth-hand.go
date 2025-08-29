@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"encoding/json"
+	"fmt"
 	"readmeow/internal/delivery/handlers/helpers"
 	"readmeow/internal/domain/services"
 	"readmeow/internal/dto"
@@ -8,18 +10,21 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"golang.org/x/oauth2"
 )
 
 type AuthHandl struct {
 	AuthServ  services.AuthServ
 	UserServ  services.UserServ
+	OathConf  *oauth2.Config
 	Validator *validator.Validator
 }
 
-func NewAuthHandle(as services.AuthServ, us services.UserServ, v *validator.Validator) *AuthHandl {
+func NewAuthHandle(as services.AuthServ, us services.UserServ, oc *oauth2.Config, v *validator.Validator) *AuthHandl {
 	return &AuthHandl{
 		AuthServ:  as,
 		UserServ:  us,
+		OathConf:  oc,
 		Validator: v,
 	}
 }
@@ -197,5 +202,28 @@ func (ah *AuthHandl) SendNewCode(c *fiber.Ctx) error {
 	if err := ah.AuthServ.SendNewCode(ctx, req.Email); err != nil {
 		return helpers.ToApiError(err)
 	}
+	return helpers.SuccessResponse(c)
+}
+
+func (ah *AuthHandl) GoogleOAuth(c *fiber.Ctx) error {
+	url := ah.OathConf.AuthCodeURL("state", oauth2.AccessTypeOnline)
+	return c.Redirect(url, fiber.StatusTemporaryRedirect)
+}
+
+func (ah *AuthHandl) GoogleOathCallback(c *fiber.Ctx) error {
+	ctx := c.UserContext()
+	code := c.Query("code")
+	token, err := ah.OathConf.Exchange(ctx, code)
+	if err != nil {
+		return helpers.ToApiError(err)
+	}
+	client := ah.OathConf.Client(ctx, token)
+	resp, err := client.Get("https://www.googleapis.com/oauth2/v2/userinfo")
+	oauthReq := dto.OAuthRequest{}
+	if err := json.NewDecoder(resp.Body).Decode(&oauthReq); err != nil {
+		return helpers.ToApiError(err)
+	}
+
+	fmt.Println(oauthReq)
 	return helpers.SuccessResponse(c)
 }

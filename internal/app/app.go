@@ -23,6 +23,8 @@ import (
 	"time"
 
 	"github.com/joho/godotenv"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
 )
 
 func Run() {
@@ -75,13 +77,21 @@ func Run() {
 	transactor := stor.NewTransactor(storage)
 	emailSendler := email.NewEmailSender(smtpAuth, cfg.Email)
 
+	oauthConf := &oauth2.Config{
+		ClientID:     cfg.OAuth.ClientId,
+		ClientSecret: cfg.OAuth.ClientSercet,
+		Scopes:       []string{"email", "profile"},
+		RedirectURL:  cfg.OAuth.RedirectURL,
+		Endpoint:     google.Endpoint,
+	}
+
 	authServ := services.NewAuthServ(userRepo, verificationRepo, cloudStorage, transactor, emailSendler, log, cfg.Auth)
 	readmeServ := services.NewReadmeServ(readmeRepo, userRepo, templateRepo, widgetRepo, transactor, cloudStorage, log)
 	widgetServ := services.NewWidgetServ(widgetRepo, userRepo, transactor, log)
 	templateServ := services.NewTemplateServ(templateRepo, readmeRepo, userRepo, widgetRepo, transactor, cloudStorage, log)
 	userServ := services.NewUserServ(userRepo, templateRepo, cloudStorage, transactor, log)
 
-	authHandl := handlers.NewAuthHandle(authServ, userServ, validator)
+	authHandl := handlers.NewAuthHandle(authServ, userServ, oauthConf, validator)
 	readmeHandl := handlers.NewReadmeHandl(readmeServ, authServ, validator)
 	widgetHandl := handlers.NewWidgetHandl(widgetServ, authServ, validator)
 	templateHandl := handlers.NewTemplateHandl(templateServ, authServ, validator)
