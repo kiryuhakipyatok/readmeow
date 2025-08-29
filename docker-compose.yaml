@@ -1,7 +1,7 @@
 services:
   readmeow:
-    build: ./
-    image: kiryuhakipyatok/app:${COMMIT_SHA}
+  #  build: ./
+    image: kiryuhakipyatok/readmeow:latest
     env_file:
       - .env
     ports:
@@ -20,7 +20,7 @@ services:
   postgres:
     image: postgres:latest
     volumes:
-      - ./internal/.db/postgres/data:/var/lib/postgresql/data
+      - .db/postgres/data:/var/lib/postgresql/data
     env_file:
       - .env
     ports:
@@ -72,8 +72,8 @@ services:
     stop_grace_period: 5s
 
   migrate:
-    build: ./
-    image: kiryuhakipyatok/migrate:${COMMIT_SHA}
+  #  build: ./
+    image: kiryuhakipyatok/migrate:latest
     env_file:
       - .env
     volumes:
