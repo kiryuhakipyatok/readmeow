@@ -1,6 +1,7 @@
 services:
-  app:
-    image: kiryuhakipyatok/app:db60a9307a5fa70fa20df8c87fff701edd523a79
+  readmeow:
+    build: ./
+    image: kiryuhakipyatok/app:${COMMIT_SHA}
     env_file:
       - .env
     ports:
@@ -71,7 +72,8 @@ services:
     stop_grace_period: 5s
 
   migrate:
-    image: kiryuhakipyatok/app:db60a9307a5fa70fa20df8c87fff701edd523a79
+    build: ./
+    image: kiryuhakipyatok/migrate:${COMMIT_SHA}
     env_file:
       - .env
     volumes:
