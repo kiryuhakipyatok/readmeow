@@ -1,6 +1,7 @@
 services:
   app:
     build: ./
+    image: kiryuhakipyatok/app:db60a9307a5fa70fa20df8c87fff701edd523a79
     env_file:
       - .env
     ports:
@@ -72,6 +73,7 @@ services:
 
   migrate:
     build: .
+    image: kiryuhakipyatok/app:db60a9307a5fa70fa20df8c87fff701edd523a79
     env_file:
       - .env
     volumes:
