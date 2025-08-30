@@ -18,6 +18,7 @@ func MustConnect(cfg config.CacheConfig) *Cache {
 
 	redis := redis.NewClient(&redis.Options{
 		Addr:     cfg.Host + ":" + cfg.Port,
+		Username: cfg.Username,
 		DB:       0,
 		Password: cfg.Password,
 		PoolSize: 10,

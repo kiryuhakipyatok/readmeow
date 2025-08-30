@@ -63,6 +63,7 @@ type StorageConfig struct {
 type CacheConfig struct {
 	Host        string        `mapstructure:"host"`
 	Port        string        `mapstructure:"port"`
+	Username    string        `mapstructure:"username"`
 	Password    string        `mapstructure:"password"`
 	PingTimeout time.Duration `mapstructure:"pingTimeout"`
 }
