@@ -49,9 +49,12 @@ type AuthConfig struct {
 }
 
 type OAuthConfig struct {
-	ClientId     string `mapstructure:"clientId"`
-	ClientSercet string `mapstructure:"clientSecret"`
-	RedirectURL  string `mapstructure:"redirectURL"`
+	GoogleClientId     string `mapstructure:"googleClientId"`
+	GoogleClientSecret string `mapstructure:"googleClientSecret"`
+	GoogleRedirectURL  string `mapstructure:"googleRedirectURL"`
+	GithubClientId     string `mapstructure:"githubClientId"`
+	GithubClientSecret string `mapstructure:"githubClientSecret"`
+	GithubRedirectURL  string `mapstructure:"githubRedirectURL"`
 }
 
 type StorageConfig struct {

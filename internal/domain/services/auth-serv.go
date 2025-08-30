@@ -30,6 +30,7 @@ type AuthServ interface {
 	GetId(ctx context.Context, cookie string) (string, error)
 	SendVerifyCode(ctx context.Context, email, login, nickname, password string) error
 	SendNewCode(ctx context.Context, email string) error
+	OAuthLogin(ctx context.Context, nickname, avatar, email, pid, provider string) (*loginResponce, error)
 }
 
 type authServ struct {
@@ -119,7 +120,7 @@ func (as *authServ) Register(ctx context.Context, email, code string) error {
 }
 
 type loginResponce struct {
-	Id       uuid.UUID
+	Id       string
 	Nickname string
 	Avatar   string
 	JWT      string
@@ -146,7 +147,7 @@ func (as *authServ) Login(ctx context.Context, login, password string) (*loginRe
 		return nil, errs.NewAppError(op, err)
 	}
 	loginResponce := &loginResponce{
-		Id:       user.Id,
+		Id:       user.Id.String(),
 		Nickname: *user.Login,
 		Avatar:   user.Avatar,
 		JWT:      jwtToken,
@@ -191,7 +192,7 @@ func (as *authServ) SendVerifyCode(ctx context.Context, email, login, nickname, 
 	log := as.Logger.AddOp(op)
 	log.Log.Info("sending verify code")
 	if _, err := as.Transactor.WithinTransaction(ctx, func(c context.Context) (any, error) {
-		exist, err := as.UserRepo.ExistanceCheck(c, login, email, nickname)
+		exist, err := as.UserRepo.ExistanceCheck(c, login, email)
 		if err != nil {
 			return nil, err
 		}
@@ -256,28 +257,70 @@ func (as *authServ) SendNewCode(ctx context.Context, email string) error {
 	return nil
 }
 
-func (as *authServ) GoogleAuth(ctx context.Context, nickname, avatar, email, pid string) error {
+func (as *authServ) OAuthLogin(ctx context.Context, nickname, avatar, email, pid, provider string) (*loginResponce, error) {
 	op := "authServ.GoogleAuth"
 	log := as.Logger.AddOp(op)
-	log.Log.Info("google loggining")
-	user := &models.User{
-		Id: uuid.New(),
-		Credentials: models.Credentials{
-			Nickname:   nickname,
-			Login:      nil,
-			Email:      email,
-			Password:   nil,
-			Provider:   "google",
-			ProviderId: &pid,
-		},
-		Avatar:         avatar,
-		TimeOfRegister: time.Now(),
-		NumOfTemplates: 0,
-		NumOfReadmes:   0,
+	log.Log.Info("user oauth loggining")
+	res, err := as.Transactor.WithinTransaction(ctx, func(c context.Context) (any, error) {
+		user := &models.User{}
+		var err error
+		user, err = as.UserRepo.GetByProviderId(ctx, pid, provider)
+		if err != nil {
+			if errors.Is(err, errs.ErrNotFoundBase) {
+				user = &models.User{
+					Id: uuid.New(),
+					Credentials: models.Credentials{
+						Nickname:   nickname,
+						Login:      nil,
+						Email:      email,
+						Password:   nil,
+						Provider:   provider,
+						ProviderId: &pid,
+					},
+					Avatar:         avatar,
+					TimeOfRegister: time.Now(),
+					NumOfTemplates: 0,
+					NumOfReadmes:   0,
+				}
+				if err := as.UserRepo.Create(c, user); err != nil {
+					return nil, err
+				}
+			} else {
+				return nil, err
+			}
+		} else {
+			updates := map[string]any{}
+			if user.Avatar != avatar || user.Nickname != nickname {
+				if user.Avatar != avatar {
+					updates["avatar"] = avatar
+				}
+				if user.Nickname != nickname {
+					updates["nickname"] = nickname
+				}
+				if err := as.UserRepo.Update(c, updates, user.Id.String()); err != nil {
+					return nil, err
+				}
+			}
+		}
+
+		jwtToken, ttl, err := helpers.GenetateJWT(as.AuthConfig.TokenTTL, user.Id.String(), as.AuthConfig.Secret)
+		if err != nil {
+			return nil, err
+		}
+		loginResponce := &loginResponce{
+			Id:       user.Id.String(),
+			Nickname: user.Nickname,
+			Avatar:   user.Avatar,
+			JWT:      jwtToken,
+			TTL:      *ttl,
+		}
+		return loginResponce, nil
+	})
+	if err != nil {
+		log.Log.Error("failed to login user with oauth", logger.Err(err))
+		return nil, errs.NewAppError(op, err)
 	}
-	if err := as.UserRepo.Create(ctx, user); err != nil {
-		log.Log.Error("failed create user", logger.Err(err))
-		return errs.NewAppError(op, err)
-	}
-	return nil
+
+	log.Log.Info("token generated successfully")
+	return res.(*loginResponce), nil
 }

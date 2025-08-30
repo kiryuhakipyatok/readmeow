@@ -7,6 +7,7 @@ import (
 	"os/signal"
 	"readmeow/internal/config"
 	"readmeow/internal/delivery/handlers"
+	"readmeow/internal/delivery/oauth"
 	"readmeow/internal/delivery/routes"
 	"readmeow/internal/delivery/server"
 	"readmeow/internal/domain/repositories"
@@ -23,8 +24,6 @@ import (
 	"time"
 
 	"github.com/joho/godotenv"
-	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/google"
 )
 
 func Run() {
@@ -76,14 +75,7 @@ func Run() {
 	verificationRepo := repositories.NewVerificationRepo(storage)
 	transactor := stor.NewTransactor(storage)
 	emailSendler := email.NewEmailSender(smtpAuth, cfg.Email)
-
-	oauthConf := &oauth2.Config{
-		ClientID:     cfg.OAuth.ClientId,
-		ClientSecret: cfg.OAuth.ClientSercet,
-		Scopes:       []string{"email", "profile"},
-		RedirectURL:  cfg.OAuth.RedirectURL,
-		Endpoint:     google.Endpoint,
-	}
+	oauthConf := oauth.NewOAuthConfig(cfg.OAuth)
 
 	authServ := services.NewAuthServ(userRepo, verificationRepo, cloudStorage, transactor, emailSendler, log, cfg.Auth)
 	readmeServ := services.NewReadmeServ(readmeRepo, userRepo, templateRepo, widgetRepo, transactor, cloudStorage, log)

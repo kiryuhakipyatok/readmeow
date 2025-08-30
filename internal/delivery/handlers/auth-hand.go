@@ -2,11 +2,12 @@ package handlers
 
 import (
 	"encoding/json"
-	"fmt"
 	"readmeow/internal/delivery/handlers/helpers"
+	"readmeow/internal/delivery/oauth"
 	"readmeow/internal/domain/services"
 	"readmeow/internal/dto"
 	"readmeow/pkg/validator"
+	"strconv"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -14,18 +15,18 @@ import (
 )
 
 type AuthHandl struct {
-	AuthServ  services.AuthServ
-	UserServ  services.UserServ
-	OathConf  *oauth2.Config
-	Validator *validator.Validator
+	AuthServ    services.AuthServ
+	UserServ    services.UserServ
+	OAuthConfig oauth.OAuthConfig
+	Validator   *validator.Validator
 }
 
-func NewAuthHandle(as services.AuthServ, us services.UserServ, oc *oauth2.Config, v *validator.Validator) *AuthHandl {
+func NewAuthHandle(as services.AuthServ, us services.UserServ, oc oauth.OAuthConfig, v *validator.Validator) *AuthHandl {
 	return &AuthHandl{
-		AuthServ:  as,
-		UserServ:  us,
-		OathConf:  oc,
-		Validator: v,
+		AuthServ:    as,
+		UserServ:    us,
+		OAuthConfig: oc,
+		Validator:   v,
 	}
 }
 
@@ -124,7 +125,7 @@ func (ah *AuthHandl) Login(c *fiber.Ctx) error {
 	}
 	c.Cookie(cookie)
 	responce := dto.LoginResponse{
-		Id:       loginResponce.Id.String(),
+		Id:       loginResponce.Id,
 		Nickname: loginResponce.Nickname,
 		Avatar:   loginResponce.Avatar,
 	}
@@ -206,24 +207,113 @@ func (ah *AuthHandl) SendNewCode(c *fiber.Ctx) error {
 }
 
 func (ah *AuthHandl) GoogleOAuth(c *fiber.Ctx) error {
-	url := ah.OathConf.AuthCodeURL("state", oauth2.AccessTypeOnline)
+	url := ah.OAuthConfig.GoogleOAuthConfig.AuthCodeURL("state", oauth2.AccessTypeOnline)
 	return c.Redirect(url, fiber.StatusTemporaryRedirect)
 }
 
-func (ah *AuthHandl) GoogleOathCallback(c *fiber.Ctx) error {
+func (ah *AuthHandl) GitHubOAuth(c *fiber.Ctx) error {
+	url := ah.OAuthConfig.GithubOAuthConfig.AuthCodeURL("state", oauth2.AccessTypeOnline)
+	return c.Redirect(url, fiber.StatusTemporaryRedirect)
+}
+
+const (
+	github = "github"
+	google = "google"
+)
+
+func (ah *AuthHandl) GoogleOAthCallback(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	code := c.Query("code")
-	token, err := ah.OathConf.Exchange(ctx, code)
+	token, err := ah.OAuthConfig.GoogleOAuthConfig.Exchange(ctx, code)
 	if err != nil {
 		return helpers.ToApiError(err)
 	}
-	client := ah.OathConf.Client(ctx, token)
+	client := ah.OAuthConfig.GoogleOAuthConfig.Client(ctx, token)
 	resp, err := client.Get("https://www.googleapis.com/oauth2/v2/userinfo")
-	oauthReq := dto.OAuthRequest{}
+	if err != nil {
+		return helpers.ToApiError(err)
+	}
+	defer resp.Body.Close()
+	oauthReq := dto.GoogleOAuthRequest{}
 	if err := json.NewDecoder(resp.Body).Decode(&oauthReq); err != nil {
 		return helpers.ToApiError(err)
 	}
 
-	fmt.Println(oauthReq)
-	return helpers.SuccessResponse(c)
+	loginResponce, err := ah.AuthServ.OAuthLogin(ctx, oauthReq.Name, oauthReq.Picture, oauthReq.Email, oauthReq.Id, google)
+	if err != nil {
+		return helpers.ToApiError(err)
+	}
+	cookie := &fiber.Cookie{
+		Name:     "jwt",
+		Value:    loginResponce.JWT,
+		HTTPOnly: true,
+		Expires:  loginResponce.TTL,
+		MaxAge:   int(time.Until(loginResponce.TTL).Seconds()),
+		SameSite: "Lax",
+	}
+	c.Cookie(cookie)
+	responce := dto.LoginResponse{
+		Id:       loginResponce.Id,
+		Nickname: loginResponce.Nickname,
+		Avatar:   loginResponce.Avatar,
+	}
+	return c.JSON(responce)
+}
+
+func (ah *AuthHandl) GitHubOAuthCallback(c *fiber.Ctx) error {
+	ctx := c.UserContext()
+	code := c.Query("code")
+	token, err := ah.OAuthConfig.GithubOAuthConfig.Exchange(ctx, code)
+	if err != nil {
+		return helpers.ToApiError(err)
+	}
+	client := ah.OAuthConfig.GithubOAuthConfig.Client(ctx, token)
+	resp, err := client.Get("https://api.github.com/user")
+	if err != nil {
+		return helpers.ToApiError(err)
+	}
+	defer resp.Body.Close()
+	oauthReq := dto.GitHubOAuthRequest{}
+	if err := json.NewDecoder(resp.Body).Decode(&oauthReq); err != nil {
+		return helpers.ToApiError(err)
+	}
+	emailResp, err := client.Get("https://api.github.com/user/emails")
+	if err != nil {
+		return helpers.ToApiError(err)
+	}
+	defer emailResp.Body.Close()
+	var emails []struct {
+		Email    string `json:"email"`
+		Primary  bool   `json:"primary"`
+		Verified bool   `json:"verified"`
+	}
+	if err := json.NewDecoder(emailResp.Body).Decode(&emails); err != nil {
+		return helpers.ToApiError(err)
+	}
+	for _, e := range emails {
+		if e.Verified && e.Primary {
+			oauthReq.Email = e.Email
+			break
+		}
+	}
+	pid := strconv.FormatInt(oauthReq.Id, 10)
+	loginResponce, err := ah.AuthServ.OAuthLogin(ctx, oauthReq.Login, oauthReq.Avatar, oauthReq.Email, pid, github)
+	if err != nil {
+		return helpers.ToApiError(err)
+	}
+	cookie := &fiber.Cookie{
+		Name:     "jwt",
+		Value:    loginResponce.JWT,
+		HTTPOnly: true,
+		Expires:  loginResponce.TTL,
+		MaxAge:   int(time.Until(loginResponce.TTL).Seconds()),
+		SameSite: "Lax",
+	}
+	c.Cookie(cookie)
+	responce := dto.LoginResponse{
+		Id:       loginResponce.Id,
+		Nickname: loginResponce.Nickname,
+		Avatar:   loginResponce.Avatar,
+	}
+	return c.JSON(responce)
 }

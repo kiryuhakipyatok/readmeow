@@ -173,7 +173,7 @@ type SendNewCodeRequest struct {
 	Email string `json:"email" validate:"required,email"`
 }
 
-type OAuthRequest struct {
+type GoogleOAuthRequest struct {
 	Id            string `json:"id"`
 	Email         string `json:"email"`
 	VerifiedEmail bool   `json:"verified_email"`
@@ -182,4 +182,11 @@ type OAuthRequest struct {
 	FamilyName    string `json:"family_name"`
 	Picture       string `json:"picture"`
 	Locale        string `json:"locale"`
+}
+
+type GitHubOAuthRequest struct {
+	Id     int64  `json:"id"`
+	Login  string `json:"login"`
+	Avatar string `json:"avatar_url"`
+	Email  string `json:"email"`
 }

@@ -1,7 +1,7 @@
 services:
   readmeow:
     build: ./
-    image: kiryuhakipyatok/readmeow:latest
+  #  image: kiryuhakipyatok/readmeow:latest
     env_file:
       - .env
     ports:
@@ -73,7 +73,7 @@ services:
 
   migrate:
     build: ./
-    image: kiryuhakipyatok/migrate:latest
+  #  image: kiryuhakipyatok/migrate:latest
     env_file:
       - .env
     volumes:
