@@ -33,14 +33,14 @@ func NewServer(scfg config.ServerConfig, acfg config.AuthConfig, apcfg config.Ap
 
 	swaggerGroup := app.Group("/api/swagger")
 
-	validIps := map[string]bool{
-		"172.21.0.1": true,
-		//	"000.00.0.0": true,
-	}
+	// validIps := map[string]bool{
+	// 	"172.21.0.1": true,
+	// 	//	"000.00.0.0": true,
+	// }
 
 	swaggerGroup.Use(
 		corsMiddleware,
-		validIpsMiddleware(validIps),
+		// validIpsMiddleware(validIps),
 	)
 
 	swaggerGroup.Get("/*", swagger.HandlerDefault)
@@ -138,13 +138,13 @@ func rateLimiterMiddleware(scfg config.ServerConfig) fiber.Handler {
 	}
 }
 
-func validIpsMiddleware(validIps map[string]bool) fiber.Handler {
-	return func(c *fiber.Ctx) error {
-		if _, ok := validIps[c.IP()]; !ok {
-			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
-				"message": "forbidden",
-			})
-		}
-		return c.Next()
-	}
-}
+// func validIpsMiddleware(validIps map[string]bool) fiber.Handler {
+// 	return func(c *fiber.Ctx) error {
+// 		if _, ok := validIps[c.IP()]; !ok {
+// 			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+// 				"message": "forbidden",
+// 			})
+// 		}
+// 		return c.Next()
+// 	}
+// }
