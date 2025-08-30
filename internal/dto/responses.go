@@ -63,3 +63,8 @@ type SuccessResponse struct {
 	Code    int    `json:"code" example:"200"`
 	Message string `json:"message" example:"success"`
 }
+
+type IdResponse struct {
+	Id      string `json:"id" example:"00000000-0000-0000-0000-000000000000" validate:"required,uuid"`
+	Message string `json:"message" example:"swth created successfully"`
+}

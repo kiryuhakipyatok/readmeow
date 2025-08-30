@@ -35,11 +35,12 @@ func NewServer(scfg config.ServerConfig, acfg config.AuthConfig, apcfg config.Ap
 
 	validIps := map[string]bool{
 		"172.21.0.1": true,
+		//	"000.00.0.0": true,
 	}
 
 	swaggerGroup.Use(
 		corsMiddleware,
-		validIpsMiddleware(validIps),
+		ValidIpsMiddleware(validIps),
 	)
 
 	swaggerGroup.Get("/*", swagger.HandlerDefault)
@@ -61,19 +62,21 @@ func (s *Server) MustClose(ctx context.Context) {
 }
 
 const (
-	login    = "/api/auth/login"
-	register = "/api/auth/register"
-	verify   = "/api/auth/verify"
-	newcode  = "/api/auth/newcode"
+	login        = "/api/auth/login"
+	register     = "/api/auth/register"
+	verify       = "/api/auth/verify"
+	newcode      = "/api/auth/newcode"
+	createWidget = "/api/auth/widget"
 )
 
 func authMiddleware(acfg config.AuthConfig) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		validPaths := map[string]bool{
-			login:    true,
-			register: true,
-			verify:   true,
-			newcode:  true,
+			login:        true,
+			register:     true,
+			verify:       true,
+			newcode:      true,
+			createWidget: true,
 		}
 		if validPaths[c.Path()] {
 			return c.Next()
@@ -107,11 +110,16 @@ func requestTimeoutMiddleware(timeout time.Duration) fiber.Handler {
 }
 
 func errorHandler(c *fiber.Ctx, err error) error {
+	var fe *fiber.Error
+	if errors.As(err, &fe) {
+		return c.Status(fe.Code).JSON(fiber.Map{
+			"error": fe.Message,
+		})
+	}
 	var apiErr helpers.ApiErr
 	if errors.As(err, &apiErr) {
 		return c.Status(apiErr.Code).JSON(apiErr)
 	}
-
 	return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 		"error": "internal server error",
 	})
@@ -130,7 +138,7 @@ func rateLimiterMiddleware(scfg config.ServerConfig) fiber.Handler {
 	}
 }
 
-func validIpsMiddleware(validIps map[string]bool) fiber.Handler {
+func ValidIpsMiddleware(validIps map[string]bool) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		if _, ok := validIps[c.IP()]; !ok {
 			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{

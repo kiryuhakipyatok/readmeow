@@ -31,7 +31,7 @@ func NewAuthHandle(as services.AuthServ, us services.UserServ, v *validator.Vali
 // @Accept json
 // @Produce json
 // @Param body body dto.RegisterRequest true "Register Request"
-// @Success 200 {object} dto.SuccessResponse "Success response"
+// @Success 200 {object} dto.IdResponse "Success response"
 // @Failure 400 {object} helpers.ApiErr "Bad request"
 // @Failure 404 {object} helpers.ApiErr "Not found"
 // @Failure 409 {object} helpers.ApiErr "Already exists"
@@ -47,10 +47,15 @@ func (ah *AuthHandl) Register(c *fiber.Ctx) error {
 	if err := helpers.ParseAndValidateRequest(c, &req, helpers.Body{}, ah.Validator); err != nil {
 		return err
 	}
-	if err := ah.AuthServ.Register(ctx, req.Email, req.Code); err != nil {
+	id, err := ah.AuthServ.Register(ctx, req.Email, req.Code)
+	if err != nil {
 		return helpers.ToApiError(err)
 	}
-	return helpers.SuccessResponse(c)
+	idResp := dto.IdResponse{
+		Id:      id,
+		Message: "user registered successfully",
+	}
+	return c.JSON(idResp)
 }
 
 // VerifyEmail godoc

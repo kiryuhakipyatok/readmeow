@@ -33,7 +33,7 @@ func NewTemplateHandl(ts services.TemplateServ, as services.AuthServ, v *validat
 // @Produce      json
 // @Security     ApiKeyAuth
 // @Param        data formData dto.CreateTemplateRequestDoc true "Template creation request"
-// @Success      200 {object} dto.SuccessResponse "Success response"
+// @Success      200 {object} dto.IdResponse "Success response"
 // @Failure      400 {object} helpers.ApiErr "Bad request"
 // @Failure      404 {object} helpers.ApiErr "Not found"
 // @Failure 409 {object} helpers.ApiErr "Already exists"
@@ -78,7 +78,7 @@ func (th *TemplateHandl) CreateTemplate(c *fiber.Ctx) error {
 	if widgetsData != "" {
 		widgets := make([]map[string]string, 0)
 		if err := json.Unmarshal([]byte(widgetsData), &widgets); err != nil {
-			return helpers.ToApiError(err)
+			return helpers.InvalidRequest()
 		}
 		req.Widgets = widgets
 	}
@@ -90,10 +90,15 @@ func (th *TemplateHandl) CreateTemplate(c *fiber.Ctx) error {
 	if errs := helpers.ValidateStruct(req, th.Validator); len(errs) > 0 {
 		return helpers.ValidationError(errs)
 	}
-	if err := th.TemplateServ.Create(ctx, oid, req.Title, req.Description, req.Image, req.Links, req.RenderOrder, req.Text, req.Widgets, req.IsPublic); err != nil {
+	id, err := th.TemplateServ.Create(ctx, oid, req.Title, req.Description, req.Image, req.Links, req.RenderOrder, req.Text, req.Widgets, req.IsPublic)
+	if err != nil {
 		return helpers.ToApiError(err)
 	}
-	return helpers.SuccessResponse(c)
+	idResp := dto.IdResponse{
+		Id:      id,
+		Message: "template created successfully",
+	}
+	return c.JSON(idResp)
 }
 
 // UpdateTemplate godoc

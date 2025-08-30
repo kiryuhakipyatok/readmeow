@@ -18,7 +18,7 @@ import (
 )
 
 type TemplateServ interface {
-	Create(ctx context.Context, oid, title, description string, image *multipart.FileHeader, links, order, text []string, widgets []map[string]string, isPublic bool) error
+	Create(ctx context.Context, oid, title, description string, image *multipart.FileHeader, links, order, text []string, widgets []map[string]string, isPublic bool) (string, error)
 	Update(ctx context.Context, updates map[string]any, id string) error
 	Delete(ctx context.Context, id, uid string) error
 	Get(ctx context.Context, id string) (*models.TemplateWithOwner, error)
@@ -53,11 +53,11 @@ func NewTemplateServ(tr repositories.TemplateRepo, rr repositories.ReadmeRepo, u
 
 var baseTemplateId = uuid.Nil
 
-func (ts *templateServ) Create(ctx context.Context, oid, title, description string, image *multipart.FileHeader, links, order, text []string, widgets []map[string]string, isPublic bool) error {
+func (ts *templateServ) Create(ctx context.Context, oid, title, description string, image *multipart.FileHeader, links, order, text []string, widgets []map[string]string, isPublic bool) (string, error) {
 	op := "templateServ.Create"
 	log := ts.Logger.AddOp(op)
 	log.Log.Info("creating template")
-	_, err := ts.Transactor.WithinTransaction(ctx, func(c context.Context) (any, error) {
+	res, err := ts.Transactor.WithinTransaction(ctx, func(c context.Context) (any, error) {
 		user, err := ts.UserRepo.Get(c, oid)
 		if err != nil {
 			return nil, err
@@ -133,14 +133,14 @@ func (ts *templateServ) Create(ctx context.Context, oid, title, description stri
 			return nil, err
 		}
 
-		return nil, nil
+		return template.Id.String(), nil
 	})
 	if err != nil {
 		log.Log.Error("failed to create template", logger.Err(err))
-		return errs.NewAppError(op, err)
+		return "", errs.NewAppError(op, err)
 	}
 	log.Log.Info("template created successfully")
-	return nil
+	return res.(string), nil
 }
 
 func (ts *templateServ) FetchByUser(ctx context.Context, id string, amount, page uint) ([]dto.TemplateInfo, error) {

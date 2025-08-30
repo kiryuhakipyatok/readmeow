@@ -20,6 +20,17 @@ definitions:
     required:
     - password
     type: object
+  dto.IdResponse:
+    properties:
+      id:
+        example: 00000000-0000-0000-0000-000000000000
+        type: string
+      message:
+        example: readme created successfully
+        type: string
+    required:
+    - id
+    type: object
   dto.LoginRequest:
     properties:
       login:
@@ -564,7 +575,7 @@ paths:
         "200":
           description: Success response
           schema:
-            $ref: '#/definitions/dto.SuccessResponse'
+            $ref: '#/definitions/dto.IdResponse'
         "400":
           description: Bad request
           schema:
@@ -709,7 +720,7 @@ paths:
         "200":
           description: Success response
           schema:
-            $ref: '#/definitions/dto.SuccessResponse'
+            $ref: '#/definitions/dto.IdResponse'
         "400":
           description: Bad request
           schema:
@@ -996,6 +1007,7 @@ paths:
         type: string
       - in: formData
         name: is_public
+        required: true
         type: boolean
       - collectionFormat: csv
         in: formData
@@ -1029,7 +1041,7 @@ paths:
         "200":
           description: Success response
           schema:
-            $ref: '#/definitions/dto.SuccessResponse'
+            $ref: '#/definitions/dto.IdResponse'
         "400":
           description: Bad request
           schema:
@@ -1443,6 +1455,74 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Search Widgets
+      tags:
+      - Widgets
+    post:
+      consumes:
+      - multipart/form-data
+      description: Creating a new widget
+      parameters:
+      - in: formData
+        maxLength: 1000
+        minLength: 1
+        name: description
+        required: true
+        type: string
+      - format: binary
+        in: formData
+        name: image
+        required: true
+        type: string
+      - in: formData
+        name: link
+        required: true
+        type: string
+      - in: formData
+        name: tags
+        required: true
+        type: string
+      - in: formData
+        maxLength: 80
+        minLength: 1
+        name: title
+        required: true
+        type: string
+      - in: formData
+        maxLength: 50
+        minLength: 1
+        name: type
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success response
+          schema:
+            $ref: '#/definitions/dto.IdResponse'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "404":
+          description: Not found
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "409":
+          description: Already exists
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "422":
+          description: Invalid JSON
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+      security:
+      - ApiKeyAuth: []
+      summary: Create Widget
       tags:
       - Widgets
   /api/widgets/{widget}:

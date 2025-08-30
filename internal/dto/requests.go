@@ -172,3 +172,21 @@ type UpdateReadmeRequestDoc struct {
 type SendNewCodeRequest struct {
 	Email string `json:"email" validate:"required,email"`
 }
+
+type CreateWidgetRequest struct {
+	Title       string                `json:"title" validate:"required,min=1,max=80"`
+	Image       *multipart.FileHeader `json:"image" validate:"required"`
+	Description string                `json:"description" validate:"required,min=1,max=1000"`
+	Type        string                `json:"type" validate:"required,min=1,max=50"`
+	Tags        map[string]any        `json:"tags" validate:"required,dive,keys,required,min=1"`
+	Link        string                `json:"link" validate:"required,url"`
+}
+
+type CreateWidgetRequestDoc struct {
+	Title       string `json:"title" validate:"required,min=1,max=80"`
+	Image       string `json:"image" validate:"required" format:"binary"`
+	Description string `json:"description" validate:"required,min=1,max=1000"`
+	Type        string `json:"type" validate:"required,min=1,max=50"`
+	Tags        string `json:"tags" validate:"required,dive,keys,required,min=1"`
+	Link        string `json:"link" validate:"required,url"`
+}

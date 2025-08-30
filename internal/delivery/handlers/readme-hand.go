@@ -32,7 +32,7 @@ func NewReadmeHandl(rs services.ReadmeServ, as services.AuthServ, v *validator.V
 // @Produce      json
 // @Security     ApiKeyAuth
 // @Param        data formData dto.CreateReadmeRequestDoc true "Readme creation request"
-// @Success      200 {object} dto.SuccessResponse "Success response"
+// @Success      200 {object} dto.IdResponse "Success response"
 // @Failure      400 {object} helpers.ApiErr "Bad request"
 // @Failure      404 {object} helpers.ApiErr "Not found"
 // @Failure 409 {object} helpers.ApiErr "Already exists"
@@ -72,7 +72,7 @@ func (rh *ReadmeHandl) CreateReadme(c *fiber.Ctx) error {
 	if widgetsData != "" {
 		widgets := make([]map[string]string, 0)
 		if err := json.Unmarshal([]byte(widgetsData), &widgets); err != nil {
-			return helpers.ToApiError(err)
+			return helpers.InvalidRequest()
 		}
 		req.Widgets = widgets
 	}
@@ -84,10 +84,15 @@ func (rh *ReadmeHandl) CreateReadme(c *fiber.Ctx) error {
 		return helpers.ValidationError(errs)
 	}
 
-	if err := rh.ReadmeServ.Create(ctx, req.TemplateId, uid, req.Title, req.Image, req.Text, req.Links, req.RenderOrder, req.Widgets); err != nil {
+	id, err := rh.ReadmeServ.Create(ctx, req.TemplateId, uid, req.Title, req.Image, req.Text, req.Links, req.RenderOrder, req.Widgets)
+	if err != nil {
 		return helpers.ToApiError(err)
 	}
-	return helpers.SuccessResponse(c)
+	idResp := dto.IdResponse{
+		Id:      id,
+		Message: "readme created successfully",
+	}
+	return c.JSON(idResp)
 }
 
 // DeleteReadme godoc

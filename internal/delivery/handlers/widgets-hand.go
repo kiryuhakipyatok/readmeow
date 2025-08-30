@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"readmeow/internal/delivery/handlers/helpers"
 	"readmeow/internal/domain/services"
 	"readmeow/internal/dto"
@@ -21,6 +22,51 @@ func NewWidgetHandl(ws services.WidgetServ, as services.AuthServ, v *validator.V
 		AuthServ:   as,
 		Validator:  v,
 	}
+}
+
+// CreateWidget godoc
+// @Summary      Create Widget
+// @Description  Creating a new widget
+// @Tags         Widgets
+// @Accept       multipart/form-data
+// @Produce      json
+// @Security     ApiKeyAuth
+// @Param        data formData dto.CreateWidgetRequestDoc true "Widget creation request"
+// @Success      200 {object} dto.IdResponse "Success response"
+// @Failure      400 {object} helpers.ApiErr "Bad request"
+// @Failure      404 {object} helpers.ApiErr "Not found"
+// @Failure 	 409 {object} helpers.ApiErr "Already exists"
+// @Failure      422 {object} helpers.ApiErr "Invalid JSON"
+// @Failure      500 {object} helpers.ApiErr "Internal server error"
+// @Router       /api/widgets [post]
+func (wh *WidgetHandl) CreateWidget(c *fiber.Ctx) error {
+	ctx := c.UserContext()
+	req := dto.CreateWidgetRequest{}
+	req.Title = c.FormValue("title")
+	req.Description = c.FormValue("description")
+	req.Type = c.FormValue("type")
+	req.Link = c.FormValue("link")
+	tagsStr := c.FormValue("tags")
+	tags := make(map[string]any)
+	if err := json.Unmarshal([]byte(tagsStr), &tags); err != nil {
+		return helpers.InvalidRequest()
+	}
+	req.Tags = tags
+	if image, _ := c.FormFile("image"); image != nil {
+		req.Image = image
+	}
+	if errs := helpers.ValidateStruct(&req, wh.Validator); errs != nil {
+		return helpers.ValidationError(errs)
+	}
+	id, err := wh.WidgetServ.Create(ctx, req.Title, req.Description, req.Link, req.Type, req.Tags, req.Image)
+	if err != nil {
+		return helpers.ToApiError(err)
+	}
+	idResp := dto.IdResponse{
+		Id:      id,
+		Message: "widget created successfully",
+	}
+	return c.JSON(idResp)
 }
 
 // GetWidgetById godoc

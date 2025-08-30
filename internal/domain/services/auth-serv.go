@@ -24,7 +24,7 @@ import (
 )
 
 type AuthServ interface {
-	Register(ctx context.Context, email, code string) error
+	Register(ctx context.Context, email, code string) (string, error)
 	Login(ctx context.Context, login, password string) (*loginResponce, error)
 	GetId(ctx context.Context, cookie string) (string, error)
 	SendVerifyCode(ctx context.Context, email, login, nickname, password string) error
@@ -56,11 +56,11 @@ func NewAuthServ(ur repositories.UserRepo, vr repositories.VerificationRepo, cs 
 //go:embed assets/default-ava.jpg
 var defaultAvatar []byte
 
-func (as *authServ) Register(ctx context.Context, email, code string) error {
+func (as *authServ) Register(ctx context.Context, email, code string) (string, error) {
 	op := "authServ.Register"
 	log := as.Logger.AddOp(op)
 	log.Log.Info("registering user")
-	if _, err := as.Transactor.WithinTransaction(ctx, func(c context.Context) (any, error) {
+	res, err := as.Transactor.WithinTransaction(ctx, func(c context.Context) (any, error) {
 		codeHash := sha256.Sum256([]byte(code))
 		res, err := as.VerificationRepo.CodeCheck(c, email, codeHash[:])
 		if err != nil {
@@ -104,15 +104,16 @@ func (as *authServ) Register(ctx context.Context, email, code string) error {
 			return nil, err
 		}
 
-		return nil, nil
-	}); err != nil {
+		return user.Id.String(), nil
+	})
+	if err != nil {
 		log.Log.Error("failed to register user", logger.Err(err))
-		return errs.NewAppError(op, err)
+		return "", errs.NewAppError(op, err)
 	}
 
 	log.Log.Info("user registered successfully")
 
-	return nil
+	return res.(string), nil
 }
 
 type loginResponce struct {

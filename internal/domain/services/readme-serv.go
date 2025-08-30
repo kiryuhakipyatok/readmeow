@@ -18,7 +18,7 @@ import (
 )
 
 type ReadmeServ interface {
-	Create(ctx context.Context, tid, oid, title string, image *multipart.FileHeader, text, links, order []string, widgets []map[string]string) error
+	Create(ctx context.Context, tid, oid, title string, image *multipart.FileHeader, text, links, order []string, widgets []map[string]string) (string, error)
 	Delete(ctx context.Context, id, uid string) error
 	Update(ctx context.Context, updates map[string]any, id string) error
 	Get(ctx context.Context, id string) (*models.Readme, error)
@@ -47,11 +47,11 @@ func NewReadmeServ(rr repositories.ReadmeRepo, ur repositories.UserRepo, tr repo
 	}
 }
 
-func (rs *readmeServ) Create(ctx context.Context, tid, oid, title string, image *multipart.FileHeader, text, links, order []string, widgets []map[string]string) error {
+func (rs *readmeServ) Create(ctx context.Context, tid, oid, title string, image *multipart.FileHeader, text, links, order []string, widgets []map[string]string) (string, error) {
 	op := "readmeServ.Create"
 	log := rs.Logger.AddOp(op)
 	log.Log.Info("creating readme")
-	_, err := rs.Transactor.WithinTransaction(ctx, func(c context.Context) (any, error) {
+	res, err := rs.Transactor.WithinTransaction(ctx, func(c context.Context) (any, error) {
 		user, err := rs.UserRepo.Get(c, oid)
 		if err != nil {
 			return nil, err
@@ -135,14 +135,14 @@ func (rs *readmeServ) Create(ctx context.Context, tid, oid, title string, image 
 			return nil, err
 		}
 
-		return nil, nil
+		return readme.Id.String(), nil
 	})
 	if err != nil {
 		log.Log.Error("failed to create new readme", logger.Err(err))
-		return errs.NewAppError(op, err)
+		return "", errs.NewAppError(op, err)
 	}
 	log.Log.Info("new readme created successfully")
-	return nil
+	return res.(string), nil
 }
 
 func (rs *readmeServ) Delete(ctx context.Context, id, uid string) error {

@@ -2,15 +2,22 @@ package services
 
 import (
 	"context"
+	"fmt"
+	"mime/multipart"
 	"readmeow/internal/domain/models"
 	"readmeow/internal/domain/repositories"
 	"readmeow/internal/dto"
+	"readmeow/pkg/cloudstorage"
 	"readmeow/pkg/errs"
 	"readmeow/pkg/logger"
 	"readmeow/pkg/storage"
+	"time"
+
+	"github.com/google/uuid"
 )
 
 type WidgetServ interface {
+	Create(ctx context.Context, title, description, link, typee string, tags map[string]any, image *multipart.FileHeader) (string, error)
 	Get(ctx context.Context, id string) (*models.Widget, error)
 	Search(ctx context.Context, amount, page uint, query string, filter map[string][]string, sort map[string]string) ([]dto.WidgetResponse, error)
 	Like(ctx context.Context, id, uid string) error
@@ -19,19 +26,64 @@ type WidgetServ interface {
 }
 
 type widgetServ struct {
-	WidgetRepo repositories.WidgetRepo
-	UserRepo   repositories.UserRepo
-	Transactor storage.Transactor
-	Logger     *logger.Logger
+	WidgetRepo   repositories.WidgetRepo
+	UserRepo     repositories.UserRepo
+	CloudStorage cloudstorage.CloudStorage
+	Transactor   storage.Transactor
+	Logger       *logger.Logger
 }
 
-func NewWidgetServ(wr repositories.WidgetRepo, ur repositories.UserRepo, t storage.Transactor, l *logger.Logger) WidgetServ {
+func NewWidgetServ(wr repositories.WidgetRepo, ur repositories.UserRepo, cs cloudstorage.CloudStorage, t storage.Transactor, l *logger.Logger) WidgetServ {
 	return &widgetServ{
-		WidgetRepo: wr,
-		UserRepo:   ur,
-		Transactor: t,
-		Logger:     l,
+		WidgetRepo:   wr,
+		UserRepo:     ur,
+		CloudStorage: cs,
+		Transactor:   t,
+		Logger:       l,
 	}
+}
+
+func (ws *widgetServ) Create(ctx context.Context, title, description, link, typee string, tags map[string]any, image *multipart.FileHeader) (string, error) {
+	op := "widgetServ.Create"
+	log := ws.Logger.AddOp(op)
+	log.Log.Info("creating widget")
+	file, err := image.Open()
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+	now := time.Now()
+	unow := now.Unix()
+	id := uuid.New()
+	filename := fmt.Sprintf("%s-%d", id, unow)
+	folder := "widgets"
+	url, pid, err := ws.CloudStorage.UploadImage(ctx, file, filename, folder)
+	if err != nil {
+		log.Log.Error("failed to upload widget image", logger.Err(err))
+		return "", err
+	}
+	widget := &models.Widget{
+		Id:          uuid.New(),
+		Title:       title,
+		Description: description,
+		Link:        link,
+		Type:        typee,
+		Tags:        tags,
+		Image:       url,
+		Likes:       0,
+		NumOfUsers:  0,
+	}
+	if err := ws.WidgetRepo.Create(ctx, widget); err != nil {
+		log.Log.Error("failed to create widget", logger.Err(err))
+		if cerr := ws.CloudStorage.DeleteImage(ctx, pid); cerr != nil {
+			dErr := fmt.Errorf("%w : %w", err, cerr)
+			log.Log.Error("failed to delete widget image", logger.Err(dErr))
+			return "", err
+		}
+		return "", err
+	}
+	log.Log.Info("widget created successfully")
+	return widget.Id.String(), nil
 }
 
 func (ws *widgetServ) Get(ctx context.Context, id string) (*models.Widget, error) {

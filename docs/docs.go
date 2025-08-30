@@ -236,7 +236,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Success response",
                         "schema": {
-                            "$ref": "#/definitions/dto.SuccessResponse"
+                            "$ref": "#/definitions/dto.IdResponse"
                         }
                     },
                     "400": {
@@ -461,7 +461,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Success response",
                         "schema": {
-                            "$ref": "#/definitions/dto.SuccessResponse"
+                            "$ref": "#/definitions/dto.IdResponse"
                         }
                     },
                     "400": {
@@ -802,7 +802,8 @@ const docTemplate = `{
                     {
                         "type": "boolean",
                         "name": "is_public",
-                        "in": "formData"
+                        "in": "formData",
+                        "required": true
                     },
                     {
                         "type": "array",
@@ -846,7 +847,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Success response",
                         "schema": {
-                            "$ref": "#/definitions/dto.SuccessResponse"
+                            "$ref": "#/definitions/dto.IdResponse"
                         }
                     },
                     "400": {
@@ -1594,6 +1595,107 @@ const docTemplate = `{
                         }
                     }
                 }
+            },
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Creating a new widget",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Widgets"
+                ],
+                "summary": "Create Widget",
+                "parameters": [
+                    {
+                        "maxLength": 1000,
+                        "minLength": 1,
+                        "type": "string",
+                        "name": "description",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "format": "binary",
+                        "name": "image",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "name": "link",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "name": "tags",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "maxLength": 80,
+                        "minLength": 1,
+                        "type": "string",
+                        "name": "title",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "maxLength": 50,
+                        "minLength": 1,
+                        "type": "string",
+                        "name": "type",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success response",
+                        "schema": {
+                            "$ref": "#/definitions/dto.IdResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/helpers.ApiErr"
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "schema": {
+                            "$ref": "#/definitions/helpers.ApiErr"
+                        }
+                    },
+                    "409": {
+                        "description": "Already exists",
+                        "schema": {
+                            "$ref": "#/definitions/helpers.ApiErr"
+                        }
+                    },
+                    "422": {
+                        "description": "Invalid JSON",
+                        "schema": {
+                            "$ref": "#/definitions/helpers.ApiErr"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/helpers.ApiErr"
+                        }
+                    }
+                }
             }
         },
         "/api/widgets/dislike/{widget}": {
@@ -1863,6 +1965,22 @@ const docTemplate = `{
                 "password": {
                     "type": "string",
                     "minLength": 12
+                }
+            }
+        },
+        "dto.IdResponse": {
+            "type": "object",
+            "required": [
+                "id"
+            ],
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "example": "00000000-0000-0000-0000-000000000000"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "readme created successfully"
                 }
             }
         },

@@ -23,6 +23,7 @@ import (
 )
 
 type WidgetRepo interface {
+	Create(ctx context.Context, widget *models.Widget) error
 	Get(ctx context.Context, id string) (*models.Widget, error)
 	Search(ctx context.Context, amount, page uint, query string, filter map[string][]string, sort map[string]string) ([]models.Widget, error)
 	Like(ctx context.Context, uid, id string) error
@@ -45,6 +46,16 @@ func NewWidgetRepo(s *storage.Storage, c *cache.Cache, sc *search.SearchClient) 
 		Cache:        c,
 		SearchClient: sc,
 	}
+}
+
+func (wr *widgetRepo) Create(ctx context.Context, widget *models.Widget) error {
+	op := "widgetRepo.Get"
+	query := "INSERT INTO widgets (id, title, image, description, type, tags, link, likes, num_of_users) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)"
+	qd := helpers.NewQueryData(ctx, wr.Storage, op, query, widget.Id, widget.Title, widget.Image, widget.Description, widget.Type, widget.Tags, widget.Link, widget.Likes, widget.NumOfUsers)
+	if err := qd.InsertWithTx(); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (wr *widgetRepo) Get(ctx context.Context, id string) (*models.Widget, error) {

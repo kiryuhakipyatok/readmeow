@@ -2,6 +2,7 @@ package routes
 
 import (
 	"readmeow/internal/delivery/handlers"
+	"readmeow/internal/delivery/server"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -57,6 +58,13 @@ func (rc *RouteConfig) AuthRoutes() {
 
 func (rc *RouteConfig) WidgetsRoutes() {
 	widgetGroup := rc.App.Group("/api/widgets")
+
+	validIps := map[string]bool{
+		"172.21.0.1": true,
+		//	"000.00.0.0": true,
+	}
+
+	widgetGroup.Post("", server.ValidIpsMiddleware(validIps), rc.WidgetHandl.CreateWidget)
 
 	widgetGroup.Get("", rc.WidgetHandl.SearchWidgets)
 	widgetGroup.Get("/favorite", rc.WidgetHandl.FetchFavoriteWidgets)
