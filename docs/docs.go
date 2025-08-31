@@ -411,16 +411,18 @@ const docTemplate = `{
                 "summary": "Fetch User Readmes",
                 "parameters": [
                     {
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "Pagination amount",
                         "name": "amount",
-                        "in": "query"
+                        "in": "query",
+                        "required": true
                     },
                     {
+                        "minimum": 1,
                         "type": "integer",
-                        "description": "Pagination page",
                         "name": "page",
-                        "in": "query"
+                        "in": "query",
+                        "required": true
                     }
                 ],
                 "responses": {
