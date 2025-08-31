@@ -645,13 +645,15 @@ paths:
     get:
       description: Returns list of readmes for the authorized user
       parameters:
-      - description: Pagination amount
-        in: query
+      - in: query
+        minimum: 1
         name: amount
+        required: true
         type: integer
-      - description: Pagination page
-        in: query
+      - in: query
+        minimum: 1
         name: page
+        required: true
         type: integer
       produces:
       - application/json
