@@ -1,6 +1,7 @@
-package helpers
+package utils
 
 import (
+	"errors"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
@@ -27,4 +28,16 @@ func GenetateJWT(tokenTTL time.Duration, id, secret string) (string, *time.Time,
 		return "", nil, err
 	}
 	return jwtToken, &t, nil
+}
+
+func GetIdFromLocals(locals any) (string, error) {
+	token, ok := locals.(*jwt.Token)
+	if !ok {
+		return "", errors.New("invalid local data")
+	}
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return "", errors.New("invalid claims data")
+	}
+	return claims["sub"].(string), nil
 }

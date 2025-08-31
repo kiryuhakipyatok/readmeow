@@ -55,10 +55,3 @@ func ValidateId(c *fiber.Ctx, id string) error {
 	}
 	return nil
 }
-
-func AlreadyLoggined(c *fiber.Ctx) error {
-	return c.Status(fiber.StatusConflict).JSON(dto.SuccessResponse{
-		Code:    fiber.StatusConflict,
-		Message: "already loggined",
-	})
-}

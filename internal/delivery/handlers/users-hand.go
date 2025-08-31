@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"readmeow/internal/delivery/handlers/helpers"
 	"readmeow/internal/domain/services"
+	"readmeow/internal/domain/utils"
 	"readmeow/internal/dto"
 	"readmeow/pkg/validator"
 	"time"
@@ -67,8 +68,7 @@ func (uh *UserHandl) GetUser(c *fiber.Ctx) error {
 func (uh *UserHandl) Update(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 
-	cookie := c.Cookies("jwt")
-	id, err := uh.AuthServ.GetId(ctx, cookie)
+	id, err := utils.GetIdFromLocals(c.Locals("user"))
 	if err != nil {
 		return helpers.ToApiError(err)
 	}
@@ -114,8 +114,7 @@ func (uh *UserHandl) Delete(c *fiber.Ctx) error {
 	if err := helpers.ParseAndValidateRequest(c, &req, helpers.Body{}, uh.Validator); err != nil {
 		return err
 	}
-	cookie := c.Cookies("jwt")
-	id, err := uh.AuthServ.GetId(ctx, cookie)
+	id, err := utils.GetIdFromLocals(c.Locals("user"))
 	if err != nil {
 		return helpers.ToApiError(err)
 	}
@@ -156,8 +155,7 @@ func (uh *UserHandl) ChangeUserPassword(c *fiber.Ctx) error {
 	if err := helpers.ParseAndValidateRequest(c, &req, helpers.Body{}, uh.Validator); err != nil {
 		return err
 	}
-	cookie := c.Cookies("jwt")
-	id, err := uh.AuthServ.GetId(ctx, cookie)
+	id, err := utils.GetIdFromLocals(c.Locals("user"))
 	if err != nil {
 		return helpers.ToApiError(err)
 	}

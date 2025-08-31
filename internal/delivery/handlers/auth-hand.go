@@ -5,6 +5,7 @@ import (
 	"readmeow/internal/delivery/handlers/helpers"
 	"readmeow/internal/delivery/oauth"
 	"readmeow/internal/domain/services"
+	"readmeow/internal/domain/utils"
 	"readmeow/internal/dto"
 	"readmeow/pkg/validator"
 	"strconv"
@@ -46,9 +47,6 @@ func NewAuthHandle(as services.AuthServ, us services.UserServ, oc oauth.OAuthCon
 // @Router /api/auth/register [post]
 func (ah *AuthHandl) Register(c *fiber.Ctx) error {
 	ctx := c.UserContext()
-	if c.Cookies("jwt") != "" {
-		return helpers.AlreadyLoggined(c)
-	}
 	req := dto.RegisterRequest{}
 	if err := helpers.ParseAndValidateRequest(c, &req, helpers.Body{}, ah.Validator); err != nil {
 		return err
@@ -75,9 +73,6 @@ func (ah *AuthHandl) Register(c *fiber.Ctx) error {
 // @Router /api/auth/verify [post]
 func (ah *AuthHandl) VerifyEmail(c *fiber.Ctx) error {
 	ctx := c.UserContext()
-	if c.Cookies("jwt") != "" {
-		return helpers.AlreadyLoggined(c)
-	}
 	req := dto.VerifyRequest{}
 	if err := helpers.ParseAndValidateRequest(c, &req, helpers.Body{}, ah.Validator); err != nil {
 		return err
@@ -104,9 +99,6 @@ func (ah *AuthHandl) VerifyEmail(c *fiber.Ctx) error {
 // @Router /api/auth/login [post]
 func (ah *AuthHandl) Login(c *fiber.Ctx) error {
 	ctx := c.UserContext()
-	if c.Cookies("jwt") != "" {
-		return helpers.AlreadyLoggined(c)
-	}
 	req := dto.LoginRequest{}
 	if err := helpers.ParseAndValidateRequest(c, &req, helpers.Body{}, ah.Validator); err != nil {
 		return err
@@ -165,8 +157,7 @@ func (ah *AuthHandl) Logout(c *fiber.Ctx) error {
 // @Router /api/auth/profile [get]
 func (ah *AuthHandl) Profile(c *fiber.Ctx) error {
 	ctx := c.UserContext()
-	cookie := c.Cookies("jwt")
-	id, err := ah.AuthServ.GetId(ctx, cookie)
+	id, err := utils.GetIdFromLocals(c.Locals("user"))
 	if err != nil {
 		return helpers.ToApiError(err)
 	}
@@ -193,9 +184,6 @@ func (ah *AuthHandl) Profile(c *fiber.Ctx) error {
 // @Router /api/auth/newcode [post]
 func (ah *AuthHandl) SendNewCode(c *fiber.Ctx) error {
 	ctx := c.UserContext()
-	if c.Cookies("jwt") != "" {
-		return helpers.AlreadyLoggined(c)
-	}
 	req := dto.SendNewCodeRequest{}
 	if err := helpers.ParseAndValidateRequest(c, &req, helpers.Body{}, ah.Validator); err != nil {
 		return err
@@ -206,11 +194,29 @@ func (ah *AuthHandl) SendNewCode(c *fiber.Ctx) error {
 	return helpers.SuccessResponse(c)
 }
 
+// GoogleOAuth godoc
+// @Summary Login via Google
+// @Description Start Google OAuth login flow. User will be redirected to Google for authentication, then back to your app. After successful login, the client will receive dto.LoginResponse.
+// @Tags Auth
+// @Produce json
+// @Success 307 "Redirect to Google OAuth"
+// @Failure 400 {object} helpers.ApiErr "Bad request"
+// @Failure 500 {object} helpers.ApiErr "Internal server error"
+// @Router /api/auth/google [get]
 func (ah *AuthHandl) GoogleOAuth(c *fiber.Ctx) error {
 	url := ah.OAuthConfig.GoogleOAuthConfig.AuthCodeURL("state", oauth2.AccessTypeOnline)
 	return c.Redirect(url, fiber.StatusTemporaryRedirect)
 }
 
+// GitHubOAuth godoc
+// @Summary Login via GitHub
+// @Description Start GitHub OAuth login flow. User will be redirected to Google for authentication, then back to your app. After successful login, the client will receive dto.LoginResponse.
+// @Tags Auth
+// @Produce json
+// @Success 307 "Redirect to GitHub OAuth"
+// @Failure 400 {object} helpers.ApiErr "Bad request"
+// @Failure 500 {object} helpers.ApiErr "Internal server error"
+// @Router /api/auth/github [get]
 func (ah *AuthHandl) GitHubOAuth(c *fiber.Ctx) error {
 	url := ah.OAuthConfig.GithubOAuthConfig.AuthCodeURL("state", oauth2.AccessTypeOnline)
 	return c.Redirect(url, fiber.StatusTemporaryRedirect)

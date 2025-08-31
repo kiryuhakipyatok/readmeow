@@ -37,6 +37,17 @@ func NewServer(scfg config.ServerConfig, acfg config.AuthConfig, apcfg config.Ap
 		"172.21.0.1": true,
 	}
 
+	validAuthPaths := map[string]bool{
+		login:              true,
+		register:           true,
+		verify:             true,
+		newcode:            true,
+		googleAuth:         true,
+		googleAuthCallback: true,
+		githubAuth:         true,
+		githubAuthCallback: true,
+	}
+
 	swaggerGroup.Use(
 		corsMiddleware,
 		validIpsMiddleware(validIps),
@@ -46,7 +57,8 @@ func NewServer(scfg config.ServerConfig, acfg config.AuthConfig, apcfg config.Ap
 
 	app.Use(
 		corsMiddleware,
-		authMiddleware(acfg),
+		authMiddleware(acfg, validAuthPaths),
+		alreadyLoginCheck(validAuthPaths),
 		rateLimiterMiddleware(scfg),
 		requestTimeoutMiddleware(acfg.TokenTTL),
 	)
@@ -71,22 +83,11 @@ const (
 	githubAuthCallback = "/api/auth/github/callback"
 )
 
-func authMiddleware(acfg config.AuthConfig) fiber.Handler {
+func authMiddleware(acfg config.AuthConfig, valid map[string]bool) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		validPaths := map[string]bool{
-			login:              true,
-			register:           true,
-			verify:             true,
-			newcode:            true,
-			googleAuth:         true,
-			googleAuthCallback: true,
-			githubAuth:         true,
-			githubAuthCallback: true,
-		}
-		if validPaths[c.Path()] {
+		if valid[c.Path()] {
 			return c.Next()
 		}
-
 		return jwtware.New(jwtware.Config{
 			SigningKey:  []byte(acfg.Secret),
 			TokenLookup: "cookie:jwt",
@@ -148,6 +149,20 @@ func validIpsMiddleware(validIps map[string]bool) fiber.Handler {
 		if _, ok := validIps[c.IP()]; !ok {
 			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
 				"message": "forbidden",
+			})
+		}
+		return c.Next()
+	}
+}
+
+func alreadyLoginCheck(valid map[string]bool) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		if !valid[c.Path()] {
+			return c.Next()
+		}
+		if c.Cookies("jwt") != "" {
+			return c.Status(fiber.StatusConflict).JSON(fiber.Map{
+				"message": "already logined",
 			})
 		}
 		return c.Next()

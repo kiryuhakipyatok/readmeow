@@ -11,7 +11,7 @@ import (
 	"readmeow/internal/config"
 	"readmeow/internal/domain/models"
 	"readmeow/internal/domain/repositories"
-	"readmeow/internal/domain/services/helpers"
+	"readmeow/internal/domain/utils"
 	em "readmeow/internal/email"
 	"readmeow/pkg/cloudstorage"
 	"readmeow/pkg/errs"
@@ -19,7 +19,6 @@ import (
 	"readmeow/pkg/storage"
 	"time"
 
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -27,7 +26,6 @@ import (
 type AuthServ interface {
 	Register(ctx context.Context, email, code string) error
 	Login(ctx context.Context, login, password string) (*loginResponce, error)
-	GetId(ctx context.Context, cookie string) (string, error)
 	SendVerifyCode(ctx context.Context, email, login, nickname, password string) error
 	SendNewCode(ctx context.Context, email string) error
 	OAuthLogin(ctx context.Context, nickname, avatar, email, pid, provider string) (*loginResponce, error)
@@ -141,7 +139,7 @@ func (as *authServ) Login(ctx context.Context, login, password string) (*loginRe
 		log.Log.Info("invalid credentials", logger.Err(err))
 		return nil, errs.NewAppError(op, err)
 	}
-	jwtToken, ttl, err := helpers.GenetateJWT(as.AuthConfig.TokenTTL, user.Id.String(), as.AuthConfig.Secret)
+	jwtToken, ttl, err := utils.GenetateJWT(as.AuthConfig.TokenTTL, user.Id.String(), as.AuthConfig.Secret)
 	if err != nil {
 		log.Log.Error("failed to generate jwt token", logger.Err(err))
 		return nil, errs.NewAppError(op, err)
@@ -156,35 +154,6 @@ func (as *authServ) Login(ctx context.Context, login, password string) (*loginRe
 
 	log.Log.Info("token generated successfully")
 	return loginResponce, nil
-}
-
-func (as *authServ) GetId(ctx context.Context, cookie string) (string, error) {
-	op := "authService.GetId"
-	log := as.Logger.AddOp(op)
-	log.Log.Info("id receiving")
-	token, err := jwt.ParseWithClaims(cookie, &jwt.RegisteredClaims{}, func(t *jwt.Token) (any, error) {
-		if t.Method.Alg() != jwt.SigningMethodHS256.Alg() {
-			return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
-		}
-		return []byte(as.AuthConfig.Secret), nil
-	})
-	if err != nil {
-		log.Log.Error("failed to parse cookie", logger.Err(err))
-		return "", errs.NewAppError(op, err)
-	}
-	claims := token.Claims.(*jwt.RegisteredClaims)
-	id := claims.Subject
-	exist, err := as.UserRepo.IdCheck(ctx, id)
-	if err != nil {
-		log.Log.Error("failed to check user id", logger.Err(err))
-		return "", errs.NewAppError(op, err)
-	}
-	if !exist {
-		log.Log.Error("user not found", logger.Err(err))
-		return "", errs.ErrNotFound(op)
-	}
-	log.Log.Info("id received successfully")
-	return id, nil
 }
 
 func (as *authServ) SendVerifyCode(ctx context.Context, email, login, nickname, password string) error {
@@ -303,7 +272,7 @@ func (as *authServ) OAuthLogin(ctx context.Context, nickname, avatar, email, pid
 			}
 		}
 
-		jwtToken, ttl, err := helpers.GenetateJWT(as.AuthConfig.TokenTTL, user.Id.String(), as.AuthConfig.Secret)
+		jwtToken, ttl, err := utils.GenetateJWT(as.AuthConfig.TokenTTL, user.Id.String(), as.AuthConfig.Secret)
 		if err != nil {
 			return nil, err
 		}

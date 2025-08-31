@@ -424,6 +424,48 @@ info:
   title: REODMEOW API
   version: 1.0.0
 paths:
+  /api/auth/github:
+    get:
+      description: Start GitHub OAuth login flow. User will be redirected to Google
+        for authentication, then back to your app. After successful login, the client
+        will receive dto.LoginResponse.
+      produces:
+      - application/json
+      responses:
+        "307":
+          description: Redirect to GitHub OAuth
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+      summary: Login via GitHub
+      tags:
+      - Auth
+  /api/auth/google:
+    get:
+      description: Start Google OAuth login flow. User will be redirected to Google
+        for authentication, then back to your app. After successful login, the client
+        will receive dto.LoginResponse.
+      produces:
+      - application/json
+      responses:
+        "307":
+          description: Redirect to Google OAuth
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helpers.ApiErr'
+      summary: Login via Google
+      tags:
+      - Auth
   /api/auth/login:
     post:
       consumes:
@@ -996,6 +1038,7 @@ paths:
         type: string
       - in: formData
         name: is_public
+        required: true
         type: boolean
       - collectionFormat: csv
         in: formData
