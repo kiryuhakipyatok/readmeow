@@ -205,7 +205,7 @@ func (tr *templateRepo) Get(ctx context.Context, id string) (*models.TemplateWit
 		return template, nil
 	}
 	if err == cache.EMPTY {
-		query := "SELECT t.*,u.nickname AS owner_nickname, u.avatar AS owner_avatar FROM templates t JOIN user u ON t.owner_id = u.id WHERE t.id = $1"
+		query := "SELECT t.*,u.nickname AS owner_nickname, u.avatar AS owner_avatar FROM templates t JOIN users u ON t.owner_id = u.id WHERE t.id = $1"
 		qd := helpers.NewQueryData(ctx, tr.Storage, op, query, id)
 		if err := qd.QueryRowWithTx(template); err != nil {
 			return nil, err
