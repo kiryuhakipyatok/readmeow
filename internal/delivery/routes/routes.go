@@ -49,6 +49,10 @@ func (rc *RouteConfig) AuthRoutes() {
 	authGroup.Post("/verify", rc.AuthHandl.VerifyEmail)
 	authGroup.Post("/newcode", rc.AuthHandl.SendNewCode)
 
+	authGroup.Get("/google", rc.AuthHandl.GoogleOAuth)
+	authGroup.Get("/google/callback", rc.AuthHandl.GoogleOAthCallback)
+	authGroup.Get("/github", rc.AuthHandl.GitHubOAuth)
+	authGroup.Get("/github/callback", rc.AuthHandl.GitHubOAuthCallback)
 	authGroup.Get("/login", rc.AuthHandl.Login)
 	authGroup.Get("/logout", rc.AuthHandl.Logout)
 	authGroup.Get("/profile", rc.AuthHandl.Profile)

@@ -172,3 +172,21 @@ type UpdateReadmeRequestDoc struct {
 type SendNewCodeRequest struct {
 	Email string `json:"email" validate:"required,email"`
 }
+
+type GoogleOAuthRequest struct {
+	Id            string `json:"id"`
+	Email         string `json:"email"`
+	VerifiedEmail bool   `json:"verified_email"`
+	Name          string `json:"name"`
+	GivenName     string `json:"given_name"`
+	FamilyName    string `json:"family_name"`
+	Picture       string `json:"picture"`
+	Locale        string `json:"locale"`
+}
+
+type GitHubOAuthRequest struct {
+	Id     int64  `json:"id"`
+	Login  string `json:"login"`
+	Avatar string `json:"avatar_url"`
+	Email  string `json:"email"`
+}
