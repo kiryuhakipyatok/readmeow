@@ -1,26 +1,33 @@
 package handlers
 
 import (
+	"encoding/json"
 	"readmeow/internal/delivery/handlers/helpers"
+	"readmeow/internal/delivery/oauth"
 	"readmeow/internal/domain/services"
+	"readmeow/internal/domain/utils"
 	"readmeow/internal/dto"
 	"readmeow/pkg/validator"
+	"strconv"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"golang.org/x/oauth2"
 )
 
 type AuthHandl struct {
-	AuthServ  services.AuthServ
-	UserServ  services.UserServ
-	Validator *validator.Validator
+	AuthServ    services.AuthServ
+	UserServ    services.UserServ
+	OAuthConfig oauth.OAuthConfig
+	Validator   *validator.Validator
 }
 
-func NewAuthHandle(as services.AuthServ, us services.UserServ, v *validator.Validator) *AuthHandl {
+func NewAuthHandle(as services.AuthServ, us services.UserServ, oc oauth.OAuthConfig, v *validator.Validator) *AuthHandl {
 	return &AuthHandl{
-		AuthServ:  as,
-		UserServ:  us,
-		Validator: v,
+		AuthServ:    as,
+		UserServ:    us,
+		OAuthConfig: oc,
+		Validator:   v,
 	}
 }
 
@@ -40,9 +47,6 @@ func NewAuthHandle(as services.AuthServ, us services.UserServ, v *validator.Vali
 // @Router /api/auth/register [post]
 func (ah *AuthHandl) Register(c *fiber.Ctx) error {
 	ctx := c.UserContext()
-	if c.Cookies("jwt") != "" {
-		return helpers.AlreadyLoggined(c)
-	}
 	req := dto.RegisterRequest{}
 	if err := helpers.ParseAndValidateRequest(c, &req, helpers.Body{}, ah.Validator); err != nil {
 		return err
@@ -74,9 +78,6 @@ func (ah *AuthHandl) Register(c *fiber.Ctx) error {
 // @Router /api/auth/verify [post]
 func (ah *AuthHandl) VerifyEmail(c *fiber.Ctx) error {
 	ctx := c.UserContext()
-	if c.Cookies("jwt") != "" {
-		return helpers.AlreadyLoggined(c)
-	}
 	req := dto.VerifyRequest{}
 	if err := helpers.ParseAndValidateRequest(c, &req, helpers.Body{}, ah.Validator); err != nil {
 		return err
@@ -103,9 +104,6 @@ func (ah *AuthHandl) VerifyEmail(c *fiber.Ctx) error {
 // @Router /api/auth/login [post]
 func (ah *AuthHandl) Login(c *fiber.Ctx) error {
 	ctx := c.UserContext()
-	if c.Cookies("jwt") != "" {
-		return helpers.AlreadyLoggined(c)
-	}
 	req := dto.LoginRequest{}
 	if err := helpers.ParseAndValidateRequest(c, &req, helpers.Body{}, ah.Validator); err != nil {
 		return err
@@ -124,7 +122,7 @@ func (ah *AuthHandl) Login(c *fiber.Ctx) error {
 	}
 	c.Cookie(cookie)
 	responce := dto.LoginResponse{
-		Id:       loginResponce.Id.String(),
+		Id:       loginResponce.Id,
 		Nickname: loginResponce.Nickname,
 		Avatar:   loginResponce.Avatar,
 	}
@@ -164,8 +162,7 @@ func (ah *AuthHandl) Logout(c *fiber.Ctx) error {
 // @Router /api/auth/profile [get]
 func (ah *AuthHandl) Profile(c *fiber.Ctx) error {
 	ctx := c.UserContext()
-	cookie := c.Cookies("jwt")
-	id, err := ah.AuthServ.GetId(ctx, cookie)
+	id, err := utils.GetIdFromLocals(c.Locals("user"))
 	if err != nil {
 		return helpers.ToApiError(err)
 	}
@@ -192,9 +189,6 @@ func (ah *AuthHandl) Profile(c *fiber.Ctx) error {
 // @Router /api/auth/newcode [post]
 func (ah *AuthHandl) SendNewCode(c *fiber.Ctx) error {
 	ctx := c.UserContext()
-	if c.Cookies("jwt") != "" {
-		return helpers.AlreadyLoggined(c)
-	}
 	req := dto.SendNewCodeRequest{}
 	if err := helpers.ParseAndValidateRequest(c, &req, helpers.Body{}, ah.Validator); err != nil {
 		return err
@@ -203,4 +197,134 @@ func (ah *AuthHandl) SendNewCode(c *fiber.Ctx) error {
 		return helpers.ToApiError(err)
 	}
 	return helpers.SuccessResponse(c)
+}
+
+// GoogleOAuth godoc
+// @Summary Login via Google
+// @Description Start Google OAuth login flow. User will be redirected to Google for authentication, then back to your app. After successful login, the client will receive dto.LoginResponse.
+// @Tags Auth
+// @Produce json
+// @Success 307 "Redirect to Google OAuth"
+// @Failure 400 {object} helpers.ApiErr "Bad request"
+// @Failure 500 {object} helpers.ApiErr "Internal server error"
+// @Router /api/auth/google [get]
+func (ah *AuthHandl) GoogleOAuth(c *fiber.Ctx) error {
+	url := ah.OAuthConfig.GoogleOAuthConfig.AuthCodeURL("state", oauth2.AccessTypeOnline)
+	return c.Redirect(url, fiber.StatusTemporaryRedirect)
+}
+
+// GitHubOAuth godoc
+// @Summary Login via GitHub
+// @Description Start GitHub OAuth login flow. User will be redirected to Google for authentication, then back to your app. After successful login, the client will receive dto.LoginResponse.
+// @Tags Auth
+// @Produce json
+// @Success 307 "Redirect to GitHub OAuth"
+// @Failure 400 {object} helpers.ApiErr "Bad request"
+// @Failure 500 {object} helpers.ApiErr "Internal server error"
+// @Router /api/auth/github [get]
+func (ah *AuthHandl) GitHubOAuth(c *fiber.Ctx) error {
+	url := ah.OAuthConfig.GithubOAuthConfig.AuthCodeURL("state", oauth2.AccessTypeOnline)
+	return c.Redirect(url, fiber.StatusTemporaryRedirect)
+}
+
+const (
+	github = "github"
+	google = "google"
+)
+
+func (ah *AuthHandl) GoogleOAthCallback(c *fiber.Ctx) error {
+	ctx := c.UserContext()
+	code := c.Query("code")
+	token, err := ah.OAuthConfig.GoogleOAuthConfig.Exchange(ctx, code)
+	if err != nil {
+		return helpers.ToApiError(err)
+	}
+	client := ah.OAuthConfig.GoogleOAuthConfig.Client(ctx, token)
+	resp, err := client.Get("https://www.googleapis.com/oauth2/v2/userinfo")
+	if err != nil {
+		return helpers.ToApiError(err)
+	}
+	defer resp.Body.Close()
+	oauthReq := dto.GoogleOAuthRequest{}
+	if err := json.NewDecoder(resp.Body).Decode(&oauthReq); err != nil {
+		return helpers.ToApiError(err)
+	}
+
+	loginResponce, err := ah.AuthServ.OAuthLogin(ctx, oauthReq.Name, oauthReq.Picture, oauthReq.Email, oauthReq.Id, google)
+	if err != nil {
+		return helpers.ToApiError(err)
+	}
+	cookie := &fiber.Cookie{
+		Name:     "jwt",
+		Value:    loginResponce.JWT,
+		HTTPOnly: true,
+		Expires:  loginResponce.TTL,
+		MaxAge:   int(time.Until(loginResponce.TTL).Seconds()),
+		SameSite: "Lax",
+	}
+	c.Cookie(cookie)
+	responce := dto.LoginResponse{
+		Id:       loginResponce.Id,
+		Nickname: loginResponce.Nickname,
+		Avatar:   loginResponce.Avatar,
+	}
+	return c.JSON(responce)
+}
+
+func (ah *AuthHandl) GitHubOAuthCallback(c *fiber.Ctx) error {
+	ctx := c.UserContext()
+	code := c.Query("code")
+	token, err := ah.OAuthConfig.GithubOAuthConfig.Exchange(ctx, code)
+	if err != nil {
+		return helpers.ToApiError(err)
+	}
+	client := ah.OAuthConfig.GithubOAuthConfig.Client(ctx, token)
+	resp, err := client.Get("https://api.github.com/user")
+	if err != nil {
+		return helpers.ToApiError(err)
+	}
+	defer resp.Body.Close()
+	oauthReq := dto.GitHubOAuthRequest{}
+	if err := json.NewDecoder(resp.Body).Decode(&oauthReq); err != nil {
+		return helpers.ToApiError(err)
+	}
+	emailResp, err := client.Get("https://api.github.com/user/emails")
+	if err != nil {
+		return helpers.ToApiError(err)
+	}
+	defer emailResp.Body.Close()
+	var emails []struct {
+		Email    string `json:"email"`
+		Primary  bool   `json:"primary"`
+		Verified bool   `json:"verified"`
+	}
+	if err := json.NewDecoder(emailResp.Body).Decode(&emails); err != nil {
+		return helpers.ToApiError(err)
+	}
+	for _, e := range emails {
+		if e.Verified && e.Primary {
+			oauthReq.Email = e.Email
+			break
+		}
+	}
+	pid := strconv.FormatInt(oauthReq.Id, 10)
+	loginResponce, err := ah.AuthServ.OAuthLogin(ctx, oauthReq.Login, oauthReq.Avatar, oauthReq.Email, pid, github)
+	if err != nil {
+		return helpers.ToApiError(err)
+	}
+	cookie := &fiber.Cookie{
+		Name:     "jwt",
+		Value:    loginResponce.JWT,
+		HTTPOnly: true,
+		Expires:  loginResponce.TTL,
+		MaxAge:   int(time.Until(loginResponce.TTL).Seconds()),
+		SameSite: "Lax",
+	}
+	c.Cookie(cookie)
+	responce := dto.LoginResponse{
+		Id:       loginResponce.Id,
+		Nickname: loginResponce.Nickname,
+		Avatar:   loginResponce.Avatar,
+	}
+	return c.JSON(responce)
 }

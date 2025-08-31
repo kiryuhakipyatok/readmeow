@@ -20,6 +20,7 @@ type Config struct {
 	Email        EmailConfig        `mapstructure:"email"`
 	Sheduler     ShedulerConfig     `mapstructure:"sheduler"`
 	CloudStorage CloudStorageConfig `mapstructure:"cloudstorage"`
+	OAuth        OAuthConfig        `mapstructure:"oauth"`
 }
 
 type AppConfig struct {
@@ -45,6 +46,15 @@ type AuthConfig struct {
 	CodeTTL      time.Duration `mapstructure:"codeTTL"`
 	CodeAttempts int           `mapstructure:"codeAttempts"`
 	TokenTTL     time.Duration `mapstructure:"tokenTTL"`
+}
+
+type OAuthConfig struct {
+	GoogleClientId     string `mapstructure:"googleClientId"`
+	GoogleClientSecret string `mapstructure:"googleClientSecret"`
+	GoogleRedirectURL  string `mapstructure:"googleRedirectURL"`
+	GithubClientId     string `mapstructure:"githubClientId"`
+	GithubClientSecret string `mapstructure:"githubClientSecret"`
+	GithubRedirectURL  string `mapstructure:"githubRedirectURL"`
 }
 
 type StorageConfig struct {

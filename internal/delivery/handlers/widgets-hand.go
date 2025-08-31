@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"readmeow/internal/delivery/handlers/helpers"
 	"readmeow/internal/domain/services"
+	"readmeow/internal/domain/utils"
 	"readmeow/internal/dto"
 	"readmeow/pkg/validator"
 
@@ -141,8 +142,7 @@ func (wh *WidgetHandl) Like(c *fiber.Ctx) error {
 	if err := helpers.ValidateId(c, id); err != nil {
 		return err
 	}
-	cookie := c.Cookies("jwt")
-	uid, err := wh.AuthServ.GetId(ctx, cookie)
+	uid, err := utils.GetIdFromLocals(c.Locals("user"))
 	if err != nil {
 		return helpers.ToApiError(err)
 	}
@@ -171,8 +171,7 @@ func (wh *WidgetHandl) Dislike(c *fiber.Ctx) error {
 	if err := helpers.ValidateId(c, id); err != nil {
 		return err
 	}
-	cookie := c.Cookies("jwt")
-	uid, err := wh.AuthServ.GetId(ctx, cookie)
+	uid, err := utils.GetIdFromLocals(c.Locals("user"))
 	if err != nil {
 		return helpers.ToApiError(err)
 	}
@@ -202,8 +201,7 @@ func (wh *WidgetHandl) FetchFavoriteWidgets(c *fiber.Ctx) error {
 	if err := helpers.ParseAndValidateRequest(c, &req, helpers.Query{}, wh.Validator); err != nil {
 		return err
 	}
-	cookie := c.Cookies("jwt")
-	id, err := wh.AuthServ.GetId(ctx, cookie)
+	id, err := utils.GetIdFromLocals(c.Locals("user"))
 	if err != nil {
 		return helpers.ToApiError(err)
 	}

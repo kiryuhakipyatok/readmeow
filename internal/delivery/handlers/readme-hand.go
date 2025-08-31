@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"readmeow/internal/delivery/handlers/helpers"
 	"readmeow/internal/domain/services"
+	"readmeow/internal/domain/utils"
 	"readmeow/internal/dto"
 	"readmeow/pkg/validator"
 
@@ -41,10 +42,9 @@ func NewReadmeHandl(rs services.ReadmeServ, as services.AuthServ, v *validator.V
 // @Router       /api/readmes [post]
 func (rh *ReadmeHandl) CreateReadme(c *fiber.Ctx) error {
 	ctx := c.UserContext()
-	cookie := c.Cookies("jwt")
 
 	req := dto.CreateReadmeRequest{}
-	uid, err := rh.AuthServ.GetId(ctx, cookie)
+	uid, err := utils.GetIdFromLocals(c.Locals("user"))
 	if err != nil {
 		return helpers.ToApiError(err)
 	}
@@ -113,8 +113,7 @@ func (rh *ReadmeHandl) DeleteReadme(c *fiber.Ctx) error {
 	if err := helpers.ValidateId(c, id); err != nil {
 		return err
 	}
-	cookie := c.Cookies("jwt")
-	uid, err := rh.AuthServ.GetId(ctx, cookie)
+	uid, err := utils.GetIdFromLocals(c.Locals("user"))
 	if err != nil {
 		return helpers.ToApiError(err)
 	}
@@ -216,16 +215,14 @@ func (rh *ReadmeHandl) GetReadmeById(c *fiber.Ctx) error {
 // @Tags         Readmes
 // @Produce      json
 // @Security     ApiKeyAuth
-// @Param        amount  query int false "Pagination amount"
-// @Param        page   query int false "Pagination page"
+// @Param        body query dto.PaginationRequest true "Pagination request"
 // @Success      200 {array} dto.ReadmeResponse "Success response"
 // @Failure      400 {object} helpers.ApiErr "Bad request"
 // @Failure      500 {object} helpers.ApiErr "Internal server error"
 // @Router       /api/readmes [get]
 func (rh *ReadmeHandl) FetchReadmesByUser(c *fiber.Ctx) error {
 	ctx := c.UserContext()
-	cookie := c.Cookies("jwt")
-	uid, err := rh.AuthServ.GetId(ctx, cookie)
+	uid, err := utils.GetIdFromLocals(c.Locals("user"))
 	if err != nil {
 		return helpers.ToApiError(err)
 	}

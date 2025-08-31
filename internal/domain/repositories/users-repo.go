@@ -14,13 +14,14 @@ import (
 type UserRepo interface {
 	Create(ctx context.Context, user *models.User) error
 	Get(ctx context.Context, id string) (*models.User, error)
+	GetByProviderId(ctx context.Context, pid, provider string) (*models.User, error)
 	GetByLogin(ctx context.Context, login string) (*models.User, error)
 	GetByIds(ctx context.Context, ids []string) ([]models.User, error)
 	Update(ctx context.Context, updates map[string]any, id string) error
 	Delete(ctx context.Context, id string) error
 	IdCheck(ctx context.Context, id string) (bool, error)
 	GetAvatar(ctx context.Context, id string) (string, error)
-	ExistanceCheck(ctx context.Context, login, email, nickname string) (bool, error)
+	ExistanceCheck(ctx context.Context, login, email string) (bool, error)
 	ChangePassword(ctx context.Context, id string, password []byte) error
 	GetPassword(ctx context.Context, id string) ([]byte, error)
 }
@@ -37,8 +38,8 @@ func NewUserRepo(s *storage.Storage) UserRepo {
 
 func (ur *userRepo) Create(ctx context.Context, user *models.User) error {
 	op := "userRepo.Create"
-	query := "INSERT INTO users (id, nickname, login, email, avatar, password, time_of_register, num_of_templates, num_of_readmes) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9)"
-	qd := helpers.NewQueryData(ctx, ur.Storage, op, query, user.Id, user.Nickname, user.Login, user.Email, user.Avatar, user.Password, user.TimeOfRegister, user.NumOfTemplates, user.NumOfReadmes)
+	query := "INSERT INTO users (id, nickname, login, email, avatar, password, time_of_register, num_of_templates, num_of_readmes, provider, provider_id) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10,$11)"
+	qd := helpers.NewQueryData(ctx, ur.Storage, op, query, user.Id, user.Nickname, user.Login, user.Email, user.Avatar, user.Password, user.TimeOfRegister, user.NumOfTemplates, user.NumOfReadmes, user.Provider, user.ProviderId)
 	if err := qd.InsertWithTx(); err != nil {
 		return err
 	}
@@ -94,7 +95,7 @@ func (ur *userRepo) GetAvatar(ctx context.Context, id string) (string, error) {
 
 func (ur *userRepo) GetByLogin(ctx context.Context, login string) (*models.User, error) {
 	op := "userRepo.GetByLogin"
-	query := "SELECT id, nickname, login, email, password, avatar, time_of_register, num_of_templates, num_of_readmes FROM users WHERE login = $1"
+	query := "SELECT id, nickname, login, email, password, avatar, time_of_register, num_of_templates, num_of_readmes FROM users WHERE login = $1 AND provider = 'local'"
 	user := &models.User{}
 	qd := helpers.NewQueryData(ctx, ur.Storage, op, query, login)
 	if err := qd.QueryRowWithTx(user); err != nil {
@@ -103,11 +104,11 @@ func (ur *userRepo) GetByLogin(ctx context.Context, login string) (*models.User,
 	return user, nil
 }
 
-func (ur *userRepo) ExistanceCheck(ctx context.Context, login, email, nickname string) (bool, error) {
+func (ur *userRepo) ExistanceCheck(ctx context.Context, login, email string) (bool, error) {
 	op := "userRepo.ExistanceCheck"
-	query := "SELECT 1 FROM users WHERE login = $1 OR email = $2 OR nickname = $3"
+	query := "SELECT 1 FROM users WHERE login = $1 OR email = $2"
 	var res int
-	qd := helpers.NewQueryData(ctx, ur.Storage, op, query, login, email, nickname)
+	qd := helpers.NewQueryData(ctx, ur.Storage, op, query, login, email)
 	if err := qd.QueryRowWithTx(&res); err != nil {
 		if errors.Is(err, errs.ErrNotFoundBase) {
 			return false, nil
@@ -115,6 +116,17 @@ func (ur *userRepo) ExistanceCheck(ctx context.Context, login, email, nickname s
 		return false, err
 	}
 	return true, nil
+}
+
+func (ur *userRepo) GetByProviderId(ctx context.Context, pid, provider string) (*models.User, error) {
+	op := "userRepo.GetByProviderId"
+	query := "SELECT id, nickname, login, email, password, avatar, time_of_register, num_of_templates, num_of_readmes FROM users WHERE provider_id = $1 AND provider = $2"
+	user := &models.User{}
+	qd := helpers.NewQueryData(ctx, ur.Storage, op, query, pid, provider)
+	if err := qd.QueryRowWithTx(user); err != nil {
+		return nil, err
+	}
+	return user, nil
 }
 
 func (ur *userRepo) IdCheck(ctx context.Context, id string) (bool, error) {
@@ -183,7 +195,7 @@ func (ur *userRepo) Update(ctx context.Context, updates map[string]any, id strin
 
 func (ur *userRepo) ChangePassword(ctx context.Context, id string, password []byte) error {
 	op := "userRepo.UpdatePassword"
-	query := "UPDATE users SET password=$1 WHERE id = $2"
+	query := "UPDATE users SET password=$1 WHERE id = $2 AND provider = 'local'"
 	qd := helpers.NewQueryData(ctx, ur.Storage, op, query, password, id)
 	if err := qd.DeleteOrUpdateWithTx(); err != nil {
 		return err
@@ -193,7 +205,7 @@ func (ur *userRepo) ChangePassword(ctx context.Context, id string, password []by
 
 func (ur *userRepo) GetPassword(ctx context.Context, id string) ([]byte, error) {
 	op := "userRepo.GetPassword"
-	query := "SELECT password FROM users WHERE id = $1"
+	query := "SELECT password FROM users WHERE id = $1 AND provider = 'local'"
 	password := []byte{}
 	qd := helpers.NewQueryData(ctx, ur.Storage, op, query, id)
 	if err := qd.QueryRowWithTx(&password); err != nil {

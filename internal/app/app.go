@@ -7,6 +7,7 @@ import (
 	"os/signal"
 	"readmeow/internal/config"
 	"readmeow/internal/delivery/handlers"
+	"readmeow/internal/delivery/oauth"
 	"readmeow/internal/delivery/routes"
 	"readmeow/internal/delivery/server"
 	"readmeow/internal/domain/repositories"
@@ -74,6 +75,7 @@ func Run() {
 	verificationRepo := repositories.NewVerificationRepo(storage)
 	transactor := stor.NewTransactor(storage)
 	emailSendler := email.NewEmailSender(smtpAuth, cfg.Email)
+	oauthConf := oauth.NewOAuthConfig(cfg.OAuth)
 
 	authServ := services.NewAuthServ(userRepo, verificationRepo, cloudStorage, transactor, emailSendler, log, cfg.Auth)
 	readmeServ := services.NewReadmeServ(readmeRepo, userRepo, templateRepo, widgetRepo, transactor, cloudStorage, log)
@@ -81,7 +83,7 @@ func Run() {
 	templateServ := services.NewTemplateServ(templateRepo, readmeRepo, userRepo, widgetRepo, transactor, cloudStorage, log)
 	userServ := services.NewUserServ(userRepo, templateRepo, cloudStorage, transactor, log)
 
-	authHandl := handlers.NewAuthHandle(authServ, userServ, validator)
+	authHandl := handlers.NewAuthHandle(authServ, userServ, oauthConf, validator)
 	readmeHandl := handlers.NewReadmeHandl(readmeServ, authServ, validator)
 	widgetHandl := handlers.NewWidgetHandl(widgetServ, authServ, validator)
 	templateHandl := handlers.NewTemplateHandl(templateServ, authServ, validator)

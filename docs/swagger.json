@@ -12,6 +12,64 @@
     "host": "localhost:3333",
     "basePath": "/api/",
     "paths": {
+        "/api/auth/github": {
+            "get": {
+                "description": "Start GitHub OAuth login flow. User will be redirected to Google for authentication, then back to your app. After successful login, the client will receive dto.LoginResponse.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Login via GitHub",
+                "responses": {
+                    "307": {
+                        "description": "Redirect to GitHub OAuth"
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/helpers.ApiErr"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/helpers.ApiErr"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/auth/google": {
+            "get": {
+                "description": "Start Google OAuth login flow. User will be redirected to Google for authentication, then back to your app. After successful login, the client will receive dto.LoginResponse.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Login via Google",
+                "responses": {
+                    "307": {
+                        "description": "Redirect to Google OAuth"
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/helpers.ApiErr"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/helpers.ApiErr"
+                        }
+                    }
+                }
+            }
+        },
         "/api/auth/login": {
             "post": {
                 "description": "Log in a user with login and password",

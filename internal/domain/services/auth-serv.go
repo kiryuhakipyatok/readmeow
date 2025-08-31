@@ -11,6 +11,7 @@ import (
 	"readmeow/internal/config"
 	"readmeow/internal/domain/models"
 	"readmeow/internal/domain/repositories"
+	"readmeow/internal/domain/utils"
 	em "readmeow/internal/email"
 	"readmeow/pkg/cloudstorage"
 	"readmeow/pkg/errs"
@@ -18,7 +19,6 @@ import (
 	"readmeow/pkg/storage"
 	"time"
 
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -26,9 +26,9 @@ import (
 type AuthServ interface {
 	Register(ctx context.Context, email, code string) (string, error)
 	Login(ctx context.Context, login, password string) (*loginResponce, error)
-	GetId(ctx context.Context, cookie string) (string, error)
 	SendVerifyCode(ctx context.Context, email, login, nickname, password string) error
 	SendNewCode(ctx context.Context, email string) error
+	OAuthLogin(ctx context.Context, nickname, avatar, email, pid, provider string) (*loginResponce, error)
 }
 
 type authServ struct {
@@ -84,10 +84,12 @@ func (as *authServ) Register(ctx context.Context, email, code string) (string, e
 		user := models.User{
 			Id: id,
 			Credentials: models.Credentials{
-				Nickname: credentials.Nickname,
-				Login:    credentials.Login,
-				Email:    credentials.Email,
-				Password: credentials.Password,
+				Nickname:   credentials.Nickname,
+				Login:      credentials.Login,
+				Email:      credentials.Email,
+				Password:   credentials.Password,
+				Provider:   "local",
+				ProviderId: nil,
 			},
 			Avatar:         url,
 			TimeOfRegister: now,
@@ -117,7 +119,7 @@ func (as *authServ) Register(ctx context.Context, email, code string) (string, e
 }
 
 type loginResponce struct {
-	Id       uuid.UUID
+	Id       string
 	Nickname string
 	Avatar   string
 	JWT      string
@@ -138,64 +140,21 @@ func (as *authServ) Login(ctx context.Context, login, password string) (*loginRe
 		log.Log.Info("invalid credentials", logger.Err(err))
 		return nil, errs.NewAppError(op, err)
 	}
-	now := time.Now()
-	t := now.Add(as.AuthConfig.TokenTTL)
-	ttl := jwt.NewNumericDate(t)
-	iat := jwt.NewNumericDate(now)
-	jti := uuid.New().String()
-	claims := jwt.RegisteredClaims{
-		Subject:   user.Id.String(),
-		ExpiresAt: ttl,
-		IssuedAt:  iat,
-		ID:        jti,
-		Issuer:    "readmeow",
-		Audience:  []string{"readmeow-users"},
-	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	jwtToken, err := token.SignedString([]byte(as.AuthConfig.Secret))
+	jwtToken, ttl, err := utils.GenetateJWT(as.AuthConfig.TokenTTL, user.Id.String(), as.AuthConfig.Secret)
 	if err != nil {
-		log.Log.Error("failed to sign token", logger.Err(err))
+		log.Log.Error("failed to generate jwt token", logger.Err(err))
 		return nil, errs.NewAppError(op, err)
 	}
 	loginResponce := &loginResponce{
-		Id:       user.Id,
-		Nickname: user.Login,
+		Id:       user.Id.String(),
+		Nickname: *user.Login,
 		Avatar:   user.Avatar,
 		JWT:      jwtToken,
-		TTL:      t,
+		TTL:      *ttl,
 	}
 
 	log.Log.Info("token generated successfully")
 	return loginResponce, nil
-}
-
-func (as *authServ) GetId(ctx context.Context, cookie string) (string, error) {
-	op := "authService.GetId"
-	log := as.Logger.AddOp(op)
-	log.Log.Info("id receiving")
-	token, err := jwt.ParseWithClaims(cookie, &jwt.RegisteredClaims{}, func(t *jwt.Token) (any, error) {
-		if t.Method.Alg() != jwt.SigningMethodHS256.Alg() {
-			return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
-		}
-		return []byte(as.AuthConfig.Secret), nil
-	})
-	if err != nil {
-		log.Log.Error("failed to parse cookie", logger.Err(err))
-		return "", errs.NewAppError(op, err)
-	}
-	claims := token.Claims.(*jwt.RegisteredClaims)
-	id := claims.Subject
-	exist, err := as.UserRepo.IdCheck(ctx, id)
-	if err != nil {
-		log.Log.Error("failed to check user id", logger.Err(err))
-		return "", errs.NewAppError(op, err)
-	}
-	if !exist {
-		log.Log.Error("user not found", logger.Err(err))
-		return "", errs.ErrNotFound(op)
-	}
-	log.Log.Info("id received successfully")
-	return id, nil
 }
 
 func (as *authServ) SendVerifyCode(ctx context.Context, email, login, nickname, password string) error {
@@ -203,7 +162,7 @@ func (as *authServ) SendVerifyCode(ctx context.Context, email, login, nickname, 
 	log := as.Logger.AddOp(op)
 	log.Log.Info("sending verify code")
 	if _, err := as.Transactor.WithinTransaction(ctx, func(c context.Context) (any, error) {
-		exist, err := as.UserRepo.ExistanceCheck(c, login, email, nickname)
+		exist, err := as.UserRepo.ExistanceCheck(c, login, email)
 		if err != nil {
 			return nil, err
 		}
@@ -266,4 +225,72 @@ func (as *authServ) SendNewCode(ctx context.Context, email string) error {
 
 	log.Log.Info("new code sended successfully")
 	return nil
+}
+
+func (as *authServ) OAuthLogin(ctx context.Context, nickname, avatar, email, pid, provider string) (*loginResponce, error) {
+	op := "authServ.GoogleAuth"
+	log := as.Logger.AddOp(op)
+	log.Log.Info("user oauth loggining")
+	res, err := as.Transactor.WithinTransaction(ctx, func(c context.Context) (any, error) {
+		user := &models.User{}
+		var err error
+		user, err = as.UserRepo.GetByProviderId(ctx, pid, provider)
+		if err != nil {
+			if errors.Is(err, errs.ErrNotFoundBase) {
+				user = &models.User{
+					Id: uuid.New(),
+					Credentials: models.Credentials{
+						Nickname:   nickname,
+						Login:      nil,
+						Email:      email,
+						Password:   nil,
+						Provider:   provider,
+						ProviderId: &pid,
+					},
+					Avatar:         avatar,
+					TimeOfRegister: time.Now(),
+					NumOfTemplates: 0,
+					NumOfReadmes:   0,
+				}
+				if err := as.UserRepo.Create(c, user); err != nil {
+					return nil, err
+				}
+			} else {
+				return nil, err
+			}
+		} else {
+			updates := map[string]any{}
+			if user.Avatar != avatar || user.Nickname != nickname {
+				if user.Avatar != avatar {
+					updates["avatar"] = avatar
+				}
+				if user.Nickname != nickname {
+					updates["nickname"] = nickname
+				}
+				if err := as.UserRepo.Update(c, updates, user.Id.String()); err != nil {
+					return nil, err
+				}
+			}
+		}
+
+		jwtToken, ttl, err := utils.GenetateJWT(as.AuthConfig.TokenTTL, user.Id.String(), as.AuthConfig.Secret)
+		if err != nil {
+			return nil, err
+		}
+		loginResponce := &loginResponce{
+			Id:       user.Id.String(),
+			Nickname: user.Nickname,
+			Avatar:   user.Avatar,
+			JWT:      jwtToken,
+			TTL:      *ttl,
+		}
+		return loginResponce, nil
+	})
+	if err != nil {
+		log.Log.Error("failed to login user with oauth", logger.Err(err))
+		return nil, errs.NewAppError(op, err)
+	}
+
+	log.Log.Info("token generated successfully")
+	return res.(*loginResponce), nil
 }

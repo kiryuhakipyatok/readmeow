@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"readmeow/internal/delivery/handlers/helpers"
 	"readmeow/internal/domain/services"
+	"readmeow/internal/domain/utils"
 	"readmeow/internal/dto"
 	"readmeow/pkg/validator"
 	"strconv"
@@ -42,9 +43,8 @@ func NewTemplateHandl(ts services.TemplateServ, as services.AuthServ, v *validat
 // @Router       /api/templates [post]
 func (th *TemplateHandl) CreateTemplate(c *fiber.Ctx) error {
 	ctx := c.UserContext()
-	cookie := c.Cookies("jwt")
 	req := dto.CreateTemplateRequest{}
-	oid, err := th.AuthServ.GetId(ctx, cookie)
+	oid, err := utils.GetIdFromLocals(c.Locals("user"))
 	if err != nil {
 		return helpers.ToApiError(err)
 	}
@@ -190,8 +190,7 @@ func (th *TemplateHandl) UpdateTemplate(c *fiber.Ctx) error {
 func (th *TemplateHandl) DeleteTemplate(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	id := c.Params("template")
-	cookie := c.Cookies("jwt")
-	uid, err := th.AuthServ.GetId(ctx, cookie)
+	uid, err := utils.GetIdFromLocals(c.Locals("user"))
 	if err != nil {
 		return helpers.ToApiError(err)
 	}
@@ -275,8 +274,7 @@ func (th *TemplateHandl) Like(c *fiber.Ctx) error {
 	if err := helpers.ValidateId(c, id); err != nil {
 		return err
 	}
-	cookie := c.Cookies("jwt")
-	uid, err := th.AuthServ.GetId(ctx, cookie)
+	uid, err := utils.GetIdFromLocals(c.Locals("user"))
 	if err != nil {
 		return helpers.ToApiError(err)
 	}
@@ -305,8 +303,7 @@ func (th *TemplateHandl) Dislike(c *fiber.Ctx) error {
 	if err := helpers.ValidateId(c, id); err != nil {
 		return err
 	}
-	cookie := c.Cookies("jwt")
-	uid, err := th.AuthServ.GetId(ctx, cookie)
+	uid, err := utils.GetIdFromLocals(c.Locals("user"))
 	if err != nil {
 		return helpers.ToApiError(err)
 	}
@@ -336,8 +333,7 @@ func (th *TemplateHandl) FetchFavoriteTemplates(c *fiber.Ctx) error {
 	if err := helpers.ParseAndValidateRequest(c, &req, helpers.Query{}, th.Validator); err != nil {
 		return err
 	}
-	cookie := c.Cookies("jwt")
-	id, err := th.AuthServ.GetId(ctx, cookie)
+	id, err := utils.GetIdFromLocals(c.Locals("user"))
 	if err != nil {
 		return helpers.ToApiError(err)
 	}
