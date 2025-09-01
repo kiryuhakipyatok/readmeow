@@ -63,7 +63,7 @@ sheduler:
 
 cloudstorage:
   cloudURL: "${CLOUDINARY_URL}"
-  timeout: 30s
+  timeout: 1m
 
 oauth:
     googleClientId: "${GOOGLE_CLIENT_ID}"
