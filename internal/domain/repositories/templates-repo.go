@@ -384,7 +384,7 @@ func (tr *templateRepo) Search(ctx context.Context, amount, page uint, query str
 
 func (tr *templateRepo) getByIds(ctx context.Context, ids []string) ([]models.TemplateWithOwner, error) {
 	op := "templateRepo.SearchPreparing.GetByIds"
-	query := "SELECT t.*,u.nickname as owner_nickname, u.owner_avatar as owner_avatar FROM templates t JOIN users u ON t.owner_id=u.id  WHERE t.id = ANY($1)"
+	query := "SELECT t.*,u.nickname as owner_nickname, u.avatar as owner_avatar FROM templates t JOIN users u ON t.owner_id=u.id WHERE t.id = ANY($1)"
 	templates := make([]models.TemplateWithOwner, 0, len(ids))
 	rows, err := tr.Storage.Pool.Query(ctx, query, ids)
 	if err != nil {

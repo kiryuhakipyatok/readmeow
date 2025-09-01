@@ -47,6 +47,8 @@ func NewServer(scfg config.ServerConfig, acfg config.AuthConfig, apcfg config.Ap
 		googleAuthCallback: true,
 		githubAuth:         true,
 		githubAuthCallback: true,
+		fetchTemplates:     true,
+		fetchWidgets:       true,
 	}
 
 	swaggerGroup.Use(
@@ -82,6 +84,8 @@ const (
 	googleAuthCallback = "/api/auth/google/callback"
 	githubAuth         = "/api/auth/github"
 	githubAuthCallback = "/api/auth/github/callback"
+	fetchTemplates     = "/api/templates"
+	fetchWidgets       = "/api/widgets"
 )
 
 func authMiddleware(acfg config.AuthConfig, valid map[string]bool) fiber.Handler {
