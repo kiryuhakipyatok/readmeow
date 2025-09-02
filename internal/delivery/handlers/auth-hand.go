@@ -5,7 +5,6 @@ import (
 	"readmeow/internal/delivery/handlers/helpers"
 	"readmeow/internal/delivery/oauth"
 	"readmeow/internal/domain/services"
-	"readmeow/internal/domain/utils"
 	"readmeow/internal/dto"
 	"readmeow/pkg/validator"
 	"strconv"
@@ -163,11 +162,8 @@ func (ah *AuthHandl) Logout(c *fiber.Ctx) error {
 // @Router /api/auth/profile [get]
 func (ah *AuthHandl) Profile(c *fiber.Ctx) error {
 	ctx := c.UserContext()
-	id, err := utils.GetIdFromLocals(c.Locals("user"))
-	if err != nil {
-		return helpers.ToApiError(err)
-	}
-	user, err := ah.UserServ.Get(ctx, id)
+	id := c.Locals("userId").(string)
+	user, err := ah.UserServ.Get(ctx, id, true)
 	if err != nil {
 		return helpers.ToApiError(err)
 	}

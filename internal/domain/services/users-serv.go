@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"mime/multipart"
+	"readmeow/internal/domain/models"
 	"readmeow/internal/domain/repositories"
 	"readmeow/internal/dto"
 	"readmeow/pkg/cloudstorage"
@@ -16,7 +17,7 @@ import (
 )
 
 type UserServ interface {
-	Get(ctx context.Context, id string) (*dto.UserResponse, error)
+	Get(ctx context.Context, id string, showPrivate bool) (*dto.UserResponse, error)
 	Update(ctx context.Context, updates map[string]any, id string) error
 	Delete(ctx context.Context, id, password string) error
 	ChangePassword(ctx context.Context, id string, oldPassword, newPasswrod string) error
@@ -154,20 +155,39 @@ func (us *userServ) ChangePassword(ctx context.Context, id string, oldPassword, 
 	return nil
 }
 
-func (us *userServ) Get(ctx context.Context, id string) (*dto.UserResponse, error) {
+func (us *userServ) Get(ctx context.Context, id string, showPrivate bool) (*dto.UserResponse, error) {
 	op := "userServ.Get"
 	log := us.Logger.AddOp(op)
 	log.Log.Info("receiving user")
-	user, err := us.UserRepo.Get(ctx, id)
-	if err != nil {
+	type userRes struct {
+		user *models.User
+		err  error
+	}
+	type templsRes struct {
+		templs []models.Template
+		err    error
+	}
+	userChan := make(chan userRes, 1)
+	templChan := make(chan templsRes, 1)
+	go func() {
+		user, err := us.UserRepo.Get(ctx, id)
+		userChan <- userRes{user: user, err: err}
+	}()
+	go func() {
+		templates, err := us.TemplateRepo.FetchByUser(ctx, id, showPrivate)
+		templChan <- templsRes{templs: templates, err: err}
+	}()
+	userResponse := <-userChan
+	templateResponse := <-templChan
+	if err := userResponse.err; err != nil {
 		log.Log.Error("failed to get user", logger.Err(err))
 		return nil, errs.NewAppError(op, err)
 	}
-	templates, err := us.TemplateRepo.FetchByUser(ctx, id)
-	if err != nil {
+	if err := templateResponse.err; err != nil {
 		log.Log.Error("failed to fetch user templates", logger.Err(err))
 		return nil, errs.NewAppError(op, err)
 	}
+	templates := templateResponse.templs
 	templateInfo := make([]dto.TemplateInfo, 0, len(templates))
 	for _, t := range templates {
 		temlInf := dto.TemplateInfo{
@@ -181,6 +201,7 @@ func (us *userServ) Get(ctx context.Context, id string) (*dto.UserResponse, erro
 		}
 		templateInfo = append(templateInfo, temlInf)
 	}
+	user := userResponse.user
 	userResp := &dto.UserResponse{
 		Id:             user.Id.String(),
 		Nickname:       user.Nickname,

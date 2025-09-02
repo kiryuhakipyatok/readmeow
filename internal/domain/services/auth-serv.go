@@ -11,7 +11,7 @@ import (
 	"readmeow/internal/config"
 	"readmeow/internal/domain/models"
 	"readmeow/internal/domain/repositories"
-	"readmeow/internal/domain/utils"
+	"readmeow/internal/domain/services/utils"
 	em "readmeow/internal/email"
 	"readmeow/pkg/cloudstorage"
 	"readmeow/pkg/errs"
@@ -137,10 +137,10 @@ func (as *authServ) Login(ctx context.Context, login, password string) (*loginRe
 		return nil, errs.NewAppError(op, err)
 	}
 	if err := bcrypt.CompareHashAndPassword(user.Password, []byte(password)); err != nil {
-		log.Log.Info("invalid credentials", logger.Err(err))
+		log.Log.Error("invalid credentials", logger.Err(err))
 		return nil, errs.NewAppError(op, err)
 	}
-	jwtToken, ttl, err := utils.GenetateJWT(as.AuthConfig.TokenTTL, user.Id.String(), as.AuthConfig.Secret)
+	jwtToken, ttl, err := utils.GenerateJWT(as.AuthConfig.TokenTTL, user.Id.String(), as.AuthConfig.Secret)
 	if err != nil {
 		log.Log.Error("failed to generate jwt token", logger.Err(err))
 		return nil, errs.NewAppError(op, err)
@@ -273,7 +273,7 @@ func (as *authServ) OAuthLogin(ctx context.Context, nickname, avatar, email, pid
 			}
 		}
 
-		jwtToken, ttl, err := utils.GenetateJWT(as.AuthConfig.TokenTTL, user.Id.String(), as.AuthConfig.Secret)
+		jwtToken, ttl, err := utils.GenerateJWT(as.AuthConfig.TokenTTL, user.Id.String(), as.AuthConfig.Secret)
 		if err != nil {
 			return nil, err
 		}

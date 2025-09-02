@@ -28,7 +28,7 @@ type TemplateRepo interface {
 	Delete(ctx context.Context, id string) error
 	Get(ctx context.Context, id string) (*models.TemplateWithOwner, error)
 	GetImage(ctx context.Context, id string) (string, error)
-	FetchByUser(ctx context.Context, id string) ([]models.Template, error)
+	FetchByUser(ctx context.Context, id string, showPrivate bool) ([]models.Template, error)
 	Like(ctx context.Context, id, uid string) error
 	Dislike(ctx context.Context, id, uid string) error
 	FetchFavorite(ctx context.Context, id string, amount, page uint) ([]models.TemplateWithOwner, error)
@@ -110,9 +110,13 @@ func (tr *templateRepo) Update(ctx context.Context, updates map[string]any, id s
 	return nil
 }
 
-func (tr *templateRepo) FetchByUser(ctx context.Context, id string) ([]models.Template, error) {
+func (tr *templateRepo) FetchByUser(ctx context.Context, id string, showPrivate bool) ([]models.Template, error) {
 	op := "templateRepo.FetchByUser"
-	query := "SELECT * FROM templates WHERE owner_id = $1 AND is_public = TRUE ORDER BY num_of_users DESC"
+	p := ""
+	if !showPrivate {
+		p = "AND is_public = TRUE"
+	}
+	query := fmt.Sprintf("SELECT * FROM templates WHERE owner_id = $1 %s ORDER BY num_of_users DESC", p)
 	templates := []models.Template{}
 	rows, err := tr.Storage.Pool.Query(ctx, query, id)
 	if err != nil {
