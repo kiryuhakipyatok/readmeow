@@ -23,7 +23,7 @@ type TemplateServ interface {
 	Delete(ctx context.Context, id, uid string) error
 	Get(ctx context.Context, id string) (*models.TemplateWithOwner, error)
 	FetchFavorite(ctx context.Context, id string, amount, page uint) ([]dto.TemplateResponse, error)
-	FetchByUser(ctx context.Context, id string, amount, page uint) ([]dto.TemplateInfo, error)
+	FetchByUser(ctx context.Context, id string, showPrivate bool, amount, page uint) ([]dto.TemplateInfo, error)
 	Search(ctx context.Context, amount, page uint, query string, filter map[string]bool, sort map[string]string) ([]dto.TemplateResponse, error)
 	Like(ctx context.Context, id, uid string) error
 	Dislike(ctx context.Context, id, uid string) error
@@ -143,11 +143,11 @@ func (ts *templateServ) Create(ctx context.Context, oid, title, description stri
 	return nil
 }
 
-func (ts *templateServ) FetchByUser(ctx context.Context, id string, amount, page uint) ([]dto.TemplateInfo, error) {
+func (ts *templateServ) FetchByUser(ctx context.Context, id string, showPrivate bool, amount, page uint) ([]dto.TemplateInfo, error) {
 	op := "templateServ.FetchByUser"
 	log := ts.Logger.AddOp(op)
 	log.Log.Info("fetching tempaltes by user")
-	templs, err := ts.TemplateRepo.FetchByUser(ctx, id)
+	templs, err := ts.TemplateRepo.FetchByUser(ctx, id, showPrivate)
 	if err != nil {
 		log.Log.Error("failed to fetch templates by user", logger.Err(err))
 		return nil, errs.NewAppError(op, err)
@@ -284,13 +284,7 @@ func (ts *templateServ) Get(ctx context.Context, id string) (*models.TemplateWit
 		log.Log.Error("failed to receive template", logger.Err(err))
 		return nil, errs.NewAppError(op, err)
 	}
-	owner, err := ts.UserRepo.Get(ctx, template.OwnerId.String())
-	if err != nil {
-		log.Log.Error("failed to receive template owner", logger.Err(err))
-		return nil, errs.NewAppError(op, err)
-	}
-	template.OwnerAvatar = owner.Avatar
-	template.OwnerNickname = owner.Nickname
+
 	log.Log.Info("template received successfully")
 	return template, nil
 }
@@ -338,27 +332,8 @@ func (ts *templateServ) Search(ctx context.Context, amount, page uint, query str
 		return nil, errs.NewAppError(op, err)
 	}
 	templates := make([]dto.TemplateResponse, 0, len(templs))
-	uids := []string{}
-	for _, t := range templs {
-		uids = append(uids, t.OwnerId.String())
-	}
-	users, err := ts.UserRepo.GetByIds(ctx, uids)
-	if err != nil {
-		log.Log.Error("failed to fetch owners", logger.Err(err))
-		return nil, errs.NewAppError(op, err)
-	}
-	userMap := make(map[string]models.User)
-	for _, user := range users {
-		userMap[user.Id.String()] = user
-	}
 
 	for _, t := range templs {
-		owner, ok := userMap[t.OwnerId.String()]
-		if !ok {
-			err := errors.New("undefind template owner")
-			log.Log.Error("failed to get template owner", logger.Err(err))
-			return nil, errs.NewAppError(op, err)
-		}
 		template := dto.TemplateResponse{
 			TemplateInfo: dto.TemplateInfo{
 				Id:             t.Id.String(),
@@ -369,9 +344,9 @@ func (ts *templateServ) Search(ctx context.Context, amount, page uint, query str
 				Likes:          t.Likes,
 			},
 			OwnerInfo: dto.OwnerInfo{
-				OwnerId:       owner.Id.String(),
-				OwnerAvatar:   owner.Avatar,
-				OwnerNickname: owner.Nickname,
+				OwnerId:       t.OwnerId.String(),
+				OwnerAvatar:   t.OwnerAvatar,
+				OwnerNickname: t.OwnerNickname,
 			},
 		}
 		templates = append(templates, template)

@@ -14,6 +14,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	jwtware "github.com/gofiber/jwt/v3"
 	"github.com/gofiber/swagger"
+	"github.com/golang-jwt/jwt/v4"
 )
 
 type Server struct {
@@ -95,6 +96,28 @@ func authMiddleware(acfg config.AuthConfig, valid map[string]bool) fiber.Handler
 		return jwtware.New(jwtware.Config{
 			SigningKey:  []byte(acfg.Secret),
 			TokenLookup: "cookie:jwt",
+			SuccessHandler: func(c *fiber.Ctx) error {
+				token, ok := c.Locals("user").(*jwt.Token)
+				if !ok {
+					return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+						"error": "invalid local data",
+					})
+				}
+				claims, ok := token.Claims.(jwt.MapClaims)
+				if !ok {
+					return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+						"error": "invalid token data",
+					})
+				}
+				userId, ok := claims["sub"].(string)
+				if !ok {
+					return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+						"error": "invalid claims data",
+					})
+				}
+				c.Locals("userId", userId)
+				return c.Next()
+			},
 			ErrorHandler: func(c *fiber.Ctx, err error) error {
 				return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 					"message": "unauthorized",

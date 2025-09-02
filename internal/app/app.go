@@ -89,7 +89,7 @@ func Run() {
 	templateHandl := handlers.NewTemplateHandl(templateServ, authServ, validator)
 	userHandl := handlers.NewUserHandl(userServ, authServ, validator)
 
-	sheduler := scheduler.NewSheduler(widgetRepo, templateRepo, verificationRepo, cfg.Sheduler, cfg.Search, log)
+	sheduler := scheduler.NewScheduler(widgetRepo, templateRepo, verificationRepo, cfg.Sheduler, cfg.Search, log)
 	sheduler.Start()
 	defer func() {
 		sheduler.Stop()

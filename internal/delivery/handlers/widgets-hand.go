@@ -3,7 +3,6 @@ package handlers
 import (
 	"readmeow/internal/delivery/handlers/helpers"
 	"readmeow/internal/domain/services"
-	"readmeow/internal/domain/utils"
 	"readmeow/internal/dto"
 	"readmeow/pkg/validator"
 
@@ -95,10 +94,7 @@ func (wh *WidgetHandl) Like(c *fiber.Ctx) error {
 	if err := helpers.ValidateId(c, id); err != nil {
 		return err
 	}
-	uid, err := utils.GetIdFromLocals(c.Locals("user"))
-	if err != nil {
-		return helpers.ToApiError(err)
-	}
+	uid := c.Locals("userId").(string)
 	if err := wh.WidgetServ.Like(ctx, id, uid); err != nil {
 		return helpers.ToApiError(err)
 	}
@@ -124,10 +120,7 @@ func (wh *WidgetHandl) Dislike(c *fiber.Ctx) error {
 	if err := helpers.ValidateId(c, id); err != nil {
 		return err
 	}
-	uid, err := utils.GetIdFromLocals(c.Locals("user"))
-	if err != nil {
-		return helpers.ToApiError(err)
-	}
+	uid := c.Locals("userId").(string)
 	if err := wh.WidgetServ.Dislike(ctx, id, uid); err != nil {
 		return helpers.ToApiError(err)
 	}
@@ -154,10 +147,7 @@ func (wh *WidgetHandl) FetchFavoriteWidgets(c *fiber.Ctx) error {
 	if err := helpers.ParseAndValidateRequest(c, &req, helpers.Query{}, wh.Validator); err != nil {
 		return err
 	}
-	id, err := utils.GetIdFromLocals(c.Locals("user"))
-	if err != nil {
-		return helpers.ToApiError(err)
-	}
+	id := c.Locals("userId").(string)
 	widgets, err := wh.WidgetServ.FetchFavorite(ctx, id, req.Amount, req.Page)
 	if err != nil {
 		return helpers.ToApiError(err)

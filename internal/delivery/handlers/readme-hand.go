@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"readmeow/internal/delivery/handlers/helpers"
 	"readmeow/internal/domain/services"
-	"readmeow/internal/domain/utils"
 	"readmeow/internal/dto"
 	"readmeow/pkg/validator"
 
@@ -44,10 +43,7 @@ func (rh *ReadmeHandl) CreateReadme(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 
 	req := dto.CreateReadmeRequest{}
-	uid, err := utils.GetIdFromLocals(c.Locals("user"))
-	if err != nil {
-		return helpers.ToApiError(err)
-	}
+	uid := c.Locals("userId").(string)
 
 	req.TemplateId = c.FormValue("template_id")
 
@@ -108,10 +104,7 @@ func (rh *ReadmeHandl) DeleteReadme(c *fiber.Ctx) error {
 	if err := helpers.ValidateId(c, id); err != nil {
 		return err
 	}
-	uid, err := utils.GetIdFromLocals(c.Locals("user"))
-	if err != nil {
-		return helpers.ToApiError(err)
-	}
+	uid := c.Locals("userId").(string)
 	if err := rh.ReadmeServ.Delete(ctx, id, uid); err != nil {
 		return helpers.ToApiError(err)
 	}
@@ -217,10 +210,7 @@ func (rh *ReadmeHandl) GetReadmeById(c *fiber.Ctx) error {
 // @Router       /api/readmes [get]
 func (rh *ReadmeHandl) FetchReadmesByUser(c *fiber.Ctx) error {
 	ctx := c.UserContext()
-	uid, err := utils.GetIdFromLocals(c.Locals("user"))
-	if err != nil {
-		return helpers.ToApiError(err)
-	}
+	uid := c.Locals("userId").(string)
 	req := dto.PaginationRequest{}
 	if err := helpers.ParseAndValidateRequest(c, &req, helpers.Query{}, rh.Validator); err != nil {
 		return err

@@ -10,7 +10,7 @@ import (
 	"github.com/robfig/cron/v3"
 )
 
-type Sheduler struct {
+type Scheduler struct {
 	Cron             *cron.Cron
 	WidgetRepo       repositories.WidgetRepo
 	TemplateRepo     repositories.TemplateRepo
@@ -20,11 +20,11 @@ type Sheduler struct {
 	Logger           *logger.Logger
 }
 
-func NewSheduler(wr repositories.WidgetRepo, tr repositories.TemplateRepo, vr repositories.VerificationRepo, shcfg config.ShedulerConfig, scfg config.SearchConfig, l *logger.Logger) *Sheduler {
+func NewScheduler(wr repositories.WidgetRepo, tr repositories.TemplateRepo, vr repositories.VerificationRepo, shcfg config.ShedulerConfig, scfg config.SearchConfig, l *logger.Logger) *Scheduler {
 	cr := cron.New(cron.WithChain(
 		cron.SkipIfStillRunning(cron.DefaultLogger),
 	))
-	return &Sheduler{
+	return &Scheduler{
 		Cron:             cr,
 		WidgetRepo:       wr,
 		TemplateRepo:     tr,
@@ -35,7 +35,7 @@ func NewSheduler(wr repositories.WidgetRepo, tr repositories.TemplateRepo, vr re
 	}
 }
 
-func (s *Sheduler) Start() {
+func (s *Scheduler) Start() {
 	if _, err := s.Cron.AddFunc(fmt.Sprintf("@every %s", s.ShedulerConfig.CleanCodesTime), func() {
 		op := "sheduler.CleanExpiredVerifyCodes"
 		log := s.Logger.AddOp(op)
@@ -81,7 +81,7 @@ func (s *Sheduler) Start() {
 	s.Cron.Start()
 }
 
-func (s *Sheduler) Stop() {
+func (s *Scheduler) Stop() {
 	ctx := s.Cron.Stop()
 	<-ctx.Done()
 }

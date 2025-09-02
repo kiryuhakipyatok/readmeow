@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"readmeow/internal/delivery/handlers/helpers"
 	"readmeow/internal/domain/services"
-	"readmeow/internal/domain/utils"
 	"readmeow/internal/dto"
 	"readmeow/pkg/validator"
 	"strconv"
@@ -44,10 +43,7 @@ func NewTemplateHandl(ts services.TemplateServ, as services.AuthServ, v *validat
 func (th *TemplateHandl) CreateTemplate(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	req := dto.CreateTemplateRequest{}
-	oid, err := utils.GetIdFromLocals(c.Locals("user"))
-	if err != nil {
-		return helpers.ToApiError(err)
-	}
+	oid := c.Locals("userId").(string)
 	isPublicStr := c.FormValue("is_public")
 
 	b, err := strconv.ParseBool(isPublicStr)
@@ -185,10 +181,7 @@ func (th *TemplateHandl) UpdateTemplate(c *fiber.Ctx) error {
 func (th *TemplateHandl) DeleteTemplate(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	id := c.Params("template")
-	uid, err := utils.GetIdFromLocals(c.Locals("user"))
-	if err != nil {
-		return helpers.ToApiError(err)
-	}
+	uid := c.Locals("userId").(string)
 	if err := helpers.ValidateId(c, id); err != nil {
 		return err
 	}
@@ -268,10 +261,7 @@ func (th *TemplateHandl) Like(c *fiber.Ctx) error {
 	if err := helpers.ValidateId(c, id); err != nil {
 		return err
 	}
-	uid, err := utils.GetIdFromLocals(c.Locals("user"))
-	if err != nil {
-		return helpers.ToApiError(err)
-	}
+	uid := c.Locals("userId").(string)
 	if err := th.TemplateServ.Like(ctx, id, uid); err != nil {
 		return helpers.ToApiError(err)
 	}
@@ -297,10 +287,7 @@ func (th *TemplateHandl) Dislike(c *fiber.Ctx) error {
 	if err := helpers.ValidateId(c, id); err != nil {
 		return err
 	}
-	uid, err := utils.GetIdFromLocals(c.Locals("user"))
-	if err != nil {
-		return helpers.ToApiError(err)
-	}
+	uid := c.Locals("userId").(string)
 	if err := th.TemplateServ.Dislike(ctx, id, uid); err != nil {
 		return helpers.ToApiError(err)
 	}
@@ -327,10 +314,7 @@ func (th *TemplateHandl) FetchFavoriteTemplates(c *fiber.Ctx) error {
 	if err := helpers.ParseAndValidateRequest(c, &req, helpers.Query{}, th.Validator); err != nil {
 		return err
 	}
-	id, err := utils.GetIdFromLocals(c.Locals("user"))
-	if err != nil {
-		return helpers.ToApiError(err)
-	}
+	id := c.Locals("userId").(string)
 	templates, err := th.TemplateServ.FetchFavorite(ctx, id, req.Amount, req.Page)
 	if err != nil {
 		return helpers.ToApiError(err)

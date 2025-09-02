@@ -1,10 +1,8 @@
 package handlers
 
 import (
-	"fmt"
 	"readmeow/internal/delivery/handlers/helpers"
 	"readmeow/internal/domain/services"
-	"readmeow/internal/domain/utils"
 	"readmeow/internal/dto"
 	"readmeow/pkg/validator"
 	"time"
@@ -44,7 +42,7 @@ func (uh *UserHandl) GetUser(c *fiber.Ctx) error {
 	if err := helpers.ValidateId(c, id); err != nil {
 		return err
 	}
-	user, err := uh.UserServ.Get(ctx, id)
+	user, err := uh.UserServ.Get(ctx, id, false)
 	if err != nil {
 		return helpers.ToApiError(err)
 	}
@@ -68,10 +66,7 @@ func (uh *UserHandl) GetUser(c *fiber.Ctx) error {
 func (uh *UserHandl) Update(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 
-	id, err := utils.GetIdFromLocals(c.Locals("user"))
-	if err != nil {
-		return helpers.ToApiError(err)
-	}
+	id := c.Locals("userId").(string)
 	updates := make(map[string]any)
 	nickname := c.FormValue("nickname")
 	if nickname != "" {
@@ -84,7 +79,6 @@ func (uh *UserHandl) Update(c *fiber.Ctx) error {
 		Updates: updates,
 		Id:      id,
 	}
-	fmt.Println(req)
 	if errs := helpers.ValidateStruct(req, uh.Validator); len(errs) > 0 {
 		return helpers.ValidationError(errs)
 	}
@@ -114,10 +108,7 @@ func (uh *UserHandl) Delete(c *fiber.Ctx) error {
 	if err := helpers.ParseAndValidateRequest(c, &req, helpers.Body{}, uh.Validator); err != nil {
 		return err
 	}
-	id, err := utils.GetIdFromLocals(c.Locals("user"))
-	if err != nil {
-		return helpers.ToApiError(err)
-	}
+	id := c.Locals("userId").(string)
 	if err := uh.UserServ.Delete(ctx, id, req.Password); err != nil {
 		return helpers.ToApiError(err)
 	}
@@ -155,10 +146,7 @@ func (uh *UserHandl) ChangeUserPassword(c *fiber.Ctx) error {
 	if err := helpers.ParseAndValidateRequest(c, &req, helpers.Body{}, uh.Validator); err != nil {
 		return err
 	}
-	id, err := utils.GetIdFromLocals(c.Locals("user"))
-	if err != nil {
-		return helpers.ToApiError(err)
-	}
+	id := c.Locals("userId").(string)
 	if err := uh.UserServ.ChangePassword(ctx, id, req.OldPasswrod, req.NewPassword); err != nil {
 		return helpers.ToApiError(err)
 	}

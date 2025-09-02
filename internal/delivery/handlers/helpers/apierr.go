@@ -10,7 +10,7 @@ import (
 
 var (
 	ErrNotFound          = errors.New("not found")
-	ErrAlreadyExists     = errors.New("alredy exists")
+	ErrAlreadyExists     = errors.New("already exists")
 	ErrBadRequest        = errors.New("bad request")
 	ErrInternalServer    = errors.New("internal server error")
 	ErrInvalidVerifyCode = errors.New("invalid verification code")
