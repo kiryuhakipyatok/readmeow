@@ -42,6 +42,13 @@ func ParseAndValidateRequest[T any](c *fiber.Ctx, request *T, requestType Reques
 	return nil
 }
 
+func ValidateId(c *fiber.Ctx, id string) error {
+	if err := uuid.Validate(id); err != nil {
+		return InvalidRequest()
+	}
+	return nil
+}
+
 func SuccessResponse(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(dto.SuccessResponse{
 		Code:    fiber.StatusOK,
@@ -49,9 +56,8 @@ func SuccessResponse(c *fiber.Ctx) error {
 	})
 }
 
-func ValidateId(c *fiber.Ctx, id string) error {
-	if err := uuid.Validate(id); err != nil {
-		return InvalidRequest()
-	}
-	return nil
+func InvalidState(c *fiber.Ctx) error {
+	return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+		"error": "invalid state",
+	})
 }

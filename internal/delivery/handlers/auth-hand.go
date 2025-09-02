@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 	"golang.org/x/oauth2"
 )
 
@@ -209,7 +210,18 @@ func (ah *AuthHandl) SendNewCode(c *fiber.Ctx) error {
 // @Failure 500 {object} helpers.ApiErr "Internal server error"
 // @Router /api/auth/google [get]
 func (ah *AuthHandl) GoogleOAuth(c *fiber.Ctx) error {
-	url := ah.OAuthConfig.GoogleOAuthConfig.AuthCodeURL("state", oauth2.AccessTypeOnline)
+	state := uuid.New().String()
+	exp := time.Now().Add(ah.OAuthConfig.StateExpire)
+	stateCookie := &fiber.Cookie{
+		Name:     "oauth_state",
+		Value:    state,
+		HTTPOnly: true,
+		Expires:  exp,
+		MaxAge:   int(time.Until(exp).Seconds()),
+		SameSite: "Lax",
+	}
+	c.Cookie(stateCookie)
+	url := ah.OAuthConfig.GoogleOAuthConfig.AuthCodeURL(state, oauth2.AccessTypeOnline)
 	return c.Redirect(url, fiber.StatusTemporaryRedirect)
 }
 
@@ -223,7 +235,18 @@ func (ah *AuthHandl) GoogleOAuth(c *fiber.Ctx) error {
 // @Failure 500 {object} helpers.ApiErr "Internal server error"
 // @Router /api/auth/github [get]
 func (ah *AuthHandl) GitHubOAuth(c *fiber.Ctx) error {
-	url := ah.OAuthConfig.GithubOAuthConfig.AuthCodeURL("state", oauth2.AccessTypeOnline)
+	state := uuid.New().String()
+	exp := time.Now().Add(ah.OAuthConfig.StateExpire)
+	stateCookie := &fiber.Cookie{
+		Name:     "oauth_state",
+		Value:    state,
+		HTTPOnly: true,
+		Expires:  exp,
+		MaxAge:   int(time.Until(exp).Seconds()),
+		SameSite: "Lax",
+	}
+	c.Cookie(stateCookie)
+	url := ah.OAuthConfig.GithubOAuthConfig.AuthCodeURL(state, oauth2.AccessTypeOnline)
 	return c.Redirect(url, fiber.StatusTemporaryRedirect)
 }
 
@@ -234,6 +257,21 @@ const (
 
 func (ah *AuthHandl) GoogleOAthCallback(c *fiber.Ctx) error {
 	ctx := c.UserContext()
+	state := c.Query("state")
+	defer func() {
+		s := &fiber.Cookie{
+			Name:     "oauth_state",
+			Value:    "",
+			HTTPOnly: true,
+			Expires:  time.Now().Add(-time.Hour),
+			MaxAge:   -1,
+			SameSite: "Lax",
+		}
+		c.Cookie(s)
+	}()
+	if c.Cookies("oauth_state") != state {
+		return helpers.InvalidState(c)
+	}
 	code := c.Query("code")
 	token, err := ah.OAuthConfig.GoogleOAuthConfig.Exchange(ctx, code)
 	if err != nil {
@@ -273,6 +311,21 @@ func (ah *AuthHandl) GoogleOAthCallback(c *fiber.Ctx) error {
 
 func (ah *AuthHandl) GitHubOAuthCallback(c *fiber.Ctx) error {
 	ctx := c.UserContext()
+	state := c.Query("state")
+	defer func() {
+		s := &fiber.Cookie{
+			Name:     "oauth_state",
+			Value:    "",
+			HTTPOnly: true,
+			Expires:  time.Now().Add(-time.Hour),
+			MaxAge:   -1,
+			SameSite: "Lax",
+		}
+		c.Cookie(s)
+	}()
+	if c.Cookies("oauth_state") != state {
+		return helpers.InvalidState(c)
+	}
 	code := c.Query("code")
 	token, err := ah.OAuthConfig.GithubOAuthConfig.Exchange(ctx, code)
 	if err != nil {

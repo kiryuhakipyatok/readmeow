@@ -66,10 +66,11 @@ cloudstorage:
   timeout: 1m
 
 oauth:
-    googleClientId: "${GOOGLE_CLIENT_ID}"
-    googleClientSecret: "${GOOGLE_CLIENT_SECRET}"
-    googleRedirectURL: "http://localhost:3333/api/auth/google/callback"  
-    githubRedirectURL: "http://localhost:3333/api/auth/github/callback"
-    githubClientId: "${GITHUB_CLIENT_ID}"
-    githubClientSecret: "${GITHUB_CLIENT_SECRET}"
+  googleClientId: "${GOOGLE_CLIENT_ID}"
+  googleClientSecret: "${GOOGLE_CLIENT_SECRET}"
+  googleRedirectURL: "http://localhost:3333/api/auth/google/callback"  
+  githubRedirectURL: "http://localhost:3333/api/auth/github/callback"
+  githubClientId: "${GITHUB_CLIENT_ID}"
+  githubClientSecret: "${GITHUB_CLIENT_SECRET}"
+  stateTTL: 5m
   

@@ -49,12 +49,13 @@ type AuthConfig struct {
 }
 
 type OAuthConfig struct {
-	GoogleClientId     string `mapstructure:"googleClientId"`
-	GoogleClientSecret string `mapstructure:"googleClientSecret"`
-	GoogleRedirectURL  string `mapstructure:"googleRedirectURL"`
-	GithubClientId     string `mapstructure:"githubClientId"`
-	GithubClientSecret string `mapstructure:"githubClientSecret"`
-	GithubRedirectURL  string `mapstructure:"githubRedirectURL"`
+	GoogleClientId     string        `mapstructure:"googleClientId"`
+	GoogleClientSecret string        `mapstructure:"googleClientSecret"`
+	GoogleRedirectURL  string        `mapstructure:"googleRedirectURL"`
+	GithubClientId     string        `mapstructure:"githubClientId"`
+	GithubClientSecret string        `mapstructure:"githubClientSecret"`
+	GithubRedirectURL  string        `mapstructure:"githubRedirectURL"`
+	StateTTL           time.Duration `mapstructure:"stateTTL"`
 }
 
 type StorageConfig struct {

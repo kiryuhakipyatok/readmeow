@@ -2,6 +2,7 @@ package oauth
 
 import (
 	"readmeow/internal/config"
+	"time"
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/github"
@@ -11,6 +12,7 @@ import (
 type OAuthConfig struct {
 	GoogleOAuthConfig *oauth2.Config
 	GithubOAuthConfig *oauth2.Config
+	StateExpire       time.Duration
 }
 
 type oauthParams struct {
@@ -57,5 +59,6 @@ func NewOAuthConfig(cfg config.OAuthConfig) OAuthConfig {
 	return OAuthConfig{
 		GoogleOAuthConfig: googleOAuthConfig,
 		GithubOAuthConfig: githubOAuthConfig,
+		StateExpire:       cfg.StateTTL,
 	}
 }
