@@ -38,10 +38,15 @@ Easily build, edit, and share README templates using widgets. Templates can be *
 ## 📦 Getting Started
 
 ### 1. Clone the repository
-```bash
+```powershell
 git clone https://github.com/kiryuhakipyatok/readmeow.git
 cd readmeow
 code .
 make docker-run-infra
 make docker-migrate-up
 make docker-run-app
+```
+
+### 2. Documentation
+After starting the application, you can access the API documentation at:
+http://localhost:3333/swagger
