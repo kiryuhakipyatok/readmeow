@@ -19,7 +19,7 @@ Easily build, edit, and share README templates using widgets. Templates can be *
   - filtering and sorting for templates and widgets.
 
 - ☁️ **Cloud storage**:
-  - upload avatars and widget/template images;
+  - upload avatars and widget/template/readmes images;
   - store files in **Cloudinary**.
 
 - 🏗️ **Architecture**:
@@ -39,5 +39,9 @@ Easily build, edit, and share README templates using widgets. Templates can be *
 
 ### 1. Clone the repository
 ```bash
-git clone https://github.com/<username>/<repo>.git
-cd <repo>
+git clone https://github.com/kiryuhakipyatok/readmeow.git
+cd readmeow
+code .
+make docker-run-infra
+make docker-migrate-up
+make docker-run-app
