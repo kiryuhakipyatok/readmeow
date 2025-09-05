@@ -1,0 +1,43 @@
+# 📝 READMEOW
+
+A tool for creating and customizing **GitHub profile README files**.  
+Easily build, edit, and share README templates using widgets. Templates can be **public** or **private**, and new READMEs can be generated from base or custom templates.  
+
+## 🚀 Features
+
+- 📂 **Templates**:
+  - create public and private templates;
+  - customize templates with widgets, text, links or images;
+  - generate README files from base or user-defined templates.
+
+- 🔑 **Authentication**:
+  - via verified email and password;
+  - OAuth login with Google or GitHub.
+
+- 🔍 **Search & Sorting**:
+  - full-text search with Elasticsearch;
+  - filtering and sorting for templates and widgets.
+
+- ☁️ **Cloud storage**:
+  - upload avatars and widget/template images;
+  - store files in **Cloudinary**.
+
+- 🏗️ **Architecture**:
+  - built with **Clean Architecture principles**;
+  - clear separation of domain, use cases, and infrastructure.
+
+## 🛠️ Tech Stack
+
+- **Backend**: [Golang](https://go.dev/) + [Fiber](https://gofiber.io/)  
+- **Database**: PostgreSQL  
+- **Cache**: Redis  
+- **Search**: Elasticsearch  
+- **File storage**: Cloudinary  
+- **Infrastructure**: Docker, Docker Compose  
+
+## 📦 Getting Started
+
+### 1. Clone the repository
+```bash
+git clone https://github.com/<username>/<repo>.git
+cd <repo>
