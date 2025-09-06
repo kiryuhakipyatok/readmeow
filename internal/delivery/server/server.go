@@ -6,22 +6,26 @@ import (
 	"readmeow/internal/config"
 	"readmeow/internal/delivery/handlers/helpers"
 	"readmeow/internal/delivery/ratelimiter"
+	"readmeow/pkg/monitoring"
+	"strconv"
 	"time"
 
 	_ "readmeow/docs"
 
+	"github.com/gofiber/adaptor/v2"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	jwtware "github.com/gofiber/jwt/v3"
 	"github.com/gofiber/swagger"
 	"github.com/golang-jwt/jwt/v4"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 type Server struct {
 	App *fiber.App
 }
 
-func NewServer(scfg config.ServerConfig, acfg config.AuthConfig, apcfg config.AppConfig) *Server {
+func NewServer(scfg config.ServerConfig, acfg config.AuthConfig, apcfg config.AppConfig, ps *monitoring.PrometheusSetup) *Server {
 	app := fiber.New(fiber.Config{
 		ReadTimeout:  time.Duration(scfg.ReadTimeout),
 		WriteTimeout: time.Duration(scfg.WriteTimeout),
@@ -31,6 +35,8 @@ func NewServer(scfg config.ServerConfig, acfg config.AuthConfig, apcfg config.Ap
 	})
 
 	corsMiddleware := cors.New(cors.Config{})
+
+	app.Get("/metrics", adaptor.HTTPHandler(promhttp.Handler()))
 
 	swaggerGroup := app.Group("/api/swagger")
 
@@ -64,6 +70,7 @@ func NewServer(scfg config.ServerConfig, acfg config.AuthConfig, apcfg config.Ap
 		alreadyLoginCheck(validAuthPaths),
 		rateLimiterMiddleware(scfg),
 		requestTimeoutMiddleware(acfg.TokenTTL),
+		metricsMiddleware(ps),
 	)
 
 	return &Server{App: app}
@@ -127,6 +134,29 @@ func authMiddleware(acfg config.AuthConfig, valid map[string]bool) fiber.Handler
 	}
 }
 
+func metricsMiddleware(ps *monitoring.PrometheusSetup) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		start := time.Now()
+		err := c.Next()
+		duration := time.Since(start).Seconds()
+		statusCode := c.Response().StatusCode()
+		if err != nil {
+			switch err := err.(type) {
+			case *fiber.Error:
+				statusCode = err.Code
+				ps.HTTPErrorTotal.WithLabelValues(c.Route().Path, c.Method(), strconv.Itoa(statusCode), err.Message).Inc()
+			case helpers.ApiErr:
+				statusCode = err.Code
+				ps.HTTPErrorTotal.WithLabelValues(c.Route().Path, c.Method(), strconv.Itoa(statusCode), err.Message.(string)).Inc()
+			}
+
+		}
+		ps.HTTPRequestsTotal.WithLabelValues(c.Route().Path, c.Method()).Inc()
+		ps.HTTPRequestDuration.WithLabelValues(c.Route().Path, c.Method(), strconv.Itoa(statusCode)).Observe(duration)
+		return err
+	}
+}
+
 func requestTimeoutMiddleware(timeout time.Duration) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		ctx, cancel := context.WithTimeout(c.UserContext(), timeout)
@@ -145,9 +175,7 @@ func requestTimeoutMiddleware(timeout time.Duration) fiber.Handler {
 func errorHandler(c *fiber.Ctx, err error) error {
 	var fe *fiber.Error
 	if errors.As(err, &fe) {
-		return c.Status(fe.Code).JSON(fiber.Map{
-			"error": fe.Message,
-		})
+		return c.Status(fe.Code).JSON(fe)
 	}
 	var apiErr helpers.ApiErr
 	if errors.As(err, &apiErr) {

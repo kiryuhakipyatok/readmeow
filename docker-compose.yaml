@@ -46,6 +46,7 @@ services:
       test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
       interval: 5s
       timeout: 5s
+      start_period: 30s
       retries: 5
     networks:
       - app-network
@@ -81,6 +82,18 @@ services:
     entrypoint: ["goose", "-dir", "/migrations"]
     networks:
       - app-network
+
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    depends_on:
+      - readmeow
+    volumes:
+      - ./pkg/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - app-network
+    stop_grace_period: 5s
 
 networks:
   app-network:

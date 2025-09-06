@@ -17,6 +17,7 @@ import (
 	"readmeow/pkg/cache"
 	"readmeow/pkg/cloudstorage"
 	"readmeow/pkg/logger"
+	"readmeow/pkg/monitoring"
 	"readmeow/pkg/search"
 	stor "readmeow/pkg/storage"
 	"readmeow/pkg/validator"
@@ -54,7 +55,10 @@ func Run() {
 	search := search.MustConnect(cfg.Search)
 	log.Log.Info("connected to elasticsearch")
 
-	server := server.NewServer(cfg.Server, cfg.Auth, cfg.App)
+	ps := monitoring.NewPrometheusSetup()
+	log.Log.Info("prometheus setuped")
+
+	server := server.NewServer(cfg.Server, cfg.Auth, cfg.App, ps)
 	defer func() {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second*time.Duration(cfg.Server.CloseTimeout))
 		defer cancel()
