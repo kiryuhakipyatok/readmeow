@@ -1,5 +1,11 @@
 basePath: /api/
 definitions:
+  apierr.ApiErr:
+    properties:
+      code:
+        type: integer
+      message: {}
+    type: object
   dto.ChangePasswordRequest:
     properties:
       new_password:
@@ -137,6 +143,8 @@ definitions:
         type: string
       image:
         type: string
+      is_public:
+        type: boolean
       last_update_time:
         type: string
       likes:
@@ -152,6 +160,7 @@ definitions:
     - description
     - id
     - image
+    - is_public
     - last_update_time
     - likes
     - num_of_users
@@ -166,6 +175,8 @@ definitions:
         type: string
       image:
         type: string
+      is_public:
+        type: boolean
       last_update_time:
         type: string
       likes:
@@ -187,6 +198,7 @@ definitions:
     - description
     - id
     - image
+    - is_public
     - last_update_time
     - likes
     - num_of_users
@@ -311,12 +323,6 @@ definitions:
         example: desc/asc
         type: string
     type: object
-  helpers.ApiErr:
-    properties:
-      code:
-        type: integer
-      message: {}
-    type: object
   models.Readme:
     properties:
       create_time:
@@ -352,7 +358,7 @@ definitions:
           type: object
         type: array
     type: object
-  models.Template:
+  models.TemplateWithOwner:
     properties:
       create_time:
         type: string
@@ -374,7 +380,11 @@ definitions:
         type: array
       num_of_users:
         type: integer
+      owner_avatar:
+        type: string
       owner_id:
+        type: string
+      owner_nickname:
         type: string
       render_order:
         items:
@@ -437,11 +447,11 @@ paths:
         "400":
           description: Bad request
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
       summary: Login via GitHub
       tags:
       - Auth
@@ -458,11 +468,11 @@ paths:
         "400":
           description: Bad request
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
       summary: Login via Google
       tags:
       - Auth
@@ -488,23 +498,23 @@ paths:
         "400":
           description: Bad request
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
         "404":
           description: Not found
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
         "409":
           description: Already exists
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
         "422":
           description: Invalid JSON
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
       summary: Login
       tags:
       - Auth
@@ -545,23 +555,23 @@ paths:
         "400":
           description: Bad request
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
         "404":
           description: Not found
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
         "409":
           description: Already exists
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
         "422":
           description: Invalid JSON
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
       summary: Send New Code
       tags:
       - Auth
@@ -578,11 +588,11 @@ paths:
         "404":
           description: Not found
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
       security:
       - ApiKeyAuth: []
       summary: Profile
@@ -610,23 +620,23 @@ paths:
         "400":
           description: Bad request
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
         "404":
           description: Not found
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
         "409":
           description: Already exists
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
         "422":
           description: Invalid JSON
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
       summary: Register
       tags:
       - Auth
@@ -652,23 +662,23 @@ paths:
         "400":
           description: Bad request
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
         "404":
           description: Not found
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
         "409":
           description: Already exists
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
         "422":
           description: Invalid JSON
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
       summary: Verify Email
       tags:
       - Auth
@@ -698,11 +708,11 @@ paths:
         "400":
           description: Bad request
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
       security:
       - ApiKeyAuth: []
       summary: Fetch User Readmes
@@ -757,23 +767,23 @@ paths:
         "400":
           description: Bad request
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
         "404":
           description: Not found
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
         "409":
           description: Already exists
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
         "422":
           description: Invalid JSON
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
       security:
       - ApiKeyAuth: []
       summary: Create Readme
@@ -798,15 +808,15 @@ paths:
         "400":
           description: Bad request
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
         "404":
           description: Not found
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
       security:
       - ApiKeyAuth: []
       summary: Delete Readme
@@ -830,15 +840,15 @@ paths:
         "400":
           description: Bad request
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
         "404":
           description: Not found
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
       security:
       - ApiKeyAuth: []
       summary: Get Readme by ID
@@ -894,19 +904,19 @@ paths:
         "400":
           description: Bad request
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
         "404":
           description: Not found
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
         "422":
           description: Invalid JSON
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
       security:
       - ApiKeyAuth: []
       summary: Update Readme
@@ -936,21 +946,19 @@ paths:
         "400":
           description: Bad request
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
         "404":
           description: Not found
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
         "422":
           description: Invalid JSON
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
-      security:
-      - ApiKeyAuth: []
+            $ref: '#/definitions/apierr.ApiErr'
       summary: Search Templates
       tags:
       - Templates
@@ -1004,19 +1012,19 @@ paths:
         "400":
           description: Bad request
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
         "404":
           description: Not found
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
         "422":
           description: Invalid JSON
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
       security:
       - ApiKeyAuth: []
       summary: Update Template
@@ -1078,23 +1086,23 @@ paths:
         "400":
           description: Bad request
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
         "404":
           description: Not found
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
         "409":
           description: Already exists
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
         "422":
           description: Invalid JSON
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
       security:
       - ApiKeyAuth: []
       summary: Create Template
@@ -1119,15 +1127,15 @@ paths:
         "400":
           description: Bad request
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
         "404":
           description: Not found
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
       security:
       - ApiKeyAuth: []
       summary: Delete Template
@@ -1147,19 +1155,19 @@ paths:
         "200":
           description: Template data
           schema:
-            $ref: '#/definitions/models.Template'
+            $ref: '#/definitions/models.TemplateWithOwner'
         "400":
           description: Bad request
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
         "404":
           description: Not found
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
       security:
       - ApiKeyAuth: []
       summary: Get Template
@@ -1184,19 +1192,19 @@ paths:
         "400":
           description: Bad request
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
         "404":
           description: Not found
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
         "409":
           description: Already disliked
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
       security:
       - ApiKeyAuth: []
       summary: Dislike Template
@@ -1230,19 +1238,19 @@ paths:
         "400":
           description: Bad request
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
         "404":
           description: Not found
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
         "422":
           description: Invalid JSON
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
       security:
       - ApiKeyAuth: []
       summary: Fetch Favorite Templates
@@ -1267,19 +1275,19 @@ paths:
         "400":
           description: Bad request
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
         "404":
           description: Not found
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
         "409":
           description: Already liked
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
       security:
       - ApiKeyAuth: []
       summary: Like Template
@@ -1307,19 +1315,19 @@ paths:
         "400":
           description: Bad request
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
         "404":
           description: Not found
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
         "422":
           description: Invalid JSON
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
       security:
       - ApiKeyAuth: []
       summary: Delete User
@@ -1353,19 +1361,19 @@ paths:
         "400":
           description: Bad request
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
         "404":
           description: Not found
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
         "422":
           description: Invalid JSON
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
       security:
       - ApiKeyAuth: []
       summary: Update User
@@ -1390,15 +1398,15 @@ paths:
         "400":
           description: Bad request
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
         "404":
           description: Not found
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
       security:
       - ApiKeyAuth: []
       summary: Get User
@@ -1426,23 +1434,23 @@ paths:
         "400":
           description: Bad request
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
         "404":
           description: Not found
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
         "422":
           description: Invalid JSON
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
       security:
       - ApiKeyAuth: []
       summary: Change User Password
@@ -1472,21 +1480,19 @@ paths:
         "400":
           description: Bad request
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
         "404":
           description: Not found
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
         "422":
           description: Invalid JSON
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
-      security:
-      - ApiKeyAuth: []
+            $ref: '#/definitions/apierr.ApiErr'
       summary: Search Widgets
       tags:
       - Widgets
@@ -1509,15 +1515,15 @@ paths:
         "400":
           description: Bad request
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
         "404":
           description: Not found
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
       security:
       - ApiKeyAuth: []
       summary: Get Widget
@@ -1542,19 +1548,19 @@ paths:
         "400":
           description: Bad request
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
         "404":
           description: Not found
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
         "409":
           description: Already exists
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
       security:
       - ApiKeyAuth: []
       summary: Dislike Widget
@@ -1588,19 +1594,19 @@ paths:
         "400":
           description: Bad request
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
         "404":
           description: Not found
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
         "422":
           description: Invalid JSON
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
       security:
       - ApiKeyAuth: []
       summary: Fetch Favorite Widgets
@@ -1625,19 +1631,19 @@ paths:
         "400":
           description: Bad request
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
         "404":
           description: Not found
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
         "409":
           description: Already exists
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/helpers.ApiErr'
+            $ref: '#/definitions/apierr.ApiErr'
       security:
       - ApiKeyAuth: []
       summary: Like Widget

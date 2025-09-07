@@ -40,11 +40,11 @@ func NewAuthHandle(as services.AuthServ, us services.UserServ, oc oauth.OAuthCon
 // @Produce json
 // @Param body body dto.RegisterRequest true "Register Request"
 // @Success 200 {object} dto.SuccessResponse "Success response"
-// @Failure 400 {object} helpers.ApiErr "Bad request"
-// @Failure 404 {object} helpers.ApiErr "Not found"
-// @Failure 409 {object} helpers.ApiErr "Already exists"
-// @Failure 422 {object} helpers.ApiErr "Invalid JSON"
-// @Failure 500 {object} helpers.ApiErr "Internal server error"
+// @Failure 400 {object} apierr.ApiErr "Bad request"
+// @Failure 404 {object} apierr.ApiErr "Not found"
+// @Failure 409 {object} apierr.ApiErr "Already exists"
+// @Failure 422 {object} apierr.ApiErr "Invalid JSON"
+// @Failure 500 {object} apierr.ApiErr "Internal server error"
 // @Router /api/auth/register [post]
 func (ah *AuthHandl) Register(c *fiber.Ctx) error {
 	ctx := c.UserContext()
@@ -66,11 +66,11 @@ func (ah *AuthHandl) Register(c *fiber.Ctx) error {
 // @Produce json
 // @Param body body dto.VerifyRequest true "Verification Request"
 // @Success 200 {object} dto.SuccessResponse "Success response"
-// @Failure 400 {object} helpers.ApiErr "Bad request"
-// @Failure 404 {object} helpers.ApiErr "Not found"
-// @Failure 409 {object} helpers.ApiErr "Already exists"
-// @Failure 422 {object} helpers.ApiErr "Invalid JSON"
-// @Failure 500 {object} helpers.ApiErr "Internal server error"
+// @Failure 400 {object} apierr.ApiErr "Bad request"
+// @Failure 404 {object} apierr.ApiErr "Not found"
+// @Failure 409 {object} apierr.ApiErr "Already exists"
+// @Failure 422 {object} apierr.ApiErr "Invalid JSON"
+// @Failure 500 {object} apierr.ApiErr "Internal server error"
 // @Router /api/auth/verify [post]
 func (ah *AuthHandl) VerifyEmail(c *fiber.Ctx) error {
 	ctx := c.UserContext()
@@ -92,11 +92,11 @@ func (ah *AuthHandl) VerifyEmail(c *fiber.Ctx) error {
 // @Produce json
 // @Param body body dto.LoginRequest true "Login Request"
 // @Success 200 {object} dto.LoginResponse "Login response"
-// @Failure 400 {object} helpers.ApiErr "Bad request"
-// @Failure 404 {object} helpers.ApiErr "Not found"
-// @Failure 409 {object} helpers.ApiErr "Already exists"
-// @Failure 422 {object} helpers.ApiErr "Invalid JSON"
-// @Failure 500 {object} helpers.ApiErr "Internal server error"
+// @Failure 400 {object} apierr.ApiErr "Bad request"
+// @Failure 404 {object} apierr.ApiErr "Not found"
+// @Failure 409 {object} apierr.ApiErr "Already exists"
+// @Failure 422 {object} apierr.ApiErr "Invalid JSON"
+// @Failure 500 {object} apierr.ApiErr "Internal server error"
 // @Router /api/auth/login [post]
 func (ah *AuthHandl) Login(c *fiber.Ctx) error {
 	ctx := c.UserContext()
@@ -152,8 +152,8 @@ func (ah *AuthHandl) Logout(c *fiber.Ctx) error {
 // @Tags Auth
 // @Produce json
 // @Success 200 {object} dto.UserResponse "User info response"
-// @Failure 404 {object} helpers.ApiErr "Not found"
-// @Failure 500 {object} helpers.ApiErr "Internal server error"
+// @Failure 404 {object} apierr.ApiErr "Not found"
+// @Failure 500 {object} apierr.ApiErr "Internal server error"
 // @Security ApiKeyAuth
 // @Router /api/auth/profile [get]
 func (ah *AuthHandl) Profile(c *fiber.Ctx) error {
@@ -174,11 +174,11 @@ func (ah *AuthHandl) Profile(c *fiber.Ctx) error {
 // @Produce json
 // @Param body body dto.SendNewCodeRequest true "SendNewCodeRequest Request"
 // @Success 200 {object} dto.SuccessResponse "Success response"
-// @Failure 400 {object} helpers.ApiErr "Bad request"
-// @Failure 404 {object} helpers.ApiErr "Not found"
-// @Failure 409 {object} helpers.ApiErr "Already exists"
-// @Failure 422 {object} helpers.ApiErr "Invalid JSON"
-// @Failure 500 {object} helpers.ApiErr "Internal server error"
+// @Failure 400 {object} apierr.ApiErr "Bad request"
+// @Failure 404 {object} apierr.ApiErr "Not found"
+// @Failure 409 {object} apierr.ApiErr "Already exists"
+// @Failure 422 {object} apierr.ApiErr "Invalid JSON"
+// @Failure 500 {object} apierr.ApiErr "Internal server error"
 // @Router /api/auth/newcode [post]
 func (ah *AuthHandl) SendNewCode(c *fiber.Ctx) error {
 	ctx := c.UserContext()
@@ -198,8 +198,8 @@ func (ah *AuthHandl) SendNewCode(c *fiber.Ctx) error {
 // @Tags Auth
 // @Produce json
 // @Success 307 "Redirect to Google OAuth"
-// @Failure 400 {object} helpers.ApiErr "Bad request"
-// @Failure 500 {object} helpers.ApiErr "Internal server error"
+// @Failure 400 {object} apierr.ApiErr "Bad request"
+// @Failure 500 {object} apierr.ApiErr "Internal server error"
 // @Router /api/auth/google [get]
 func (ah *AuthHandl) GoogleOAuth(c *fiber.Ctx) error {
 	state := uuid.New().String()
@@ -223,8 +223,8 @@ func (ah *AuthHandl) GoogleOAuth(c *fiber.Ctx) error {
 // @Tags Auth
 // @Produce json
 // @Success 307 "Redirect to GitHub OAuth"
-// @Failure 400 {object} helpers.ApiErr "Bad request"
-// @Failure 500 {object} helpers.ApiErr "Internal server error"
+// @Failure 400 {object} apierr.ApiErr "Bad request"
+// @Failure 500 {object} apierr.ApiErr "Internal server error"
 // @Router /api/auth/github [get]
 func (ah *AuthHandl) GitHubOAuth(c *fiber.Ctx) error {
 	state := uuid.New().String()

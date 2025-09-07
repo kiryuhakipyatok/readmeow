@@ -32,9 +32,9 @@ func NewWidgetHandl(ws services.WidgetServ, as services.AuthServ, v *validator.V
 // @Security     ApiKeyAuth
 // @Param        widget path string true "Widget ID"
 // @Success      200 {object} models.Widget "Widget data"
-// @Failure      400 {object} helpers.ApiErr "Bad request"
-// @Failure      404 {object} helpers.ApiErr "Not found"
-// @Failure      500 {object} helpers.ApiErr "Internal server error"
+// @Failure      400 {object} apierr.ApiErr "Bad request"
+// @Failure      404 {object} apierr.ApiErr "Not found"
+// @Failure      500 {object} apierr.ApiErr "Internal server error"
 // @Router       /api/widgets/{widget} [get]
 func (wh *WidgetHandl) GetWidgetById(c *fiber.Ctx) error {
 	ctx := c.UserContext()
@@ -57,10 +57,10 @@ func (wh *WidgetHandl) GetWidgetById(c *fiber.Ctx) error {
 // @Produce      json
 // @Param        body body dto.SearchWidgetRequestDoc true "Search widgets request"
 // @Success      200 {array} dto.WidgetResponse "List of widgets"
-// @Failure      400 {object} helpers.ApiErr "Bad request"
-// @Failure      404 {object} helpers.ApiErr "Not found"
-// @Failure      422 {object} helpers.ApiErr "Invalid JSON"
-// @Failure      500 {object} helpers.ApiErr "Internal server error"
+// @Failure      400 {object} apierr.ApiErr "Bad request"
+// @Failure      404 {object} apierr.ApiErr "Not found"
+// @Failure      422 {object} apierr.ApiErr "Invalid JSON"
+// @Failure      500 {object} apierr.ApiErr "Internal server error"
 // @Router       /api/widgets [get]
 func (wh *WidgetHandl) SearchWidgets(c *fiber.Ctx) error {
 	ctx := c.UserContext()
@@ -84,10 +84,10 @@ func (wh *WidgetHandl) SearchWidgets(c *fiber.Ctx) error {
 // @Security     ApiKeyAuth
 // @Param        widget path string true "Widget ID"
 // @Success      200 {object} dto.SuccessResponse "Success response"
-// @Failure      400 {object} helpers.ApiErr "Bad request"
-// @Failure      404 {object} helpers.ApiErr "Not found"
-// @Failure      409 {object} helpers.ApiErr "Already exists"
-// @Failure      500 {object} helpers.ApiErr "Internal server error"
+// @Failure      400 {object} apierr.ApiErr "Bad request"
+// @Failure      404 {object} apierr.ApiErr "Not found"
+// @Failure      409 {object} apierr.ApiErr "Already exists"
+// @Failure      500 {object} apierr.ApiErr "Internal server error"
 // @Router       /api/widgets/like/{widget} [patch]
 func (wh *WidgetHandl) Like(c *fiber.Ctx) error {
 	ctx := c.UserContext()
@@ -110,10 +110,10 @@ func (wh *WidgetHandl) Like(c *fiber.Ctx) error {
 // @Security     ApiKeyAuth
 // @Param        widget path string true "Widget ID"
 // @Success      200 {object} dto.SuccessResponse "Success response"
-// @Failure      400 {object} helpers.ApiErr "Bad request"
-// @Failure      404 {object} helpers.ApiErr "Not found"
-// @Failure      409 {object} helpers.ApiErr "Already exists"
-// @Failure      500 {object} helpers.ApiErr "Internal server error"
+// @Failure      400 {object} apierr.ApiErr "Bad request"
+// @Failure      404 {object} apierr.ApiErr "Not found"
+// @Failure      409 {object} apierr.ApiErr "Already exists"
+// @Failure      500 {object} apierr.ApiErr "Internal server error"
 // @Router       /api/widgets/dislike/{widget} [patch]
 func (wh *WidgetHandl) Dislike(c *fiber.Ctx) error {
 	ctx := c.UserContext()
@@ -137,10 +137,10 @@ func (wh *WidgetHandl) Dislike(c *fiber.Ctx) error {
 // @Security     ApiKeyAuth
 // @Param        body query dto.PaginationRequest true "Pagination request"
 // @Success      200 {array} dto.WidgetResponse "List of favorite widgets"
-// @Failure      400 {object} helpers.ApiErr "Bad request"
-// @Failure      404 {object} helpers.ApiErr "Not found"
-// @Failure      422 {object} helpers.ApiErr "Invalid JSON"
-// @Failure      500 {object} helpers.ApiErr "Internal server error"
+// @Failure      400 {object} apierr.ApiErr "Bad request"
+// @Failure      404 {object} apierr.ApiErr "Not found"
+// @Failure      422 {object} apierr.ApiErr "Invalid JSON"
+// @Failure      500 {object} apierr.ApiErr "Internal server error"
 // @Router       /api/widgets/favorite [get]
 func (wh *WidgetHandl) FetchFavoriteWidgets(c *fiber.Ctx) error {
 	ctx := c.UserContext()

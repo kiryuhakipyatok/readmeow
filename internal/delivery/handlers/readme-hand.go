@@ -34,11 +34,11 @@ func NewReadmeHandl(rs services.ReadmeServ, as services.AuthServ, v *validator.V
 // @Security     ApiKeyAuth
 // @Param        data formData dto.CreateReadmeRequestDoc true "Readme creation request"
 // @Success      200 {object} dto.SuccessResponse "Success response"
-// @Failure      400 {object} helpers.ApiErr "Bad request"
-// @Failure      404 {object} helpers.ApiErr "Not found"
-// @Failure 409 {object} helpers.ApiErr "Already exists"
-// @Failure      422 {object} helpers.ApiErr "Invalid JSON"
-// @Failure      500 {object} helpers.ApiErr "Internal server error"
+// @Failure      400 {object} apierr.ApiErr "Bad request"
+// @Failure      404 {object} apierr.ApiErr "Not found"
+// @Failure 409 {object} apierr.ApiErr "Already exists"
+// @Failure      422 {object} apierr.ApiErr "Invalid JSON"
+// @Failure      500 {object} apierr.ApiErr "Internal server error"
 // @Router       /api/readmes [post]
 func (rh *ReadmeHandl) CreateReadme(c *fiber.Ctx) error {
 	ctx := c.UserContext()
@@ -95,9 +95,9 @@ func (rh *ReadmeHandl) CreateReadme(c *fiber.Ctx) error {
 // @Security     ApiKeyAuth
 // @Param        readme path string true "Readme ID"
 // @Success      200 {object} dto.SuccessResponse "Success response"
-// @Failure      400 {object} helpers.ApiErr "Bad request"
-// @Failure      404 {object} helpers.ApiErr "Not found"
-// @Failure      500 {object} helpers.ApiErr "Internal server error"
+// @Failure      400 {object} apierr.ApiErr "Bad request"
+// @Failure      404 {object} apierr.ApiErr "Not found"
+// @Failure      500 {object} apierr.ApiErr "Internal server error"
 // @Router       /api/readmes/{readme} [delete]
 func (rh *ReadmeHandl) DeleteReadme(c *fiber.Ctx) error {
 	ctx := c.UserContext()
@@ -122,10 +122,10 @@ func (rh *ReadmeHandl) DeleteReadme(c *fiber.Ctx) error {
 // @Security     ApiKeyAuth
 // @Param        data formData dto.UpdateReadmeRequestDoc true "Readme update request"
 // @Success      200 {object} dto.SuccessResponse "Success response"
-// @Failure      400 {object} helpers.ApiErr "Bad request"
-// @Failure      404 {object} helpers.ApiErr "Not found"
-// @Failure      422 {object} helpers.ApiErr "Invalid JSON"
-// @Failure      500 {object} helpers.ApiErr "Internal server error"
+// @Failure      400 {object} apierr.ApiErr "Bad request"
+// @Failure      404 {object} apierr.ApiErr "Not found"
+// @Failure      422 {object} apierr.ApiErr "Invalid JSON"
+// @Failure      500 {object} apierr.ApiErr "Internal server error"
 // @Router       /api/readmes/{readme} [patch]
 func (rh *ReadmeHandl) UpdateReadme(c *fiber.Ctx) error {
 	ctx := c.UserContext()
@@ -181,9 +181,9 @@ func (rh *ReadmeHandl) UpdateReadme(c *fiber.Ctx) error {
 // @Security     ApiKeyAuth
 // @Param        readme path string true "Readme ID"
 // @Success      200 {object} models.Readme "Success response"
-// @Failure      400 {object} helpers.ApiErr "Bad request"
-// @Failure      404 {object} helpers.ApiErr "Not found"
-// @Failure      500 {object} helpers.ApiErr "Internal server error"
+// @Failure      400 {object} apierr.ApiErr "Bad request"
+// @Failure      404 {object} apierr.ApiErr "Not found"
+// @Failure      500 {object} apierr.ApiErr "Internal server error"
 // @Router       /api/readmes/{readme} [get]
 func (rh *ReadmeHandl) GetReadmeById(c *fiber.Ctx) error {
 	ctx := c.UserContext()
@@ -206,8 +206,8 @@ func (rh *ReadmeHandl) GetReadmeById(c *fiber.Ctx) error {
 // @Security     ApiKeyAuth
 // @Param        body query dto.PaginationRequest true "Pagination request"
 // @Success      200 {array} dto.ReadmeResponse "Success response"
-// @Failure      400 {object} helpers.ApiErr "Bad request"
-// @Failure      500 {object} helpers.ApiErr "Internal server error"
+// @Failure      400 {object} apierr.ApiErr "Bad request"
+// @Failure      500 {object} apierr.ApiErr "Internal server error"
 // @Router       /api/readmes [get]
 func (rh *ReadmeHandl) FetchReadmesByUser(c *fiber.Ctx) error {
 	ctx := c.UserContext()

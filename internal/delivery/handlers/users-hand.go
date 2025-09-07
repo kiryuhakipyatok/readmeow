@@ -33,9 +33,9 @@ func NewUserHandl(us services.UserServ, as services.AuthServ, v *validator.Valid
 // @Security     ApiKeyAuth
 // @Param        user path string true "User ID"
 // @Success      200 {object} dto.UserResponse "User data"
-// @Failure      400 {object} helpers.ApiErr "Bad request"
-// @Failure      404 {object} helpers.ApiErr "Not found"
-// @Failure      500 {object} helpers.ApiErr "Internal server error"
+// @Failure      400 {object} apierr.ApiErr "Bad request"
+// @Failure      404 {object} apierr.ApiErr "Not found"
+// @Failure      500 {object} apierr.ApiErr "Internal server error"
 // @Router       /api/users/{user} [get]
 func (uh *UserHandl) GetUser(c *fiber.Ctx) error {
 	ctx := c.UserContext()
@@ -59,10 +59,10 @@ func (uh *UserHandl) GetUser(c *fiber.Ctx) error {
 // @Security     ApiKeyAuth
 // @Param        data formData dto.UpdateUserRequestDoc true "Update user request"
 // @Success      200 {object} dto.SuccessResponse "Success response"
-// @Failure      400 {object} helpers.ApiErr "Bad request"
-// @Failure      404 {object} helpers.ApiErr "Not found"
-// @Failure      422 {object} helpers.ApiErr "Invalid JSON"
-// @Failure      500 {object} helpers.ApiErr "Internal server error"
+// @Failure      400 {object} apierr.ApiErr "Bad request"
+// @Failure      404 {object} apierr.ApiErr "Not found"
+// @Failure      422 {object} apierr.ApiErr "Invalid JSON"
+// @Failure      500 {object} apierr.ApiErr "Internal server error"
 // @Router       /api/users [patch]
 func (uh *UserHandl) Update(c *fiber.Ctx) error {
 	ctx := c.UserContext()
@@ -98,10 +98,10 @@ func (uh *UserHandl) Update(c *fiber.Ctx) error {
 // @Security     ApiKeyAuth
 // @Param        body body dto.DeleteUserRequest true "Delete user request"
 // @Success      200 {object} dto.SuccessResponse "Success response"
-// @Failure      400 {object} helpers.ApiErr "Bad request"
-// @Failure      404 {object} helpers.ApiErr "Not found"
-// @Failure      422 {object} helpers.ApiErr "Invalid JSON"
-// @Failure      500 {object} helpers.ApiErr "Internal server error"
+// @Failure      400 {object} apierr.ApiErr "Bad request"
+// @Failure      404 {object} apierr.ApiErr "Not found"
+// @Failure      422 {object} apierr.ApiErr "Invalid JSON"
+// @Failure      500 {object} apierr.ApiErr "Internal server error"
 // @Router       /api/users [delete]
 func (uh *UserHandl) Delete(c *fiber.Ctx) error {
 	ctx := c.UserContext()
@@ -135,11 +135,11 @@ func (uh *UserHandl) Delete(c *fiber.Ctx) error {
 // @Security     ApiKeyAuth
 // @Param        body body dto.ChangePasswordRequest true "Change password request"
 // @Success      200 {object} dto.SuccessResponse "Success response"
-// @Failure      400 {object} helpers.ApiErr "Bad request"
-// @Failure      401 {object} helpers.ApiErr "Unauthorized"
-// @Failure      404 {object} helpers.ApiErr "Not found"
-// @Failure      422 {object} helpers.ApiErr "Invalid JSON"
-// @Failure      500 {object} helpers.ApiErr "Internal server error"
+// @Failure      400 {object} apierr.ApiErr "Bad request"
+// @Failure      401 {object} apierr.ApiErr "Unauthorized"
+// @Failure      404 {object} apierr.ApiErr "Not found"
+// @Failure      422 {object} apierr.ApiErr "Invalid JSON"
+// @Failure      500 {object} apierr.ApiErr "Internal server error"
 // @Router       /api/users/password [patch]
 func (uh *UserHandl) ChangeUserPassword(c *fiber.Ctx) error {
 	ctx := c.UserContext()

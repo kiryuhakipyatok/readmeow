@@ -35,11 +35,11 @@ func NewTemplateHandl(ts services.TemplateServ, as services.AuthServ, v *validat
 // @Security     ApiKeyAuth
 // @Param        data formData dto.CreateTemplateRequestDoc true "Template creation request"
 // @Success      200 {object} dto.SuccessResponse "Success response"
-// @Failure      400 {object} helpers.ApiErr "Bad request"
-// @Failure      404 {object} helpers.ApiErr "Not found"
-// @Failure 409 {object} helpers.ApiErr "Already exists"
-// @Failure      422 {object} helpers.ApiErr "Invalid JSON"
-// @Failure      500 {object} helpers.ApiErr "Internal server error"
+// @Failure      400 {object} apierr.ApiErr "Bad request"
+// @Failure      404 {object} apierr.ApiErr "Not found"
+// @Failure 409 {object} apierr.ApiErr "Already exists"
+// @Failure      422 {object} apierr.ApiErr "Invalid JSON"
+// @Failure      500 {object} apierr.ApiErr "Internal server error"
 // @Router       /api/templates [post]
 func (th *TemplateHandl) CreateTemplate(c *fiber.Ctx) error {
 	ctx := c.UserContext()
@@ -101,10 +101,10 @@ func (th *TemplateHandl) CreateTemplate(c *fiber.Ctx) error {
 // @Security     ApiKeyAuth
 // @Param        data formData dto.UpdateTemplateRequestDoc true "Update template request"
 // @Success      200 {object} dto.SuccessResponse "Success response"
-// @Failure      400 {object} helpers.ApiErr "Bad request"
-// @Failure      404 {object} helpers.ApiErr "Not found"
-// @Failure      422 {object} helpers.ApiErr "Invalid JSON"
-// @Failure      500 {object} helpers.ApiErr "Internal server error"
+// @Failure      400 {object} apierr.ApiErr "Bad request"
+// @Failure      404 {object} apierr.ApiErr "Not found"
+// @Failure      422 {object} apierr.ApiErr "Invalid JSON"
+// @Failure      500 {object} apierr.ApiErr "Internal server error"
 // @Router       /api/templates [patch]
 func (th *TemplateHandl) UpdateTemplate(c *fiber.Ctx) error {
 	ctx := c.UserContext()
@@ -175,9 +175,9 @@ func (th *TemplateHandl) UpdateTemplate(c *fiber.Ctx) error {
 // @Security     ApiKeyAuth
 // @Param        template path string true "Template ID"
 // @Success      200 {object} dto.SuccessResponse "Success response"
-// @Failure      400 {object} helpers.ApiErr "Bad request"
-// @Failure      404 {object} helpers.ApiErr "Not found"
-// @Failure      500 {object} helpers.ApiErr "Internal server error"
+// @Failure      400 {object} apierr.ApiErr "Bad request"
+// @Failure      404 {object} apierr.ApiErr "Not found"
+// @Failure      500 {object} apierr.ApiErr "Internal server error"
 // @Router       /api/templates/{template} [delete]
 func (th *TemplateHandl) DeleteTemplate(c *fiber.Ctx) error {
 	ctx := c.UserContext()
@@ -199,10 +199,10 @@ func (th *TemplateHandl) DeleteTemplate(c *fiber.Ctx) error {
 // @Produce      json
 // @Security     ApiKeyAuth
 // @Param        template path string true "Template ID"
-// @Success      200 {object} models.Template "Template data"
-// @Failure      400 {object} helpers.ApiErr "Bad request"
-// @Failure      404 {object} helpers.ApiErr "Not found"
-// @Failure      500 {object} helpers.ApiErr "Internal server error"
+// @Success      200 {object} models.TemplateWithOwner "Template data"
+// @Failure      400 {object} apierr.ApiErr "Bad request"
+// @Failure      404 {object} apierr.ApiErr "Not found"
+// @Failure      500 {object} apierr.ApiErr "Internal server error"
 // @Router       /api/templates/{template} [get]
 func (th *TemplateHandl) GetTemplate(c *fiber.Ctx) error {
 	ctx := c.UserContext()
@@ -225,10 +225,10 @@ func (th *TemplateHandl) GetTemplate(c *fiber.Ctx) error {
 // @Produce      json
 // @Param        body body dto.SearchTemplateRequestDoc true "Search templates request"
 // @Success      200 {array} dto.TemplateResponse "List of templates"
-// @Failure      400 {object} helpers.ApiErr "Bad request"
-// @Failure      404 {object} helpers.ApiErr "Not found"
-// @Failure      422 {object} helpers.ApiErr "Invalid JSON"
-// @Failure      500 {object} helpers.ApiErr "Internal server error"
+// @Failure      400 {object} apierr.ApiErr "Bad request"
+// @Failure      404 {object} apierr.ApiErr "Not found"
+// @Failure      422 {object} apierr.ApiErr "Invalid JSON"
+// @Failure      500 {object} apierr.ApiErr "Internal server error"
 // @Router       /api/templates [get]
 func (th *TemplateHandl) SearchTemplate(c *fiber.Ctx) error {
 	ctx := c.UserContext()
@@ -251,10 +251,10 @@ func (th *TemplateHandl) SearchTemplate(c *fiber.Ctx) error {
 // @Security     ApiKeyAuth
 // @Param        template path string true "Template ID"
 // @Success      200 {object} dto.SuccessResponse "Success response"
-// @Failure      400 {object} helpers.ApiErr "Bad request"
-// @Failure      404 {object} helpers.ApiErr "Not found"
-// @Failure      409 {object} helpers.ApiErr "Already liked"
-// @Failure      500 {object} helpers.ApiErr "Internal server error"
+// @Failure      400 {object} apierr.ApiErr "Bad request"
+// @Failure      404 {object} apierr.ApiErr "Not found"
+// @Failure      409 {object} apierr.ApiErr "Already liked"
+// @Failure      500 {object} apierr.ApiErr "Internal server error"
 // @Router       /api/templates/like/{template} [patch]
 func (th *TemplateHandl) Like(c *fiber.Ctx) error {
 	ctx := c.UserContext()
@@ -277,10 +277,10 @@ func (th *TemplateHandl) Like(c *fiber.Ctx) error {
 // @Security     ApiKeyAuth
 // @Param        template path string true "Template ID"
 // @Success      200 {object} dto.SuccessResponse "Success response"
-// @Failure      400 {object} helpers.ApiErr "Bad request"
-// @Failure      404 {object} helpers.ApiErr "Not found"
-// @Failure      409 {object} helpers.ApiErr "Already disliked"
-// @Failure      500 {object} helpers.ApiErr "Internal server error"
+// @Failure      400 {object} apierr.ApiErr "Bad request"
+// @Failure      404 {object} apierr.ApiErr "Not found"
+// @Failure      409 {object} apierr.ApiErr "Already disliked"
+// @Failure      500 {object} apierr.ApiErr "Internal server error"
 // @Router       /api/templates/dislike/{template} [patch]
 func (th *TemplateHandl) Dislike(c *fiber.Ctx) error {
 	ctx := c.UserContext()
@@ -304,10 +304,10 @@ func (th *TemplateHandl) Dislike(c *fiber.Ctx) error {
 // @Security     ApiKeyAuth
 // @Param        body query dto.PaginationRequest true "Pagination request"
 // @Success      200 {array} dto.TemplateResponse "List of favorite templates"
-// @Failure      400 {object} helpers.ApiErr "Bad request"
-// @Failure      404 {object} helpers.ApiErr "Not found"
-// @Failure      422 {object} helpers.ApiErr "Invalid JSON"
-// @Failure      500 {object} helpers.ApiErr "Internal server error"
+// @Failure      400 {object} apierr.ApiErr "Bad request"
+// @Failure      404 {object} apierr.ApiErr "Not found"
+// @Failure      422 {object} apierr.ApiErr "Invalid JSON"
+// @Failure      500 {object} apierr.ApiErr "Internal server error"
 // @Router       /api/templates/favorite [get]
 func (th *TemplateHandl) FetchFavoriteTemplates(c *fiber.Ctx) error {
 	ctx := c.UserContext()
