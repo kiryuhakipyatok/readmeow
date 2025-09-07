@@ -109,6 +109,11 @@ func Run() {
 			panic("failed to start server: " + err.Error())
 		}
 	}()
+	go func() {
+		if err := server.Metric.ListenAndServe(); err != nil {
+			panic("failed to start server of metrics: " + err.Error())
+		}
+	}()
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)

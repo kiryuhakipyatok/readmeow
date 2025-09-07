@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"readmeow/internal/delivery/apierr"
 	"readmeow/internal/delivery/handlers/helpers"
 	"readmeow/internal/domain/services"
 	"readmeow/internal/dto"
@@ -48,7 +49,7 @@ func (th *TemplateHandl) CreateTemplate(c *fiber.Ctx) error {
 
 	b, err := strconv.ParseBool(isPublicStr)
 	if err != nil {
-		return helpers.InvalidRequest()
+		return apierr.InvalidRequest()
 	}
 	req.IsPublic = b
 
@@ -56,7 +57,7 @@ func (th *TemplateHandl) CreateTemplate(c *fiber.Ctx) error {
 	req.Description = c.FormValue("description")
 	form, err := c.MultipartForm()
 	if err != nil {
-		return helpers.InvalidRequest()
+		return apierr.InvalidRequest()
 	}
 	if renderOrder, ok := form.Value["render_order"]; ok {
 		req.RenderOrder = renderOrder
@@ -74,7 +75,7 @@ func (th *TemplateHandl) CreateTemplate(c *fiber.Ctx) error {
 	if widgetsData != "" {
 		widgets := make([]map[string]string, 0)
 		if err := json.Unmarshal([]byte(widgetsData), &widgets); err != nil {
-			return helpers.ToApiError(err)
+			return apierr.ToApiError(err)
 		}
 		req.Widgets = widgets
 	}
@@ -84,10 +85,10 @@ func (th *TemplateHandl) CreateTemplate(c *fiber.Ctx) error {
 	}
 
 	if errs := helpers.ValidateStruct(req, th.Validator); len(errs) > 0 {
-		return helpers.ValidationError(errs)
+		return apierr.ValidationError(errs)
 	}
 	if err := th.TemplateServ.Create(ctx, oid, req.Title, req.Description, req.Image, req.Links, req.RenderOrder, req.Text, req.Widgets, req.IsPublic); err != nil {
-		return helpers.ToApiError(err)
+		return apierr.ToApiError(err)
 	}
 	return helpers.SuccessResponse(c)
 }
@@ -121,14 +122,14 @@ func (th *TemplateHandl) UpdateTemplate(c *fiber.Ctx) error {
 	if isPublicStr != "" {
 		isPublic, err := strconv.ParseBool(isPublicStr)
 		if err != nil {
-			return helpers.ToApiError(err)
+			return apierr.ToApiError(err)
 		}
 		updates["is_public"] = isPublic
 	}
 
 	form, err := c.MultipartForm()
 	if err != nil {
-		return helpers.InvalidRequest()
+		return apierr.InvalidRequest()
 	}
 	if renderOrder, ok := form.Value["render_order"]; ok {
 		updates["render_order"] = renderOrder
@@ -143,7 +144,7 @@ func (th *TemplateHandl) UpdateTemplate(c *fiber.Ctx) error {
 	if widgetsData != "" {
 		widgets := make([]map[string]string, 0)
 		if err := json.Unmarshal([]byte(widgetsData), &widgets); err != nil {
-			return helpers.ToApiError(err)
+			return apierr.ToApiError(err)
 		}
 
 		updates["widgets"] = widgets
@@ -157,11 +158,11 @@ func (th *TemplateHandl) UpdateTemplate(c *fiber.Ctx) error {
 		Id:      id,
 	}
 	if errs := helpers.ValidateStruct(req, th.Validator); len(errs) > 0 {
-		return helpers.ValidationError(errs)
+		return apierr.ValidationError(errs)
 	}
 
 	if err := th.TemplateServ.Update(ctx, req.Updates, req.Id); err != nil {
-		return helpers.ToApiError(err)
+		return apierr.ToApiError(err)
 	}
 	return helpers.SuccessResponse(c)
 }
@@ -186,7 +187,7 @@ func (th *TemplateHandl) DeleteTemplate(c *fiber.Ctx) error {
 		return err
 	}
 	if err := th.TemplateServ.Delete(ctx, id, uid); err != nil {
-		return helpers.ToApiError(err)
+		return apierr.ToApiError(err)
 	}
 	return helpers.SuccessResponse(c)
 }
@@ -211,7 +212,7 @@ func (th *TemplateHandl) GetTemplate(c *fiber.Ctx) error {
 	}
 	template, err := th.TemplateServ.Get(ctx, id)
 	if err != nil {
-		return helpers.ToApiError(err)
+		return apierr.ToApiError(err)
 	}
 	return c.JSON(template)
 }
@@ -237,7 +238,7 @@ func (th *TemplateHandl) SearchTemplate(c *fiber.Ctx) error {
 	}
 	templates, err := th.TemplateServ.Search(ctx, req.Amount, req.Page, req.Query, req.Filter, req.Sort)
 	if err != nil {
-		return helpers.ToApiError(err)
+		return apierr.ToApiError(err)
 	}
 	return c.JSON(templates)
 }
@@ -263,7 +264,7 @@ func (th *TemplateHandl) Like(c *fiber.Ctx) error {
 	}
 	uid := c.Locals("userId").(string)
 	if err := th.TemplateServ.Like(ctx, id, uid); err != nil {
-		return helpers.ToApiError(err)
+		return apierr.ToApiError(err)
 	}
 	return helpers.SuccessResponse(c)
 }
@@ -289,7 +290,7 @@ func (th *TemplateHandl) Dislike(c *fiber.Ctx) error {
 	}
 	uid := c.Locals("userId").(string)
 	if err := th.TemplateServ.Dislike(ctx, id, uid); err != nil {
-		return helpers.ToApiError(err)
+		return apierr.ToApiError(err)
 	}
 	return helpers.SuccessResponse(c)
 }
@@ -317,7 +318,7 @@ func (th *TemplateHandl) FetchFavoriteTemplates(c *fiber.Ctx) error {
 	id := c.Locals("userId").(string)
 	templates, err := th.TemplateServ.FetchFavorite(ctx, id, req.Amount, req.Page)
 	if err != nil {
-		return helpers.ToApiError(err)
+		return apierr.ToApiError(err)
 	}
 	return c.JSON(templates)
 }

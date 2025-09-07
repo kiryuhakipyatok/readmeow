@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"readmeow/internal/delivery/apierr"
 	"readmeow/internal/delivery/handlers/helpers"
 	"readmeow/internal/delivery/oauth"
 	"readmeow/internal/domain/services"
@@ -52,7 +53,7 @@ func (ah *AuthHandl) Register(c *fiber.Ctx) error {
 		return err
 	}
 	if err := ah.AuthServ.Register(ctx, req.Email, req.Code); err != nil {
-		return helpers.ToApiError(err)
+		return apierr.ToApiError(err)
 	}
 	return helpers.SuccessResponse(c)
 }
@@ -78,7 +79,7 @@ func (ah *AuthHandl) VerifyEmail(c *fiber.Ctx) error {
 		return err
 	}
 	if err := ah.AuthServ.SendVerifyCode(ctx, req.Email, req.Login, req.Nickname, req.Password); err != nil {
-		return helpers.ToApiError(err)
+		return apierr.ToApiError(err)
 	}
 	return helpers.SuccessResponse(c)
 }
@@ -105,7 +106,7 @@ func (ah *AuthHandl) Login(c *fiber.Ctx) error {
 	}
 	loginResponce, err := ah.AuthServ.Login(ctx, req.Login, req.Password)
 	if err != nil {
-		return helpers.ToApiError(err)
+		return apierr.ToApiError(err)
 	}
 	cookie := &fiber.Cookie{
 		Name:     "jwt",
@@ -160,7 +161,7 @@ func (ah *AuthHandl) Profile(c *fiber.Ctx) error {
 	id := c.Locals("userId").(string)
 	user, err := ah.UserServ.Get(ctx, id, true)
 	if err != nil {
-		return helpers.ToApiError(err)
+		return apierr.ToApiError(err)
 	}
 	return c.JSON(user)
 }
@@ -186,7 +187,7 @@ func (ah *AuthHandl) SendNewCode(c *fiber.Ctx) error {
 		return err
 	}
 	if err := ah.AuthServ.SendNewCode(ctx, req.Email); err != nil {
-		return helpers.ToApiError(err)
+		return apierr.ToApiError(err)
 	}
 	return helpers.SuccessResponse(c)
 }
@@ -266,22 +267,22 @@ func (ah *AuthHandl) GoogleOAthCallback(c *fiber.Ctx) error {
 	code := c.Query("code")
 	token, err := ah.OAuthConfig.GoogleOAuthConfig.Exchange(ctx, code)
 	if err != nil {
-		return helpers.ToApiError(err)
+		return apierr.ToApiError(err)
 	}
 	client := ah.OAuthConfig.GoogleOAuthConfig.Client(ctx, token)
 	resp, err := client.Get("https://www.googleapis.com/oauth2/v2/userinfo")
 	if err != nil {
-		return helpers.ToApiError(err)
+		return apierr.ToApiError(err)
 	}
 	defer resp.Body.Close()
 	oauthReq := dto.GoogleOAuthRequest{}
 	if err := json.NewDecoder(resp.Body).Decode(&oauthReq); err != nil {
-		return helpers.ToApiError(err)
+		return apierr.ToApiError(err)
 	}
 
 	loginResponce, err := ah.AuthServ.OAuthLogin(ctx, oauthReq.Name, oauthReq.Picture, oauthReq.Email, oauthReq.Id, google)
 	if err != nil {
-		return helpers.ToApiError(err)
+		return apierr.ToApiError(err)
 	}
 	cookie := &fiber.Cookie{
 		Name:     "jwt",
@@ -320,21 +321,21 @@ func (ah *AuthHandl) GitHubOAuthCallback(c *fiber.Ctx) error {
 	code := c.Query("code")
 	token, err := ah.OAuthConfig.GithubOAuthConfig.Exchange(ctx, code)
 	if err != nil {
-		return helpers.ToApiError(err)
+		return apierr.ToApiError(err)
 	}
 	client := ah.OAuthConfig.GithubOAuthConfig.Client(ctx, token)
 	resp, err := client.Get("https://api.github.com/user")
 	if err != nil {
-		return helpers.ToApiError(err)
+		return apierr.ToApiError(err)
 	}
 	defer resp.Body.Close()
 	oauthReq := dto.GitHubOAuthRequest{}
 	if err := json.NewDecoder(resp.Body).Decode(&oauthReq); err != nil {
-		return helpers.ToApiError(err)
+		return apierr.ToApiError(err)
 	}
 	emailResp, err := client.Get("https://api.github.com/user/emails")
 	if err != nil {
-		return helpers.ToApiError(err)
+		return apierr.ToApiError(err)
 	}
 	defer emailResp.Body.Close()
 	var emails []struct {
@@ -343,7 +344,7 @@ func (ah *AuthHandl) GitHubOAuthCallback(c *fiber.Ctx) error {
 		Verified bool   `json:"verified"`
 	}
 	if err := json.NewDecoder(emailResp.Body).Decode(&emails); err != nil {
-		return helpers.ToApiError(err)
+		return apierr.ToApiError(err)
 	}
 	for _, e := range emails {
 		if e.Verified && e.Primary {
@@ -354,7 +355,7 @@ func (ah *AuthHandl) GitHubOAuthCallback(c *fiber.Ctx) error {
 	pid := strconv.FormatInt(oauthReq.Id, 10)
 	loginResponce, err := ah.AuthServ.OAuthLogin(ctx, oauthReq.Login, oauthReq.Avatar, oauthReq.Email, pid, github)
 	if err != nil {
-		return helpers.ToApiError(err)
+		return apierr.ToApiError(err)
 	}
 	cookie := &fiber.Cookie{
 		Name:     "jwt",

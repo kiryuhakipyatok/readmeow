@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"readmeow/internal/delivery/apierr"
 	"readmeow/internal/delivery/handlers/helpers"
 	"readmeow/internal/domain/services"
 	"readmeow/internal/dto"
@@ -50,7 +51,7 @@ func (rh *ReadmeHandl) CreateReadme(c *fiber.Ctx) error {
 	req.Title = c.FormValue("title")
 	form, err := c.MultipartForm()
 	if err != nil {
-		return helpers.InvalidRequest()
+		return apierr.InvalidRequest()
 	}
 	if renderOrder, ok := form.Value["render_order"]; ok {
 		req.RenderOrder = renderOrder
@@ -68,7 +69,7 @@ func (rh *ReadmeHandl) CreateReadme(c *fiber.Ctx) error {
 	if widgetsData != "" {
 		widgets := make([]map[string]string, 0)
 		if err := json.Unmarshal([]byte(widgetsData), &widgets); err != nil {
-			return helpers.ToApiError(err)
+			return apierr.ToApiError(err)
 		}
 		req.Widgets = widgets
 	}
@@ -77,11 +78,11 @@ func (rh *ReadmeHandl) CreateReadme(c *fiber.Ctx) error {
 	}
 
 	if errs := helpers.ValidateStruct(req, rh.Validator); len(errs) > 0 {
-		return helpers.ValidationError(errs)
+		return apierr.ValidationError(errs)
 	}
 
 	if err := rh.ReadmeServ.Create(ctx, req.TemplateId, uid, req.Title, req.Image, req.Text, req.Links, req.RenderOrder, req.Widgets); err != nil {
-		return helpers.ToApiError(err)
+		return apierr.ToApiError(err)
 	}
 	return helpers.SuccessResponse(c)
 }
@@ -106,7 +107,7 @@ func (rh *ReadmeHandl) DeleteReadme(c *fiber.Ctx) error {
 	}
 	uid := c.Locals("userId").(string)
 	if err := rh.ReadmeServ.Delete(ctx, id, uid); err != nil {
-		return helpers.ToApiError(err)
+		return apierr.ToApiError(err)
 	}
 
 	return helpers.SuccessResponse(c)
@@ -136,13 +137,13 @@ func (rh *ReadmeHandl) UpdateReadme(c *fiber.Ctx) error {
 	}
 	form, err := c.MultipartForm()
 	if err != nil {
-		return helpers.InvalidRequest()
+		return apierr.InvalidRequest()
 	}
 	widgetsData := c.FormValue("widgets")
 	if widgetsData != "" {
 		widgets := make([]map[string]string, 0)
 		if err := json.Unmarshal([]byte(widgetsData), &widgets); err != nil {
-			return helpers.ToApiError(err)
+			return apierr.ToApiError(err)
 		}
 		updates["widgets"] = widgets
 	}
@@ -164,10 +165,10 @@ func (rh *ReadmeHandl) UpdateReadme(c *fiber.Ctx) error {
 		Id:      id,
 	}
 	if errs := helpers.ValidateStruct(req, rh.Validator); len(errs) > 0 {
-		return helpers.ValidationError(errs)
+		return apierr.ValidationError(errs)
 	}
 	if err := rh.ReadmeServ.Update(ctx, req.Updates, req.Id); err != nil {
-		return helpers.ToApiError(err)
+		return apierr.ToApiError(err)
 	}
 	return helpers.SuccessResponse(c)
 }
@@ -192,7 +193,7 @@ func (rh *ReadmeHandl) GetReadmeById(c *fiber.Ctx) error {
 	}
 	readme, err := rh.ReadmeServ.Get(ctx, id)
 	if err != nil {
-		return helpers.ToApiError(err)
+		return apierr.ToApiError(err)
 	}
 	return c.JSON(readme)
 }
@@ -217,7 +218,7 @@ func (rh *ReadmeHandl) FetchReadmesByUser(c *fiber.Ctx) error {
 	}
 	readmes, err := rh.ReadmeServ.FetchByUser(ctx, req.Amount, req.Page, uid)
 	if err != nil {
-		return helpers.ToApiError(err)
+		return apierr.ToApiError(err)
 	}
 	return c.JSON(readmes)
 }

@@ -3,8 +3,9 @@ package server
 import (
 	"context"
 	"errors"
+	"net/http"
 	"readmeow/internal/config"
-	"readmeow/internal/delivery/handlers/helpers"
+	"readmeow/internal/delivery/apierr"
 	"readmeow/internal/delivery/ratelimiter"
 	"readmeow/pkg/monitoring"
 	"strconv"
@@ -12,7 +13,6 @@ import (
 
 	_ "readmeow/docs"
 
-	"github.com/gofiber/adaptor/v2"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	jwtware "github.com/gofiber/jwt/v3"
@@ -22,7 +22,8 @@ import (
 )
 
 type Server struct {
-	App *fiber.App
+	App    *fiber.App
+	Metric *http.Server
 }
 
 func NewServer(scfg config.ServerConfig, acfg config.AuthConfig, apcfg config.AppConfig, ps *monitoring.PrometheusSetup) *Server {
@@ -33,10 +34,14 @@ func NewServer(scfg config.ServerConfig, acfg config.AuthConfig, apcfg config.Ap
 		AppName:      apcfg.Name,
 		ErrorHandler: errorHandler,
 	})
+	metricsMux := http.NewServeMux()
+	metricsMux.Handle("/metrics", promhttp.HandlerFor(ps.Registry, promhttp.HandlerOpts{}))
+	metrics := &http.Server{
+		Addr:    ":" + scfg.MetricPort,
+		Handler: metricsMux,
+	}
 
 	corsMiddleware := cors.New(cors.Config{})
-
-	app.Get("/metrics", adaptor.HTTPHandler(promhttp.Handler()))
 
 	swaggerGroup := app.Group("/api/swagger")
 
@@ -73,10 +78,13 @@ func NewServer(scfg config.ServerConfig, acfg config.AuthConfig, apcfg config.Ap
 		metricsMiddleware(ps),
 	)
 
-	return &Server{App: app}
+	return &Server{App: app, Metric: metrics}
 }
 
 func (s *Server) MustClose(ctx context.Context) {
+	if err := s.Metric.Shutdown(ctx); err != nil {
+		panic("failed to close metrics server" + err.Error())
+	}
 	if err := s.App.ShutdownWithContext(ctx); err != nil {
 		panic("failed to close server" + err.Error())
 	}
@@ -126,9 +134,7 @@ func authMiddleware(acfg config.AuthConfig, valid map[string]bool) fiber.Handler
 				return c.Next()
 			},
 			ErrorHandler: func(c *fiber.Ctx, err error) error {
-				return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-					"message": "unauthorized",
-				})
+				return apierr.Unauthorized()
 			},
 		})(c)
 	}
@@ -145,7 +151,7 @@ func metricsMiddleware(ps *monitoring.PrometheusSetup) fiber.Handler {
 			case *fiber.Error:
 				statusCode = err.Code
 				ps.HTTPErrorTotal.WithLabelValues(c.Route().Path, c.Method(), strconv.Itoa(statusCode), err.Message).Inc()
-			case helpers.ApiErr:
+			case apierr.ApiErr:
 				statusCode = err.Code
 				ps.HTTPErrorTotal.WithLabelValues(c.Route().Path, c.Method(), strconv.Itoa(statusCode), err.Message.(string)).Inc()
 			}
@@ -164,9 +170,7 @@ func requestTimeoutMiddleware(timeout time.Duration) fiber.Handler {
 		c.SetUserContext(ctx)
 		err := c.Next()
 		if ctx.Err() == context.DeadlineExceeded {
-			return c.Status(fiber.StatusRequestTimeout).JSON(fiber.Map{
-				"error": "request timeout",
-			})
+			return apierr.RequestTimeout()
 		}
 		return err
 	}
@@ -177,13 +181,11 @@ func errorHandler(c *fiber.Ctx, err error) error {
 	if errors.As(err, &fe) {
 		return c.Status(fe.Code).JSON(fe)
 	}
-	var apiErr helpers.ApiErr
+	var apiErr apierr.ApiErr
 	if errors.As(err, &apiErr) {
 		return c.Status(apiErr.Code).JSON(apiErr)
 	}
-	return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-		"error": "internal server error",
-	})
+	return apierr.InternalServerError()
 }
 
 func rateLimiterMiddleware(scfg config.ServerConfig) fiber.Handler {
@@ -191,9 +193,7 @@ func rateLimiterMiddleware(scfg config.ServerConfig) fiber.Handler {
 		ip := c.IP()
 		limiter := ratelimiter.RateLimit(ip, scfg.RateLimit, scfg.Burst)
 		if !limiter.Allow() {
-			return c.Status(fiber.StatusTooManyRequests).JSON(fiber.Map{
-				"error": "too many requests",
-			})
+			return apierr.TooManyRequests()
 		}
 		return c.Next()
 	}
@@ -202,9 +202,7 @@ func rateLimiterMiddleware(scfg config.ServerConfig) fiber.Handler {
 func validIpsMiddleware(validIps map[string]bool) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		if _, ok := validIps[c.IP()]; !ok {
-			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
-				"message": "forbidden",
-			})
+			return apierr.Forbidden()
 		}
 		return c.Next()
 	}
@@ -216,9 +214,7 @@ func alreadyLoginCheck(valid map[string]bool) fiber.Handler {
 			return c.Next()
 		}
 		if c.Cookies("jwt") != "" {
-			return c.Status(fiber.StatusConflict).JSON(fiber.Map{
-				"message": "already logined",
-			})
+			return apierr.AlreadyLoggined()
 		}
 		return c.Next()
 	}

@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"readmeow/internal/delivery/apierr"
 	"readmeow/internal/delivery/handlers/helpers"
 	"readmeow/internal/domain/services"
 	"readmeow/internal/dto"
@@ -43,7 +44,7 @@ func (wh *WidgetHandl) GetWidgetById(c *fiber.Ctx) error {
 	}
 	widget, err := wh.WidgetServ.Get(ctx, id)
 	if err != nil {
-		return helpers.ToApiError(err)
+		return apierr.ToApiError(err)
 	}
 	return c.JSON(widget)
 }
@@ -69,7 +70,7 @@ func (wh *WidgetHandl) SearchWidgets(c *fiber.Ctx) error {
 	}
 	widgets, err := wh.WidgetServ.Search(ctx, req.Amount, req.Page, req.Query, req.Filter, req.Sort)
 	if err != nil {
-		return helpers.ToApiError(err)
+		return apierr.ToApiError(err)
 	}
 
 	return c.JSON(widgets)
@@ -96,7 +97,7 @@ func (wh *WidgetHandl) Like(c *fiber.Ctx) error {
 	}
 	uid := c.Locals("userId").(string)
 	if err := wh.WidgetServ.Like(ctx, id, uid); err != nil {
-		return helpers.ToApiError(err)
+		return apierr.ToApiError(err)
 	}
 	return helpers.SuccessResponse(c)
 }
@@ -122,7 +123,7 @@ func (wh *WidgetHandl) Dislike(c *fiber.Ctx) error {
 	}
 	uid := c.Locals("userId").(string)
 	if err := wh.WidgetServ.Dislike(ctx, id, uid); err != nil {
-		return helpers.ToApiError(err)
+		return apierr.ToApiError(err)
 	}
 	return helpers.SuccessResponse(c)
 }
@@ -150,7 +151,7 @@ func (wh *WidgetHandl) FetchFavoriteWidgets(c *fiber.Ctx) error {
 	id := c.Locals("userId").(string)
 	widgets, err := wh.WidgetServ.FetchFavorite(ctx, id, req.Amount, req.Page)
 	if err != nil {
-		return helpers.ToApiError(err)
+		return apierr.ToApiError(err)
 	}
 	return c.JSON(widgets)
 }

@@ -6,6 +6,7 @@ services:
       - .env
     ports:
       - ${SERVER_PORT}:${SERVER_PORT}
+      - ${METRIC_SERVER_PORT}:${METRIC_SERVER_PORT}
     depends_on:
       postgres:
         condition: service_healthy
