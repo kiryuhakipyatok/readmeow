@@ -35,13 +35,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad request",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     }
                 }
@@ -64,13 +64,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad request",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     }
                 }
@@ -110,31 +110,31 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad request",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     },
                     "404": {
                         "description": "Not found",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     },
                     "409": {
                         "description": "Already exists",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     },
                     "422": {
                         "description": "Invalid JSON",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     }
                 }
@@ -199,31 +199,31 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad request",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     },
                     "404": {
                         "description": "Not found",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     },
                     "409": {
                         "description": "Already exists",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     },
                     "422": {
                         "description": "Invalid JSON",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     }
                 }
@@ -254,13 +254,13 @@ const docTemplate = `{
                     "404": {
                         "description": "Not found",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     }
                 }
@@ -300,31 +300,31 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad request",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     },
                     "404": {
                         "description": "Not found",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     },
                     "409": {
                         "description": "Already exists",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     },
                     "422": {
                         "description": "Invalid JSON",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     }
                 }
@@ -364,31 +364,31 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad request",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     },
                     "404": {
                         "description": "Not found",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     },
                     "409": {
                         "description": "Already exists",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     },
                     "422": {
                         "description": "Invalid JSON",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     }
                 }
@@ -438,13 +438,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad request",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     }
                 }
@@ -527,31 +527,31 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad request",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     },
                     "404": {
                         "description": "Not found",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     },
                     "409": {
                         "description": "Already exists",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     },
                     "422": {
                         "description": "Invalid JSON",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     }
                 }
@@ -591,19 +591,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad request",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     },
                     "404": {
                         "description": "Not found",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     }
                 }
@@ -641,19 +641,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad request",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     },
                     "404": {
                         "description": "Not found",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     }
                 }
@@ -737,25 +737,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad request",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     },
                     "404": {
                         "description": "Not found",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     },
                     "422": {
                         "description": "Invalid JSON",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     }
                 }
@@ -763,11 +763,6 @@ const docTemplate = `{
         },
         "/api/templates": {
             "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
                 "description": "Search templates with filters and sorting",
                 "consumes": [
                     "application/json"
@@ -803,25 +798,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad request",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     },
                     "404": {
                         "description": "Not found",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     },
                     "422": {
                         "description": "Invalid JSON",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     }
                 }
@@ -913,31 +908,31 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad request",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     },
                     "404": {
                         "description": "Not found",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     },
                     "409": {
                         "description": "Already exists",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     },
                     "422": {
                         "description": "Invalid JSON",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     }
                 }
@@ -1023,25 +1018,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad request",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     },
                     "404": {
                         "description": "Not found",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     },
                     "422": {
                         "description": "Invalid JSON",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     }
                 }
@@ -1081,25 +1076,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad request",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     },
                     "404": {
                         "description": "Not found",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     },
                     "409": {
                         "description": "Already disliked",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     }
                 }
@@ -1152,25 +1147,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad request",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     },
                     "404": {
                         "description": "Not found",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     },
                     "422": {
                         "description": "Invalid JSON",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     }
                 }
@@ -1210,25 +1205,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad request",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     },
                     "404": {
                         "description": "Not found",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     },
                     "409": {
                         "description": "Already liked",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     }
                 }
@@ -1262,25 +1257,25 @@ const docTemplate = `{
                     "200": {
                         "description": "Template data",
                         "schema": {
-                            "$ref": "#/definitions/models.Template"
+                            "$ref": "#/definitions/models.TemplateWithOwner"
                         }
                     },
                     "400": {
                         "description": "Bad request",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     },
                     "404": {
                         "description": "Not found",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     }
                 }
@@ -1318,19 +1313,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad request",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     },
                     "404": {
                         "description": "Not found",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     }
                 }
@@ -1375,25 +1370,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad request",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     },
                     "404": {
                         "description": "Not found",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     },
                     "422": {
                         "description": "Invalid JSON",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     }
                 }
@@ -1446,25 +1441,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad request",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     },
                     "404": {
                         "description": "Not found",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     },
                     "422": {
                         "description": "Invalid JSON",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     }
                 }
@@ -1509,31 +1504,31 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad request",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     },
                     "404": {
                         "description": "Not found",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     },
                     "422": {
                         "description": "Invalid JSON",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     }
                 }
@@ -1573,19 +1568,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad request",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     },
                     "404": {
                         "description": "Not found",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     }
                 }
@@ -1593,11 +1588,6 @@ const docTemplate = `{
         },
         "/api/widgets": {
             "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
                 "description": "Searching widgets",
                 "consumes": [
                     "application/json"
@@ -1633,25 +1623,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad request",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     },
                     "404": {
                         "description": "Not found",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     },
                     "422": {
                         "description": "Invalid JSON",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     }
                 }
@@ -1792,25 +1782,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad request",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     },
                     "404": {
                         "description": "Not found",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     },
                     "409": {
                         "description": "Already exists",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     }
                 }
@@ -1863,25 +1853,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad request",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     },
                     "404": {
                         "description": "Not found",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     },
                     "422": {
                         "description": "Invalid JSON",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     }
                 }
@@ -1921,25 +1911,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad request",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     },
                     "404": {
                         "description": "Not found",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     },
                     "409": {
                         "description": "Already exists",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     }
                 }
@@ -1979,19 +1969,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad request",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     },
                     "404": {
                         "description": "Not found",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/helpers.ApiErr"
+                            "$ref": "#/definitions/apierr.ApiErr"
                         }
                     }
                 }
@@ -1999,6 +1989,15 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "apierr.ApiErr": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer"
+                },
+                "message": {}
+            }
+        },
         "dto.ChangePasswordRequest": {
             "type": "object",
             "required": [
@@ -2206,6 +2205,7 @@ const docTemplate = `{
                 "description",
                 "id",
                 "image",
+                "is_public",
                 "last_update_time",
                 "likes",
                 "num_of_users",
@@ -2221,6 +2221,9 @@ const docTemplate = `{
                 },
                 "image": {
                     "type": "string"
+                },
+                "is_public": {
+                    "type": "boolean"
                 },
                 "last_update_time": {
                     "type": "string"
@@ -2245,6 +2248,7 @@ const docTemplate = `{
                 "description",
                 "id",
                 "image",
+                "is_public",
                 "last_update_time",
                 "likes",
                 "num_of_users",
@@ -2263,6 +2267,9 @@ const docTemplate = `{
                 },
                 "image": {
                     "type": "string"
+                },
+                "is_public": {
+                    "type": "boolean"
                 },
                 "last_update_time": {
                     "type": "string"
@@ -2452,15 +2459,6 @@ const docTemplate = `{
                 }
             }
         },
-        "helpers.ApiErr": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer"
-                },
-                "message": {}
-            }
-        },
         "models.Readme": {
             "type": "object",
             "properties": {
@@ -2514,7 +2512,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.Template": {
+        "models.TemplateWithOwner": {
             "type": "object",
             "properties": {
                 "create_time": {
@@ -2547,7 +2545,13 @@ const docTemplate = `{
                 "num_of_users": {
                     "type": "integer"
                 },
+                "owner_avatar": {
+                    "type": "string"
+                },
                 "owner_id": {
+                    "type": "string"
+                },
+                "owner_nickname": {
                     "type": "string"
                 },
                 "render_order": {

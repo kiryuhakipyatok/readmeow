@@ -1,0 +1,52 @@
+# 📝 READMEOW
+
+A tool for creating and customizing **GitHub profile README files**.  
+Easily build, edit, and share README templates using widgets. Templates can be **public** or **private**, and new READMEs can be generated from base or custom templates.  
+
+## 🚀 Features
+
+- 📂 **Templates**:
+  - create public and private templates;
+  - customize templates with widgets, text, links or images;
+  - generate README files from base or user-defined templates.
+
+- 🔑 **Authentication**:
+  - via verified email and password;
+  - OAuth login with Google or GitHub.
+
+- 🔍 **Search & Sorting**:
+  - full-text search with Elasticsearch;
+  - filtering and sorting for templates and widgets.
+
+- ☁️ **Cloud storage**:
+  - upload avatars and widget/template/readmes images;
+  - store files in **Cloudinary**.
+
+- 🏗️ **Architecture**:
+  - built with **Clean Architecture principles**;
+  - clear separation of domain, use cases, and infrastructure.
+
+## 🛠️ Tech Stack
+
+- **Backend**: [Golang](https://go.dev/) + [Fiber](https://gofiber.io/)  
+- **Database**: PostgreSQL  
+- **Cache**: Redis  
+- **Search**: Elasticsearch  
+- **File storage**: Cloudinary  
+- **Infrastructure**: Docker, Docker Compose  
+
+## 📦 Getting Started
+
+### 1. Clone the repository
+```powershell
+git clone https://github.com/kiryuhakipyatok/readmeow.git
+cd readmeow
+code .
+make docker-run-infra
+make docker-migrate-up
+make docker-run-app
+```
+
+### 2. Documentation
+After starting the application, you can access the API documentation at:
+http://localhost:3333/swagger

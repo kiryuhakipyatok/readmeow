@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"readmeow/internal/delivery/apierr"
 	"readmeow/internal/delivery/handlers/helpers"
 	"readmeow/internal/delivery/oauth"
 	"readmeow/internal/domain/services"
@@ -38,12 +39,12 @@ func NewAuthHandle(as services.AuthServ, us services.UserServ, oc oauth.OAuthCon
 // @Accept json
 // @Produce json
 // @Param body body dto.RegisterRequest true "Register Request"
-// @Success 200 {object} dto.IdResponse "Success response"
-// @Failure 400 {object} helpers.ApiErr "Bad request"
-// @Failure 404 {object} helpers.ApiErr "Not found"
-// @Failure 409 {object} helpers.ApiErr "Already exists"
-// @Failure 422 {object} helpers.ApiErr "Invalid JSON"
-// @Failure 500 {object} helpers.ApiErr "Internal server error"
+// @Success 200 {object} dto.SuccessResponse "Success response"
+// @Failure 400 {object} apierr.ApiErr "Bad request"
+// @Failure 404 {object} apierr.ApiErr "Not found"
+// @Failure 409 {object} apierr.ApiErr "Already exists"
+// @Failure 422 {object} apierr.ApiErr "Invalid JSON"
+// @Failure 500 {object} apierr.ApiErr "Internal server error"
 // @Router /api/auth/register [post]
 func (ah *AuthHandl) Register(c *fiber.Ctx) error {
 	ctx := c.UserContext()
@@ -53,7 +54,7 @@ func (ah *AuthHandl) Register(c *fiber.Ctx) error {
 	}
 	id, err := ah.AuthServ.Register(ctx, req.Email, req.Code)
 	if err != nil {
-		return helpers.ToApiError(err)
+		return apierr.ToApiError(err)
 	}
 	idResp := dto.IdResponse{
 		Id:      id,
@@ -70,11 +71,11 @@ func (ah *AuthHandl) Register(c *fiber.Ctx) error {
 // @Produce json
 // @Param body body dto.VerifyRequest true "Verification Request"
 // @Success 200 {object} dto.SuccessResponse "Success response"
-// @Failure 400 {object} helpers.ApiErr "Bad request"
-// @Failure 404 {object} helpers.ApiErr "Not found"
-// @Failure 409 {object} helpers.ApiErr "Already exists"
-// @Failure 422 {object} helpers.ApiErr "Invalid JSON"
-// @Failure 500 {object} helpers.ApiErr "Internal server error"
+// @Failure 400 {object} apierr.ApiErr "Bad request"
+// @Failure 404 {object} apierr.ApiErr "Not found"
+// @Failure 409 {object} apierr.ApiErr "Already exists"
+// @Failure 422 {object} apierr.ApiErr "Invalid JSON"
+// @Failure 500 {object} apierr.ApiErr "Internal server error"
 // @Router /api/auth/verify [post]
 func (ah *AuthHandl) VerifyEmail(c *fiber.Ctx) error {
 	ctx := c.UserContext()
@@ -83,7 +84,7 @@ func (ah *AuthHandl) VerifyEmail(c *fiber.Ctx) error {
 		return err
 	}
 	if err := ah.AuthServ.SendVerifyCode(ctx, req.Email, req.Login, req.Nickname, req.Password); err != nil {
-		return helpers.ToApiError(err)
+		return apierr.ToApiError(err)
 	}
 	return helpers.SuccessResponse(c)
 }
@@ -96,11 +97,11 @@ func (ah *AuthHandl) VerifyEmail(c *fiber.Ctx) error {
 // @Produce json
 // @Param body body dto.LoginRequest true "Login Request"
 // @Success 200 {object} dto.LoginResponse "Login response"
-// @Failure 400 {object} helpers.ApiErr "Bad request"
-// @Failure 404 {object} helpers.ApiErr "Not found"
-// @Failure 409 {object} helpers.ApiErr "Already exists"
-// @Failure 422 {object} helpers.ApiErr "Invalid JSON"
-// @Failure 500 {object} helpers.ApiErr "Internal server error"
+// @Failure 400 {object} apierr.ApiErr "Bad request"
+// @Failure 404 {object} apierr.ApiErr "Not found"
+// @Failure 409 {object} apierr.ApiErr "Already exists"
+// @Failure 422 {object} apierr.ApiErr "Invalid JSON"
+// @Failure 500 {object} apierr.ApiErr "Internal server error"
 // @Router /api/auth/login [post]
 func (ah *AuthHandl) Login(c *fiber.Ctx) error {
 	ctx := c.UserContext()
@@ -110,7 +111,7 @@ func (ah *AuthHandl) Login(c *fiber.Ctx) error {
 	}
 	loginResponce, err := ah.AuthServ.Login(ctx, req.Login, req.Password)
 	if err != nil {
-		return helpers.ToApiError(err)
+		return apierr.ToApiError(err)
 	}
 	cookie := &fiber.Cookie{
 		Name:     "jwt",
@@ -156,8 +157,8 @@ func (ah *AuthHandl) Logout(c *fiber.Ctx) error {
 // @Tags Auth
 // @Produce json
 // @Success 200 {object} dto.UserResponse "User info response"
-// @Failure 404 {object} helpers.ApiErr "Not found"
-// @Failure 500 {object} helpers.ApiErr "Internal server error"
+// @Failure 404 {object} apierr.ApiErr "Not found"
+// @Failure 500 {object} apierr.ApiErr "Internal server error"
 // @Security ApiKeyAuth
 // @Router /api/auth/profile [get]
 func (ah *AuthHandl) Profile(c *fiber.Ctx) error {
@@ -165,7 +166,7 @@ func (ah *AuthHandl) Profile(c *fiber.Ctx) error {
 	id := c.Locals("userId").(string)
 	user, err := ah.UserServ.Get(ctx, id, true)
 	if err != nil {
-		return helpers.ToApiError(err)
+		return apierr.ToApiError(err)
 	}
 	return c.JSON(user)
 }
@@ -178,11 +179,11 @@ func (ah *AuthHandl) Profile(c *fiber.Ctx) error {
 // @Produce json
 // @Param body body dto.SendNewCodeRequest true "SendNewCodeRequest Request"
 // @Success 200 {object} dto.SuccessResponse "Success response"
-// @Failure 400 {object} helpers.ApiErr "Bad request"
-// @Failure 404 {object} helpers.ApiErr "Not found"
-// @Failure 409 {object} helpers.ApiErr "Already exists"
-// @Failure 422 {object} helpers.ApiErr "Invalid JSON"
-// @Failure 500 {object} helpers.ApiErr "Internal server error"
+// @Failure 400 {object} apierr.ApiErr "Bad request"
+// @Failure 404 {object} apierr.ApiErr "Not found"
+// @Failure 409 {object} apierr.ApiErr "Already exists"
+// @Failure 422 {object} apierr.ApiErr "Invalid JSON"
+// @Failure 500 {object} apierr.ApiErr "Internal server error"
 // @Router /api/auth/newcode [post]
 func (ah *AuthHandl) SendNewCode(c *fiber.Ctx) error {
 	ctx := c.UserContext()
@@ -191,7 +192,7 @@ func (ah *AuthHandl) SendNewCode(c *fiber.Ctx) error {
 		return err
 	}
 	if err := ah.AuthServ.SendNewCode(ctx, req.Email); err != nil {
-		return helpers.ToApiError(err)
+		return apierr.ToApiError(err)
 	}
 	return helpers.SuccessResponse(c)
 }
@@ -202,8 +203,8 @@ func (ah *AuthHandl) SendNewCode(c *fiber.Ctx) error {
 // @Tags Auth
 // @Produce json
 // @Success 307 "Redirect to Google OAuth"
-// @Failure 400 {object} helpers.ApiErr "Bad request"
-// @Failure 500 {object} helpers.ApiErr "Internal server error"
+// @Failure 400 {object} apierr.ApiErr "Bad request"
+// @Failure 500 {object} apierr.ApiErr "Internal server error"
 // @Router /api/auth/google [get]
 func (ah *AuthHandl) GoogleOAuth(c *fiber.Ctx) error {
 	state := uuid.New().String()
@@ -227,8 +228,8 @@ func (ah *AuthHandl) GoogleOAuth(c *fiber.Ctx) error {
 // @Tags Auth
 // @Produce json
 // @Success 307 "Redirect to GitHub OAuth"
-// @Failure 400 {object} helpers.ApiErr "Bad request"
-// @Failure 500 {object} helpers.ApiErr "Internal server error"
+// @Failure 400 {object} apierr.ApiErr "Bad request"
+// @Failure 500 {object} apierr.ApiErr "Internal server error"
 // @Router /api/auth/github [get]
 func (ah *AuthHandl) GitHubOAuth(c *fiber.Ctx) error {
 	state := uuid.New().String()
@@ -271,22 +272,22 @@ func (ah *AuthHandl) GoogleOAthCallback(c *fiber.Ctx) error {
 	code := c.Query("code")
 	token, err := ah.OAuthConfig.GoogleOAuthConfig.Exchange(ctx, code)
 	if err != nil {
-		return helpers.ToApiError(err)
+		return apierr.ToApiError(err)
 	}
 	client := ah.OAuthConfig.GoogleOAuthConfig.Client(ctx, token)
 	resp, err := client.Get("https://www.googleapis.com/oauth2/v2/userinfo")
 	if err != nil {
-		return helpers.ToApiError(err)
+		return apierr.ToApiError(err)
 	}
 	defer resp.Body.Close()
 	oauthReq := dto.GoogleOAuthRequest{}
 	if err := json.NewDecoder(resp.Body).Decode(&oauthReq); err != nil {
-		return helpers.ToApiError(err)
+		return apierr.ToApiError(err)
 	}
 
 	loginResponce, err := ah.AuthServ.OAuthLogin(ctx, oauthReq.Name, oauthReq.Picture, oauthReq.Email, oauthReq.Id, google)
 	if err != nil {
-		return helpers.ToApiError(err)
+		return apierr.ToApiError(err)
 	}
 	cookie := &fiber.Cookie{
 		Name:     "jwt",
@@ -325,21 +326,21 @@ func (ah *AuthHandl) GitHubOAuthCallback(c *fiber.Ctx) error {
 	code := c.Query("code")
 	token, err := ah.OAuthConfig.GithubOAuthConfig.Exchange(ctx, code)
 	if err != nil {
-		return helpers.ToApiError(err)
+		return apierr.ToApiError(err)
 	}
 	client := ah.OAuthConfig.GithubOAuthConfig.Client(ctx, token)
 	resp, err := client.Get("https://api.github.com/user")
 	if err != nil {
-		return helpers.ToApiError(err)
+		return apierr.ToApiError(err)
 	}
 	defer resp.Body.Close()
 	oauthReq := dto.GitHubOAuthRequest{}
 	if err := json.NewDecoder(resp.Body).Decode(&oauthReq); err != nil {
-		return helpers.ToApiError(err)
+		return apierr.ToApiError(err)
 	}
 	emailResp, err := client.Get("https://api.github.com/user/emails")
 	if err != nil {
-		return helpers.ToApiError(err)
+		return apierr.ToApiError(err)
 	}
 	defer emailResp.Body.Close()
 	var emails []struct {
@@ -348,7 +349,7 @@ func (ah *AuthHandl) GitHubOAuthCallback(c *fiber.Ctx) error {
 		Verified bool   `json:"verified"`
 	}
 	if err := json.NewDecoder(emailResp.Body).Decode(&emails); err != nil {
-		return helpers.ToApiError(err)
+		return apierr.ToApiError(err)
 	}
 	for _, e := range emails {
 		if e.Verified && e.Primary {
@@ -359,7 +360,7 @@ func (ah *AuthHandl) GitHubOAuthCallback(c *fiber.Ctx) error {
 	pid := strconv.FormatInt(oauthReq.Id, 10)
 	loginResponce, err := ah.AuthServ.OAuthLogin(ctx, oauthReq.Login, oauthReq.Avatar, oauthReq.Email, pid, github)
 	if err != nil {
-		return helpers.ToApiError(err)
+		return apierr.ToApiError(err)
 	}
 	cookie := &fiber.Cookie{
 		Name:     "jwt",

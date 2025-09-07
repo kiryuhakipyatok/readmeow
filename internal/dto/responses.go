@@ -33,6 +33,7 @@ type TemplateInfo struct {
 	LastUpdateTime time.Time `json:"last_update_time" validate:"required"`
 	NumOfUsers     uint32    `json:"num_of_users" validate:"required,min=0"`
 	Likes          uint32    `json:"likes" validate:"required,min=0"`
+	IsPublic       bool      `json:"is_public" validate:"required"`
 }
 
 type TemplateResponse struct {

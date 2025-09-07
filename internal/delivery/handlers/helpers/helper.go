@@ -1,6 +1,7 @@
 package helpers
 
 import (
+	"readmeow/internal/delivery/apierr"
 	"readmeow/internal/dto"
 	"readmeow/pkg/validator"
 
@@ -29,22 +30,22 @@ func ParseAndValidateRequest[T any](c *fiber.Ctx, request *T, requestType Reques
 	switch requestType.(type) {
 	case Body:
 		if err := c.BodyParser(request); err != nil {
-			return InvalidRequest()
+			return apierr.InvalidRequest()
 		}
 	case Query:
 		if err := c.QueryParser(request); err != nil {
-			return InvalidRequest()
+			return apierr.InvalidRequest()
 		}
 	}
 	if errs := ValidateStruct(request, v); errs != nil {
-		return ValidationError(errs)
+		return apierr.ValidationError(errs)
 	}
 	return nil
 }
 
 func ValidateId(c *fiber.Ctx, id string) error {
 	if err := uuid.Validate(id); err != nil {
-		return InvalidRequest()
+		return apierr.InvalidRequest()
 	}
 	return nil
 }

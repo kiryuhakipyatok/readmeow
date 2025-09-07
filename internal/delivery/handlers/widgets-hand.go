@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"readmeow/internal/delivery/apierr"
 	"readmeow/internal/delivery/handlers/helpers"
 	"readmeow/internal/domain/services"
 	"readmeow/internal/dto"
@@ -49,18 +50,18 @@ func (wh *WidgetHandl) CreateWidget(c *fiber.Ctx) error {
 	tagsStr := c.FormValue("tags")
 	tags := make(map[string]any)
 	if err := json.Unmarshal([]byte(tagsStr), &tags); err != nil {
-		return helpers.InvalidRequest()
+		return apierr.InvalidRequest()
 	}
 	req.Tags = tags
 	if image, _ := c.FormFile("image"); image != nil {
 		req.Image = image
 	}
 	if errs := helpers.ValidateStruct(&req, wh.Validator); errs != nil {
-		return helpers.ValidationError(errs)
+		return apierr.ValidationError(errs)
 	}
 	id, err := wh.WidgetServ.Create(ctx, req.Title, req.Description, req.Link, req.Type, req.Tags, req.Image)
 	if err != nil {
-		return helpers.ToApiError(err)
+		return apierr.ToApiError(err)
 	}
 	idResp := dto.IdResponse{
 		Id:      id,
@@ -77,9 +78,9 @@ func (wh *WidgetHandl) CreateWidget(c *fiber.Ctx) error {
 // @Security     ApiKeyAuth
 // @Param        widget path string true "Widget ID"
 // @Success      200 {object} models.Widget "Widget data"
-// @Failure      400 {object} helpers.ApiErr "Bad request"
-// @Failure      404 {object} helpers.ApiErr "Not found"
-// @Failure      500 {object} helpers.ApiErr "Internal server error"
+// @Failure      400 {object} apierr.ApiErr "Bad request"
+// @Failure      404 {object} apierr.ApiErr "Not found"
+// @Failure      500 {object} apierr.ApiErr "Internal server error"
 // @Router       /api/widgets/{widget} [get]
 func (wh *WidgetHandl) GetWidgetById(c *fiber.Ctx) error {
 	ctx := c.UserContext()
@@ -89,7 +90,7 @@ func (wh *WidgetHandl) GetWidgetById(c *fiber.Ctx) error {
 	}
 	widget, err := wh.WidgetServ.Get(ctx, id)
 	if err != nil {
-		return helpers.ToApiError(err)
+		return apierr.ToApiError(err)
 	}
 	return c.JSON(widget)
 }
@@ -102,10 +103,10 @@ func (wh *WidgetHandl) GetWidgetById(c *fiber.Ctx) error {
 // @Produce      json
 // @Param        body body dto.SearchWidgetRequestDoc true "Search widgets request"
 // @Success      200 {array} dto.WidgetResponse "List of widgets"
-// @Failure      400 {object} helpers.ApiErr "Bad request"
-// @Failure      404 {object} helpers.ApiErr "Not found"
-// @Failure      422 {object} helpers.ApiErr "Invalid JSON"
-// @Failure      500 {object} helpers.ApiErr "Internal server error"
+// @Failure      400 {object} apierr.ApiErr "Bad request"
+// @Failure      404 {object} apierr.ApiErr "Not found"
+// @Failure      422 {object} apierr.ApiErr "Invalid JSON"
+// @Failure      500 {object} apierr.ApiErr "Internal server error"
 // @Router       /api/widgets [get]
 func (wh *WidgetHandl) SearchWidgets(c *fiber.Ctx) error {
 	ctx := c.UserContext()
@@ -115,7 +116,7 @@ func (wh *WidgetHandl) SearchWidgets(c *fiber.Ctx) error {
 	}
 	widgets, err := wh.WidgetServ.Search(ctx, req.Amount, req.Page, req.Query, req.Filter, req.Sort)
 	if err != nil {
-		return helpers.ToApiError(err)
+		return apierr.ToApiError(err)
 	}
 
 	return c.JSON(widgets)
@@ -129,10 +130,10 @@ func (wh *WidgetHandl) SearchWidgets(c *fiber.Ctx) error {
 // @Security     ApiKeyAuth
 // @Param        widget path string true "Widget ID"
 // @Success      200 {object} dto.SuccessResponse "Success response"
-// @Failure      400 {object} helpers.ApiErr "Bad request"
-// @Failure      404 {object} helpers.ApiErr "Not found"
-// @Failure      409 {object} helpers.ApiErr "Already exists"
-// @Failure      500 {object} helpers.ApiErr "Internal server error"
+// @Failure      400 {object} apierr.ApiErr "Bad request"
+// @Failure      404 {object} apierr.ApiErr "Not found"
+// @Failure      409 {object} apierr.ApiErr "Already exists"
+// @Failure      500 {object} apierr.ApiErr "Internal server error"
 // @Router       /api/widgets/like/{widget} [patch]
 func (wh *WidgetHandl) Like(c *fiber.Ctx) error {
 	ctx := c.UserContext()
@@ -142,7 +143,7 @@ func (wh *WidgetHandl) Like(c *fiber.Ctx) error {
 	}
 	uid := c.Locals("userId").(string)
 	if err := wh.WidgetServ.Like(ctx, id, uid); err != nil {
-		return helpers.ToApiError(err)
+		return apierr.ToApiError(err)
 	}
 	return helpers.SuccessResponse(c)
 }
@@ -155,10 +156,10 @@ func (wh *WidgetHandl) Like(c *fiber.Ctx) error {
 // @Security     ApiKeyAuth
 // @Param        widget path string true "Widget ID"
 // @Success      200 {object} dto.SuccessResponse "Success response"
-// @Failure      400 {object} helpers.ApiErr "Bad request"
-// @Failure      404 {object} helpers.ApiErr "Not found"
-// @Failure      409 {object} helpers.ApiErr "Already exists"
-// @Failure      500 {object} helpers.ApiErr "Internal server error"
+// @Failure      400 {object} apierr.ApiErr "Bad request"
+// @Failure      404 {object} apierr.ApiErr "Not found"
+// @Failure      409 {object} apierr.ApiErr "Already exists"
+// @Failure      500 {object} apierr.ApiErr "Internal server error"
 // @Router       /api/widgets/dislike/{widget} [patch]
 func (wh *WidgetHandl) Dislike(c *fiber.Ctx) error {
 	ctx := c.UserContext()
@@ -168,7 +169,7 @@ func (wh *WidgetHandl) Dislike(c *fiber.Ctx) error {
 	}
 	uid := c.Locals("userId").(string)
 	if err := wh.WidgetServ.Dislike(ctx, id, uid); err != nil {
-		return helpers.ToApiError(err)
+		return apierr.ToApiError(err)
 	}
 	return helpers.SuccessResponse(c)
 }
@@ -182,10 +183,10 @@ func (wh *WidgetHandl) Dislike(c *fiber.Ctx) error {
 // @Security     ApiKeyAuth
 // @Param        body query dto.PaginationRequest true "Pagination request"
 // @Success      200 {array} dto.WidgetResponse "List of favorite widgets"
-// @Failure      400 {object} helpers.ApiErr "Bad request"
-// @Failure      404 {object} helpers.ApiErr "Not found"
-// @Failure      422 {object} helpers.ApiErr "Invalid JSON"
-// @Failure      500 {object} helpers.ApiErr "Internal server error"
+// @Failure      400 {object} apierr.ApiErr "Bad request"
+// @Failure      404 {object} apierr.ApiErr "Not found"
+// @Failure      422 {object} apierr.ApiErr "Invalid JSON"
+// @Failure      500 {object} apierr.ApiErr "Internal server error"
 // @Router       /api/widgets/favorite [get]
 func (wh *WidgetHandl) FetchFavoriteWidgets(c *fiber.Ctx) error {
 	ctx := c.UserContext()
@@ -196,7 +197,7 @@ func (wh *WidgetHandl) FetchFavoriteWidgets(c *fiber.Ctx) error {
 	id := c.Locals("userId").(string)
 	widgets, err := wh.WidgetServ.FetchFavorite(ctx, id, req.Amount, req.Page)
 	if err != nil {
-		return helpers.ToApiError(err)
+		return apierr.ToApiError(err)
 	}
 	return c.JSON(widgets)
 }

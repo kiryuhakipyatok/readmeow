@@ -1,4 +1,4 @@
-package helpers
+package apierr
 
 import (
 	"errors"
@@ -16,6 +16,11 @@ var (
 	ErrInvalidVerifyCode = errors.New("invalid verification code")
 	ErrZeroAttempts      = errors.New("verification code has zero attempts")
 	ErrCodeIsExpired     = errors.New("verification code is expired")
+	ErrAlreadyLoggined   = errors.New("already loggined")
+	ErrRequestTimeout    = errors.New("request timeout")
+	ErrToManeRequests    = errors.New("to many requests")
+	ErrForbidden         = errors.New("forbidden")
+	ErrUnauthorized      = errors.New("unauthorized")
 )
 
 type ApiErr struct {
@@ -88,4 +93,24 @@ func ZeroAttempts() ApiErr {
 
 func CodeIsExpired() ApiErr {
 	return NewApiError(fiber.StatusOK, ErrCodeIsExpired)
+}
+
+func AlreadyLoggined() ApiErr {
+	return NewApiError(fiber.StatusConflict, ErrAlreadyLoggined)
+}
+
+func RequestTimeout() ApiErr {
+	return NewApiError(fiber.StatusRequestTimeout, ErrRequestTimeout)
+}
+
+func TooManyRequests() ApiErr {
+	return NewApiError(fiber.StatusTooManyRequests, ErrToManeRequests)
+}
+
+func Forbidden() ApiErr {
+	return NewApiError(fiber.StatusForbidden, ErrForbidden)
+}
+
+func Unauthorized() ApiErr {
+	return NewApiError(fiber.StatusUnauthorized, ErrUnauthorized)
 }

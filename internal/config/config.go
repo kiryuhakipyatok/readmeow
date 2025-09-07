@@ -32,6 +32,7 @@ type AppConfig struct {
 type ServerConfig struct {
 	Host           string        `mapstructure:"host"`
 	Port           string        `mapstructure:"port"`
+	MetricPort     string        `mapstructure:"metricPort"`
 	WriteTimeout   time.Duration `mapstructure:"writeTimeout"`
 	ReadTimeout    time.Duration `mapstructure:"readTimeout"`
 	IdleTimeout    time.Duration `mapstructure:"idleTimeout"`
