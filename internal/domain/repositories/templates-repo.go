@@ -145,6 +145,9 @@ func (tr *templateRepo) FetchByUser(ctx context.Context, id string, showPrivate 
 		}
 		templates = append(templates, template)
 	}
+	if len(templates) == 0 {
+		return []models.Template{}, nil
+	}
 	return templates, nil
 }
 
@@ -264,6 +267,9 @@ func (tr *templateRepo) FetchFavorite(ctx context.Context, id string, amount, pa
 		}
 		templates = append(templates, template)
 	}
+	if len(templates) == 0 {
+		return []models.TemplateWithOwner{}, nil
+	}
 	return templates, nil
 }
 
@@ -376,7 +382,7 @@ func (tr *templateRepo) Search(ctx context.Context, amount, page uint, query str
 		}
 	}
 	if len(ids) == 0 {
-		return nil, errs.ErrNotFound(op)
+		return []models.TemplateWithOwner{}, nil
 	}
 	templates, err := tr.getByIds(ctx, ids)
 	if err != nil {
@@ -421,7 +427,7 @@ func (tr *templateRepo) getByIds(ctx context.Context, ids []string) ([]models.Te
 		byId[template.Id.String()] = template
 	}
 	if len(byId) == 0 {
-		return nil, errs.ErrNotFound(op)
+		return []models.TemplateWithOwner{}, nil
 	}
 	for _, id := range ids {
 		if t, ok := byId[id]; ok {
@@ -457,7 +463,7 @@ func (tr *templateRepo) getAll(ctx context.Context) ([]models.Template, error) {
 		templates = append(templates, template)
 	}
 	if len(templates) == 0 {
-		return nil, errs.ErrNotFound(op)
+		return []models.Template{}, nil
 	}
 	return templates, nil
 }

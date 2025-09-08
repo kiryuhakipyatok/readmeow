@@ -28,19 +28,27 @@ func NewQueryData(ctx context.Context, s *storage.Storage, op string, query stri
 
 func (qd QueryData) InsertWithTx() error {
 	if tx, ok := storage.GetTx(qd.Ctx); ok {
-		if _, err := tx.Exec(qd.Ctx, qd.Query, qd.Args...); err != nil {
+		res, err := tx.Exec(qd.Ctx, qd.Query, qd.Args...)
+		if err != nil {
 			if storage.ErrorAlreadyExists(err) {
 				return errs.ErrAlreadyExists(qd.Operation, err)
 			}
 			return errs.NewAppError(qd.Operation, err)
 		}
+		if res.RowsAffected() == 0 {
+			return errs.ErrNotFound(qd.Operation)
+		}
 		return nil
 	}
-	if _, err := qd.Storage.Pool.Exec(qd.Ctx, qd.Query, qd.Args...); err != nil {
+	res, err := qd.Storage.Pool.Exec(qd.Ctx, qd.Query, qd.Args...)
+	if err != nil {
 		if storage.ErrorAlreadyExists(err) {
 			return errs.ErrAlreadyExists(qd.Operation, err)
 		}
 		return errs.NewAppError(qd.Operation, err)
+	}
+	if res.RowsAffected() == 0 {
+		return errs.ErrNotFound(qd.Operation)
 	}
 	return nil
 }

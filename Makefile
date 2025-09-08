@@ -13,10 +13,10 @@ run:
 	@go run cmd/app/main.go
 
 docker-run-infra:
-	@docker-compose up postgres redis es prometheus --build
+	@docker-compose up postgres redis es --build
 
 docker-run-app:
-	@docker-compose up readmeow --build 
+	docker-compose up readmeow prometheus --build
 
 docker-run-monitoring:
 	@docker-compose up prometheus 

@@ -110,6 +110,9 @@ func (wr *widgetRepo) FetchFavorite(ctx context.Context, id string, amount, page
 		}
 		widgets = append(widgets, widget)
 	}
+	if len(widgets) == 0 {
+		return []models.Widget{}, nil
+	}
 	return widgets, nil
 }
 
@@ -260,7 +263,7 @@ func (wr *widgetRepo) Search(ctx context.Context, amount, page uint, query strin
 		}
 	}
 	if len(ids) == 0 {
-		return nil, errs.ErrNotFound(op)
+		return []models.Widget{}, nil
 	}
 	widgets, err := wr.GetByIds(ctx, ids)
 	if err != nil {
@@ -323,7 +326,7 @@ func (wr *widgetRepo) GetByIds(ctx context.Context, ids []string) ([]models.Widg
 		}
 	}
 	if len(byId) == 0 {
-		return nil, errs.ErrNotFound(op)
+		return []models.Widget{}, nil
 	}
 	for _, id := range ids {
 		if w, ok := byId[id]; ok {
@@ -359,7 +362,7 @@ func (wr *widgetRepo) getAll(ctx context.Context) ([]models.Widget, error) {
 		widgets = append(widgets, widget)
 	}
 	if len(widgets) == 0 {
-		return nil, errs.ErrNotFound(op)
+		return []models.Widget{}, nil
 	}
 	return widgets, nil
 }
