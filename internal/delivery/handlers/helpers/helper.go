@@ -56,9 +56,3 @@ func SuccessResponse(c *fiber.Ctx) error {
 		Message: "success",
 	})
 }
-
-func InvalidState(c *fiber.Ctx) error {
-	return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-		"error": "invalid state",
-	})
-}

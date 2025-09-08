@@ -267,7 +267,7 @@ func (ah *AuthHandl) GoogleOAthCallback(c *fiber.Ctx) error {
 		c.Cookie(s)
 	}()
 	if c.Cookies("oauth_state") != state {
-		return helpers.InvalidState(c)
+		return apierr.InvalidRequest()
 	}
 	code := c.Query("code")
 	token, err := ah.OAuthConfig.GoogleOAuthConfig.Exchange(ctx, code)
@@ -321,7 +321,7 @@ func (ah *AuthHandl) GitHubOAuthCallback(c *fiber.Ctx) error {
 		c.Cookie(s)
 	}()
 	if c.Cookies("oauth_state") != state {
-		return helpers.InvalidState(c)
+		return apierr.InvalidRequest()
 	}
 	code := c.Query("code")
 	token, err := ah.OAuthConfig.GithubOAuthConfig.Exchange(ctx, code)
