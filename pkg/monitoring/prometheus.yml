@@ -20,4 +20,4 @@ scrape_configs:
     scrape_timeout: 15s
 
     static_configs:
-      - targets: ['readmeow:3333']
+      - targets: ['readmeow:${METRIC_SERVER_PORT}']
