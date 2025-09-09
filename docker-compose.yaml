@@ -96,6 +96,17 @@ services:
       - app-network
     stop_grace_period: 5s
 
+  grafana:
+    image: grafana/grafana-oss:latest
+    ports:
+      - ${GRAFANA_PORT}:3000
+    env_file:
+      - .env
+    networks:
+      - app-network
+    depends_on:
+      - prometheus
+
 networks:
   app-network:
     driver: bridge

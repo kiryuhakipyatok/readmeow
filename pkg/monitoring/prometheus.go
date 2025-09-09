@@ -15,25 +15,28 @@ func NewPrometheusSetup() *PrometheusSetup {
 	registry := prometheus.NewRegistry()
 	httpRequestsTotal := prometheus.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "http_requests_total",
-			Help: "Total number of HTTP requests",
+			Namespace: "readmeow",
+			Name:      "http_requests_total",
+			Help:      "Total number of HTTP requests",
 		},
 		[]string{"path", "method"},
 	)
 	registry.MustRegister(httpRequestsTotal)
 	httpRequestsDuration := prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
-			Name:    "http_request_duration_sec",
-			Help:    "Duration of requests in seconds",
-			Buckets: prometheus.LinearBuckets(0.1, 0.1, 10),
+			Namespace: "readmeow",
+			Name:      "http_request_duration_sec",
+			Help:      "Duration of requests in seconds",
+			Buckets:   prometheus.LinearBuckets(0.1, 0.1, 10),
 		},
 		[]string{"path", "method", "status"},
 	)
 	registry.MustRegister(httpRequestsDuration)
 	httpErrorTotal := prometheus.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "http_error_total",
-			Help: "Total number of HTTP errors",
+			Namespace: "readmeow",
+			Name:      "http_error_total",
+			Help:      "Total number of HTTP errors",
 		},
 		[]string{"path", "method", "status", "error"},
 	)

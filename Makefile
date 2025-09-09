@@ -19,7 +19,7 @@ docker-run-app:
 	@docker-compose up readmeow --build 
 
 docker-run-monitoring:
-	@docker-compose up prometheus 
+	@docker-compose up prometheus grafana
 
 docker-down:
 	@docker-compose down
