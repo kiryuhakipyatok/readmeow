@@ -34,6 +34,7 @@ Easily build, edit, and share README templates using widgets. Templates can be *
 - **Search**: Elasticsearch  
 - **File storage**: Cloudinary  
 - **Infrastructure**: Docker, Docker Compose  
+- **Monitoring**: Prometheus, Grafana
 
 ## 📦 Getting Started
 
