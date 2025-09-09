@@ -26,7 +26,7 @@ func NewQueryData(ctx context.Context, s *storage.Storage, op string, query stri
 	}
 }
 
-func (qd QueryData) InsertWithTx() error {
+func (qd *QueryData) InsertWithTx() error {
 	if tx, ok := storage.GetTx(qd.Ctx); ok {
 		res, err := tx.Exec(qd.Ctx, qd.Query, qd.Args...)
 		if err != nil {
@@ -53,7 +53,7 @@ func (qd QueryData) InsertWithTx() error {
 	return nil
 }
 
-func (qd QueryData) DeleteOrUpdateWithTx() error {
+func (qd *QueryData) DeleteOrUpdateWithTx() error {
 	if tx, ok := storage.GetTx(qd.Ctx); ok {
 		res, err := tx.Exec(qd.Ctx, qd.Query, qd.Args...)
 		if err != nil {
@@ -74,7 +74,7 @@ func (qd QueryData) DeleteOrUpdateWithTx() error {
 	return nil
 }
 
-func (qd QueryData) queryRow(data ...any) error {
+func (qd *QueryData) queryRow(data ...any) error {
 	if tx, ok := storage.GetTx(qd.Ctx); ok {
 		if err := tx.QueryRow(qd.Ctx, qd.Query, qd.Args...).Scan(data...); err != nil {
 			if errors.Is(err, storage.ErrNotFound()) {
@@ -93,7 +93,7 @@ func (qd QueryData) queryRow(data ...any) error {
 	return nil
 }
 
-func (qd QueryData) QueryRowWithTx(entity any) error {
+func (qd *QueryData) QueryRowWithTx(entity any) error {
 	switch e := entity.(type) {
 	case *models.User:
 		userData := []any{

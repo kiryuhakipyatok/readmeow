@@ -75,7 +75,7 @@ services:
 
   migrate:
     build: ./
-    #image: kiryuhakipyatok/migrate:latest
+    image: kiryuhakipyatok/migrate:latest
     env_file:
       - .env
     volumes:
