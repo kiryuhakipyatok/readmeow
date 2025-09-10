@@ -52,15 +52,25 @@ func (ah *AuthHandl) Register(c *fiber.Ctx) error {
 	if err := helpers.ParseAndValidateRequest(c, &req, helpers.Body{}, ah.Validator); err != nil {
 		return err
 	}
-	id, err := ah.AuthServ.Register(ctx, req.Email, req.Code)
+	loginData, err := ah.AuthServ.Register(ctx, req.Email, req.Code)
 	if err != nil {
 		return apierr.ToApiError(err)
 	}
-	idResp := dto.IdResponse{
-		Id:      id,
-		Message: "user registered successfully",
+	cookie := &fiber.Cookie{
+		Name:     "jwt",
+		Value:    loginData.JWT,
+		HTTPOnly: true,
+		Expires:  loginData.TTL,
+		MaxAge:   int(time.Until(loginData.TTL).Seconds()),
+		SameSite: "Lax",
 	}
-	return c.JSON(idResp)
+	c.Cookie(cookie)
+	response := dto.LoginResponse{
+		Id:       loginData.Id,
+		Nickname: loginData.Nickname,
+		Avatar:   loginData.Avatar,
+	}
+	return c.JSON(response)
 }
 
 // VerifyEmail godoc
@@ -109,25 +119,25 @@ func (ah *AuthHandl) Login(c *fiber.Ctx) error {
 	if err := helpers.ParseAndValidateRequest(c, &req, helpers.Body{}, ah.Validator); err != nil {
 		return err
 	}
-	loginResponce, err := ah.AuthServ.Login(ctx, req.Login, req.Password)
+	loginData, err := ah.AuthServ.Login(ctx, req.Login, req.Password)
 	if err != nil {
 		return apierr.ToApiError(err)
 	}
 	cookie := &fiber.Cookie{
 		Name:     "jwt",
-		Value:    loginResponce.JWT,
+		Value:    loginData.JWT,
 		HTTPOnly: true,
-		Expires:  loginResponce.TTL,
-		MaxAge:   int(time.Until(loginResponce.TTL).Seconds()),
+		Expires:  loginData.TTL,
+		MaxAge:   int(time.Until(loginData.TTL).Seconds()),
 		SameSite: "Lax",
 	}
 	c.Cookie(cookie)
-	responce := dto.LoginResponse{
-		Id:       loginResponce.Id,
-		Nickname: loginResponce.Nickname,
-		Avatar:   loginResponce.Avatar,
+	response := dto.LoginResponse{
+		Id:       loginData.Id,
+		Nickname: loginData.Nickname,
+		Avatar:   loginData.Avatar,
 	}
-	return c.JSON(responce)
+	return c.JSON(response)
 }
 
 // Logout godoc
@@ -285,25 +295,25 @@ func (ah *AuthHandl) GoogleOAthCallback(c *fiber.Ctx) error {
 		return apierr.ToApiError(err)
 	}
 
-	loginResponce, err := ah.AuthServ.OAuthLogin(ctx, oauthReq.Name, oauthReq.Picture, oauthReq.Email, oauthReq.Id, google)
+	loginData, err := ah.AuthServ.OAuthLogin(ctx, oauthReq.Name, oauthReq.Picture, oauthReq.Email, oauthReq.Id, google)
 	if err != nil {
 		return apierr.ToApiError(err)
 	}
 	cookie := &fiber.Cookie{
 		Name:     "jwt",
-		Value:    loginResponce.JWT,
+		Value:    loginData.JWT,
 		HTTPOnly: true,
-		Expires:  loginResponce.TTL,
-		MaxAge:   int(time.Until(loginResponce.TTL).Seconds()),
+		Expires:  loginData.TTL,
+		MaxAge:   int(time.Until(loginData.TTL).Seconds()),
 		SameSite: "Lax",
 	}
 	c.Cookie(cookie)
-	responce := dto.LoginResponse{
-		Id:       loginResponce.Id,
-		Nickname: loginResponce.Nickname,
-		Avatar:   loginResponce.Avatar,
+	response := dto.LoginResponse{
+		Id:       loginData.Id,
+		Nickname: loginData.Nickname,
+		Avatar:   loginData.Avatar,
 	}
-	return c.JSON(responce)
+	return c.JSON(response)
 }
 
 func (ah *AuthHandl) GitHubOAuthCallback(c *fiber.Ctx) error {
@@ -358,23 +368,23 @@ func (ah *AuthHandl) GitHubOAuthCallback(c *fiber.Ctx) error {
 		}
 	}
 	pid := strconv.FormatInt(oauthReq.Id, 10)
-	loginResponce, err := ah.AuthServ.OAuthLogin(ctx, oauthReq.Login, oauthReq.Avatar, oauthReq.Email, pid, github)
+	loginData, err := ah.AuthServ.OAuthLogin(ctx, oauthReq.Login, oauthReq.Avatar, oauthReq.Email, pid, github)
 	if err != nil {
 		return apierr.ToApiError(err)
 	}
 	cookie := &fiber.Cookie{
 		Name:     "jwt",
-		Value:    loginResponce.JWT,
+		Value:    loginData.JWT,
 		HTTPOnly: true,
-		Expires:  loginResponce.TTL,
-		MaxAge:   int(time.Until(loginResponce.TTL).Seconds()),
+		Expires:  loginData.TTL,
+		MaxAge:   int(time.Until(loginData.TTL).Seconds()),
 		SameSite: "Lax",
 	}
 	c.Cookie(cookie)
-	responce := dto.LoginResponse{
-		Id:       loginResponce.Id,
-		Nickname: loginResponce.Nickname,
-		Avatar:   loginResponce.Avatar,
+	response := dto.LoginResponse{
+		Id:       loginData.Id,
+		Nickname: loginData.Nickname,
+		Avatar:   loginData.Avatar,
 	}
-	return c.JSON(responce)
+	return c.JSON(response)
 }

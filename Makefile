@@ -16,7 +16,7 @@ docker-run-infra:
 	@docker-compose up postgres redis es --build
 
 docker-run-app:
-	docker-compose up readmeow prometheus --build
+	docker-compose up readmeow --build
 
 docker-run-monitoring:
 	@docker-compose up prometheus 

@@ -24,11 +24,11 @@ import (
 )
 
 type AuthServ interface {
-	Register(ctx context.Context, email, code string) (string, error)
-	Login(ctx context.Context, login, password string) (*loginResponce, error)
+	Register(ctx context.Context, email, code string) (*loginData, error)
+	Login(ctx context.Context, login, password string) (*loginData, error)
 	SendVerifyCode(ctx context.Context, email, login, nickname, password string) error
 	SendNewCode(ctx context.Context, email string) error
-	OAuthLogin(ctx context.Context, nickname, avatar, email, pid, provider string) (*loginResponce, error)
+	OAuthLogin(ctx context.Context, nickname, avatar, email, pid, provider string) (*loginData, error)
 }
 
 type authServ struct {
@@ -56,7 +56,15 @@ func NewAuthServ(ur repositories.UserRepo, vr repositories.VerificationRepo, cs 
 //go:embed assets/default-ava.jpg
 var defaultAvatar []byte
 
-func (as *authServ) Register(ctx context.Context, email, code string) (string, error) {
+type loginData struct {
+	Id       string
+	Nickname string
+	Avatar   string
+	JWT      string
+	TTL      time.Time
+}
+
+func (as *authServ) Register(ctx context.Context, email, code string) (*loginData, error) {
 	op := "authServ.Register"
 	log := as.Logger.AddOp(op)
 	log.Log.Info("registering user")
@@ -81,7 +89,7 @@ func (as *authServ) Register(ctx context.Context, email, code string) (string, e
 		filename := fmt.Sprintf("%s-%d", id, unow)
 		file := bytes.NewReader(defaultAvatar)
 		url, pid, err := as.CloudStorage.UploadImage(ctx, file, filename, folder)
-		user := models.User{
+		user := &models.User{
 			Id: id,
 			Credentials: models.Credentials{
 				Nickname:   credentials.Nickname,
@@ -99,34 +107,37 @@ func (as *authServ) Register(ctx context.Context, email, code string) (string, e
 		if err := as.VerificationRepo.Delete(c, user.Email); err != nil {
 			return nil, err
 		}
-		if err := as.UserRepo.Create(c, &user); err != nil {
+		if err := as.UserRepo.Create(c, user); err != nil {
 			if cerr := as.CloudStorage.DeleteImage(ctx, pid); cerr != nil {
 				return nil, fmt.Errorf("%w : %w", err, cerr)
 			}
 			return nil, err
 		}
 
-		return user.Id.String(), nil
+		return user, nil
 	})
 	if err != nil {
 		log.Log.Error("failed to register user", logger.Err(err))
-		return "", errs.NewAppError(op, err)
+		return nil, errs.NewAppError(op, err)
 	}
-
+	user := res.(*models.User)
+	jwtToken, ttl, err := utils.GenerateJWT(as.AuthConfig.TokenTTL, user.Id.String(), as.AuthConfig.Secret)
+	if err != nil {
+		log.Log.Error("failed to generate jwt token", logger.Err(err))
+		return nil, errs.NewAppError(op, err)
+	}
+	loginData := &loginData{
+		Id:       user.Id.String(),
+		Nickname: *user.Login,
+		Avatar:   user.Avatar,
+		JWT:      jwtToken,
+		TTL:      *ttl,
+	}
 	log.Log.Info("user registered successfully")
-
-	return res.(string), nil
+	return loginData, nil
 }
 
-type loginResponce struct {
-	Id       string
-	Nickname string
-	Avatar   string
-	JWT      string
-	TTL      time.Time
-}
-
-func (as *authServ) Login(ctx context.Context, login, password string) (*loginResponce, error) {
+func (as *authServ) Login(ctx context.Context, login, password string) (*loginData, error) {
 	op := "authServ.Login"
 	log := as.Logger.AddOp(op)
 	log.Log.Info("logining user")
@@ -145,7 +156,7 @@ func (as *authServ) Login(ctx context.Context, login, password string) (*loginRe
 		log.Log.Error("failed to generate jwt token", logger.Err(err))
 		return nil, errs.NewAppError(op, err)
 	}
-	loginResponce := &loginResponce{
+	loginData := &loginData{
 		Id:       user.Id.String(),
 		Nickname: *user.Login,
 		Avatar:   user.Avatar,
@@ -153,8 +164,8 @@ func (as *authServ) Login(ctx context.Context, login, password string) (*loginRe
 		TTL:      *ttl,
 	}
 
-	log.Log.Info("token generated successfully")
-	return loginResponce, nil
+	log.Log.Info("user loggined successfully")
+	return loginData, nil
 }
 
 func (as *authServ) SendVerifyCode(ctx context.Context, email, login, nickname, password string) error {
@@ -227,7 +238,7 @@ func (as *authServ) SendNewCode(ctx context.Context, email string) error {
 	return nil
 }
 
-func (as *authServ) OAuthLogin(ctx context.Context, nickname, avatar, email, pid, provider string) (*loginResponce, error) {
+func (as *authServ) OAuthLogin(ctx context.Context, nickname, avatar, email, pid, provider string) (*loginData, error) {
 	op := "authServ.GoogleAuth"
 	log := as.Logger.AddOp(op)
 	log.Log.Info("user oauth loggining")
@@ -277,14 +288,14 @@ func (as *authServ) OAuthLogin(ctx context.Context, nickname, avatar, email, pid
 		if err != nil {
 			return nil, err
 		}
-		loginResponce := &loginResponce{
+		loginData := &loginData{
 			Id:       user.Id.String(),
 			Nickname: user.Nickname,
 			Avatar:   user.Avatar,
 			JWT:      jwtToken,
 			TTL:      *ttl,
 		}
-		return loginResponce, nil
+		return loginData, nil
 	})
 	if err != nil {
 		log.Log.Error("failed to login user with oauth", logger.Err(err))
@@ -292,5 +303,5 @@ func (as *authServ) OAuthLogin(ctx context.Context, nickname, avatar, email, pid
 	}
 
 	log.Log.Info("token generated successfully")
-	return res.(*loginResponce), nil
+	return res.(*loginData), nil
 }
