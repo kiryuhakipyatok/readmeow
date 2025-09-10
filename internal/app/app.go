@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"fmt"
 	"net/smtp"
 	"os"
 	"os/signal"
@@ -32,6 +33,7 @@ func Run() {
 		panic("failed to load .env" + err.Error())
 	}
 	cfg := config.MustLoadConfig(os.Getenv("CONFIG_PATH"))
+	fmt.Println(cfg)
 	log := logger.NewLogger(cfg.App)
 
 	log.Log.Info("config loaded")

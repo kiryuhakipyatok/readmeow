@@ -1,7 +1,7 @@
 services:
   readmeow:
     build: ./
-  #  image: kiryuhakipyatok/readmeow:latest
+    image: kiryuhakipyatok/readmeow:latest
     env_file:
       - .env
     ports:
@@ -75,7 +75,7 @@ services:
 
   migrate:
     build: ./
-    #image: kiryuhakipyatok/migrate:latest
+    image: kiryuhakipyatok/migrate:latest
     env_file:
       - .env
     volumes:
@@ -97,6 +97,17 @@ services:
     networks:
       - app-network
     stop_grace_period: 5s
+
+  grafana:
+    image: grafana/grafana-oss:latest
+    ports:
+      - ${GRAFANA_PORT}:3000
+    env_file:
+      - .env
+    networks:
+      - app-network
+    depends_on:
+      - prometheus
 
 networks:
   app-network:
