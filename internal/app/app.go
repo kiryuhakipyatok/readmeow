@@ -2,6 +2,8 @@ package app
 
 import (
 	"context"
+	"errors"
+	"net/http"
 	"net/smtp"
 	"os"
 	"os/signal"
@@ -22,7 +24,6 @@ import (
 	stor "readmeow/pkg/storage"
 	"readmeow/pkg/validator"
 	"syscall"
-	"time"
 
 	"github.com/joho/godotenv"
 )
@@ -60,7 +61,7 @@ func Run() {
 
 	server := server.NewServer(cfg.Server, cfg.Auth, cfg.App, ps)
 	defer func() {
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second*time.Duration(cfg.Server.CloseTimeout))
+		ctx, cancel := context.WithTimeout(context.Background(), cfg.Server.CloseTimeout)
 		defer cancel()
 		server.MustClose(ctx)
 		log.Log.Info("server closed")
@@ -110,7 +111,7 @@ func Run() {
 		}
 	}()
 	go func() {
-		if err := server.Metric.ListenAndServe(); err != nil {
+		if err := server.Metric.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			panic("failed to start server of metrics: " + err.Error())
 		}
 	}()
