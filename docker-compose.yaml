@@ -89,7 +89,7 @@ services:
     env_file:
       - .env
     ports:
-      - "9090:9090"
+      - ${PROMETHEUS_PORT}:9090
     depends_on:
       - readmeow
     volumes:
