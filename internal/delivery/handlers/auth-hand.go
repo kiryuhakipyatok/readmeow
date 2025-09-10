@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"encoding/json"
-	"fmt"
 	"readmeow/internal/delivery/apierr"
 	"readmeow/internal/delivery/handlers/helpers"
 	"readmeow/internal/delivery/oauth"
@@ -57,7 +56,6 @@ func (ah *AuthHandl) Register(c *fiber.Ctx) error {
 	if err != nil {
 		return apierr.ToApiError(err)
 	}
-	fmt.Println(loginData)
 	cookie := &fiber.Cookie{
 		Name:     "jwt",
 		Value:    loginData.JWT,
