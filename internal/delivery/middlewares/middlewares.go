@@ -56,10 +56,10 @@ func MetricsMiddleware(ps *monitoring.PrometheusSetup) fiber.Handler {
 			switch err := err.(type) {
 			case *fiber.Error:
 				statusCode = err.Code
-				ps.HTTPErrorTotal.WithLabelValues(c.Route().Path, c.Method(), strconv.Itoa(statusCode), err.Message).Inc()
+				ps.HTTPErrorTotal.WithLabelValues(c.Route().Path, c.Method(), strconv.Itoa(statusCode)).Inc()
 			case apierr.ApiErr:
 				statusCode = err.Code
-				ps.HTTPErrorTotal.WithLabelValues(c.Route().Path, c.Method(), strconv.Itoa(statusCode), err.Message.(string)).Inc()
+				ps.HTTPErrorTotal.WithLabelValues(c.Route().Path, c.Method(), strconv.Itoa(statusCode)).Inc()
 			}
 
 		}

@@ -35,7 +35,7 @@ func NewPrometheusSetup() *PrometheusSetup {
 			Name: "http_error_total",
 			Help: "Total number of HTTP errors",
 		},
-		[]string{"path", "method", "status", "error"},
+		[]string{"path", "method", "status"},
 	)
 	registry.MustRegister(httpErrorTotal)
 	return &PrometheusSetup{
