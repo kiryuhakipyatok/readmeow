@@ -6,10 +6,10 @@ import (
 )
 
 type VerifyRequest struct {
-	Nickname string `json:"nickname" validate:"required,min=1,max=80"`
-	Login    string `json:"login" validate:"required,min=1,max=80"`
+	Nickname string `json:"nickname" validate:"required,min=2,max=80"`
+	Login    string `json:"login" validate:"required,min=2,max=80"`
 	Email    string `json:"email" validate:"required,email"`
-	Password string `json:"password" validate:"required,min=12"`
+	Password string `json:"password" validate:"required,min=8"`
 }
 
 type RegisterRequest struct {
@@ -18,8 +18,8 @@ type RegisterRequest struct {
 }
 
 type LoginRequest struct {
-	Login    string `json:"login" validate:"required,min=1,max=80"`
-	Password string `json:"password" validate:"required,min=12"`
+	Login    string `json:"login" validate:"required,min=2,max=80"`
+	Password string `json:"password" validate:"required,min=8"`
 }
 
 type PaginationRequest struct {
@@ -82,17 +82,17 @@ type UpdateUserRequest struct {
 
 type UpdateUserRequestDoc struct {
 	Id       string `json:"id" validate:"required,uuid"`
-	Nickname string `json:"nickname" validate:"omitempty,min=1,max=80"`
+	Nickname string `json:"nickname" validate:"omitempty,min=2,max=80"`
 	Avatar   string `json:"avatar" validate:"omitempty" format:"binary"`
 }
 
 type DeleteUserRequest struct {
-	Password string `json:"password" validate:"required,min=12"`
+	Password string `json:"password" validate:"required,min=8"`
 }
 
 type ChangePasswordRequest struct {
-	OldPasswrod string `json:"old_password" validate:"required,min=12"`
-	NewPassword string `json:"new_password" validate:"required,min=12"`
+	OldPasswrod string `json:"old_password" validate:"required,min=8"`
+	NewPassword string `json:"new_password" validate:"required,min=8"`
 }
 
 type CreateTemplateRequest struct {
