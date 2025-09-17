@@ -2,7 +2,6 @@ filebeat.inputs:
   - type: filestream
     enabled: true
     paths:
-    #  - /logs/app.log
       - /logs/*.log
     ignore_older: 0
 output.logstash:
