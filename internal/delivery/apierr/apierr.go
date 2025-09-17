@@ -18,7 +18,7 @@ var (
 	ErrCodeIsExpired     = errors.New("verification code is expired")
 	ErrAlreadyLoggined   = errors.New("already loggined")
 	ErrRequestTimeout    = errors.New("request timeout")
-	ErrToManeRequests    = errors.New("to many requests")
+	ErrToManyRequests    = errors.New("to many requests")
 	ErrForbidden         = errors.New("forbidden")
 	ErrUnauthorized      = errors.New("unauthorized")
 )
@@ -62,6 +62,8 @@ func ToApiError(err error) ApiErr {
 		return ZeroAttempts()
 	case errors.Is(err, errs.ErrCodeIsExpiredBase):
 		return CodeIsExpired()
+	case errors.Is(err, errs.ErrIncorrectOldPasswordBase):
+		return IncorrectOldPassword()
 	default:
 		return InternalServerError()
 	}
@@ -104,7 +106,7 @@ func RequestTimeout() ApiErr {
 }
 
 func TooManyRequests() ApiErr {
-	return NewApiError(fiber.StatusTooManyRequests, ErrToManeRequests)
+	return NewApiError(fiber.StatusTooManyRequests, ErrToManyRequests)
 }
 
 func Forbidden() ApiErr {
@@ -113,4 +115,8 @@ func Forbidden() ApiErr {
 
 func Unauthorized() ApiErr {
 	return NewApiError(fiber.StatusUnauthorized, ErrUnauthorized)
+}
+
+func IncorrectOldPassword() ApiErr {
+	return NewApiError(fiber.StatusBadRequest, errs.ErrIncorrectOldPasswordBase)
 }

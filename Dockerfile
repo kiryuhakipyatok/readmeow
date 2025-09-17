@@ -26,9 +26,7 @@ COPY --from=builder /usr/local/src/bin/app .
 
 COPY --from=builder /go/bin/goose /usr/local/bin/goose
 
-COPY .env .
-
-COPY config/config-local.yaml /config/config-local.yaml
+COPY configs /configs
 
 COPY internal/migrations /migrations
 

@@ -6,13 +6,14 @@ import (
 )
 
 var (
-	ErrNotFoundBase      = errors.New("not found")
-	ErrAlreadyExistsBase = errors.New("already exists")
-	ErrInvalidFieldsBase = errors.New("invalid fields")
-	ErrInvalidValuesBase = errors.New("invalid values")
-	ErrInvalidCodeBase   = errors.New("invalid code")
-	ErrZeroAttemptsBase  = errors.New("zero attempts")
-	ErrCodeIsExpiredBase = errors.New("code is expired")
+	ErrNotFoundBase             = errors.New("not found")
+	ErrAlreadyExistsBase        = errors.New("already exists")
+	ErrInvalidFieldsBase        = errors.New("invalid fields")
+	ErrInvalidValuesBase        = errors.New("invalid values")
+	ErrInvalidCodeBase          = errors.New("invalid code")
+	ErrZeroAttemptsBase         = errors.New("zero attempts")
+	ErrCodeIsExpiredBase        = errors.New("code is expired")
+	ErrIncorrectOldPasswordBase = errors.New("old password is incorrect")
 )
 
 type AppError struct {
@@ -61,4 +62,8 @@ func ErrZeroAttempts(op string) AppError {
 
 func ErrCodeIsExpired(op string) AppError {
 	return NewAppError(op, fmt.Errorf("%w", ErrCodeIsExpiredBase))
+}
+
+func ErrIncorrectOldPassword(op string) AppError {
+	return NewAppError(op, fmt.Errorf("%w", ErrIncorrectOldPasswordBase))
 }

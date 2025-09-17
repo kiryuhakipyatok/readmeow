@@ -2,6 +2,7 @@ app:
   name: "READMEOW"
   version: "1.0.0"
   env: "${APP_ENV}"
+  logPath: "/logs/readmeow.log"
 
 server:
   host: "0.0.0.0"
@@ -40,11 +41,11 @@ cache:
   pingTimeout: 5s
 
 search:
-  host: "es"
+  host: "elasticsearch"
   port: "${ELASTICSEARCH_PORT}"
   user: "${ELASTICSEARCH_USER}"
   password: "${ELASTICSEARCH_PASSWORD}"
-  pingTimeout: 5s
+  pingTimeout: 60s
 
 email:
   name: "Readmeow Register System"

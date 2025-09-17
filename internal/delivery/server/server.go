@@ -2,7 +2,10 @@ package server
 
 import (
 	"context"
+	"fmt"
+	"io"
 	"net/http"
+	"os"
 	"readmeow/internal/config"
 	"readmeow/internal/delivery/middlewares"
 	"readmeow/pkg/monitoring"
@@ -12,6 +15,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/swagger"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
@@ -43,13 +47,19 @@ func NewServer(scfg config.ServerConfig, acfg config.AuthConfig, apcfg config.Ap
 		ErrorHandler: middlewares.ErrorHandler,
 	})
 	metricsMux := http.NewServeMux()
-	metricsMux.Handle("/metrics", promhttp.HandlerFor(ps.Registry, promhttp.HandlerOpts{}))
+	metricsMux.Handle("/metrics", promhttp.Handler())
 	metrics := &http.Server{
 		Addr:    ":" + scfg.MetricPort,
 		Handler: metricsMux,
 	}
 
-	corsMiddleware := cors.New(cors.Config{})
+	corsMiddleware := cors.New(cors.Config{
+		AllowOrigins:     "http://localhost:3000",
+		AllowCredentials: true,
+		AllowMethods:     "GET,POST,DELETE,PATCH,OPTIONS",
+		ExposeHeaders:    "Content-Length",
+		AllowHeaders:     "Origin, Content-Type, Accept, Authorization",
+	})
 
 	swaggerGroup := app.Group("/api/swagger")
 
@@ -88,7 +98,19 @@ func NewServer(scfg config.ServerConfig, acfg config.AuthConfig, apcfg config.Ap
 
 	swaggerGroup.Get("/*", swagger.HandlerDefault)
 
+	logFile, err := os.OpenFile(apcfg.LogPath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
+		panic(fmt.Errorf("faield to open log file: %w", err))
+	}
+	writer := io.MultiWriter(logFile, os.Stdout)
+	log := logger.New(logger.Config{
+		Format:   "{\"time\":\"${time}\",\"method\":\"${method}\",\"path\":\"${path}\",\"status\":${status},\"latency\":\"${latency}\",\"type\":\"http\"}\n",
+		TimeZone: "Europe/Minsk",
+		Output:   writer,
+	})
+
 	app.Use(
+		log,
 		corsMiddleware,
 		middlewares.AuthMiddleware(acfg, validAuthPaths),
 		middlewares.AlreadyLoginCheck(validAlreadyLoginPaths),

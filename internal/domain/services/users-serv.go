@@ -134,7 +134,7 @@ func (us *userServ) ChangePassword(ctx context.Context, id string, oldPassword, 
 		}
 
 		if err := bcrypt.CompareHashAndPassword(userPassword, []byte(oldPassword)); err != nil {
-			return nil, err
+			return nil, errs.ErrIncorrectOldPassword(op)
 		}
 
 		newHashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPasswrod), 12)

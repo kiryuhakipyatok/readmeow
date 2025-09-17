@@ -1,2 +1,8 @@
 .env
 .db
+*.log
+.grafana-data
+.prometheus-data
+.kibana-data
+.elasticsearch-data
+.redis-data

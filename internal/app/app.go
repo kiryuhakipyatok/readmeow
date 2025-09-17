@@ -24,14 +24,13 @@ import (
 	stor "readmeow/pkg/storage"
 	"readmeow/pkg/validator"
 	"syscall"
-
-	"github.com/joho/godotenv"
+	// "github.com/joho/godotenv"
 )
 
 func Run() {
-	if err := godotenv.Load(".env"); err != nil {
-		panic("failed to load .env" + err.Error())
-	}
+	// if err := godotenv.Load(".env"); err != nil {
+	// 	panic("failed to load .env" + err.Error())
+	// }
 	cfg := config.MustLoadConfig(os.Getenv("CONFIG_PATH"))
 	log := logger.NewLogger(cfg.App)
 

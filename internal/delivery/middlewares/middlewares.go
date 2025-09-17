@@ -2,7 +2,6 @@ package middlewares
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"readmeow/internal/config"
 	"readmeow/internal/delivery/apierr"
@@ -56,23 +55,16 @@ func MetricsMiddleware(ps *monitoring.PrometheusSetup) fiber.Handler {
 		if err != nil {
 			var (
 				statusCode int
-				msg        string
 			)
 			switch err := err.(type) {
 			case *fiber.Error:
 				statusCode = err.Code
-				msg = err.Message
 			case apierr.ApiErr:
 				statusCode = err.Code
-				byteMsg, jerr := json.Marshal(err.Message)
-				if jerr != nil {
-					return apierr.InternalServerError()
-				}
-				msg = string(byteMsg)
 			default:
 				return apierr.InternalServerError()
 			}
-			ps.HTTPErrorTotal.WithLabelValues(c.Route().Path, c.Method(), strconv.Itoa(statusCode), msg).Inc()
+			ps.HTTPErrorTotal.WithLabelValues(c.Route().Path, c.Method(), strconv.Itoa(statusCode)).Inc()
 		}
 		ps.HTTPRequestsTotal.WithLabelValues(c.Route().Path, c.Method()).Inc()
 		ps.HTTPRequestDuration.WithLabelValues(c.Route().Path, c.Method(), strconv.Itoa(statusCode)).Observe(duration)
