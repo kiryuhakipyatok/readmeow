@@ -80,7 +80,7 @@ func (uh *UserHandl) Update(c *fiber.Ctx) error {
 		Updates: updates,
 		Id:      id,
 	}
-	if errs := helpers.ValidateStruct(req, uh.Validator); len(errs) > 0 {
+	if errs := uh.Validator.ValidateStruct(req); len(errs) > 0 {
 		return apierr.ValidationError(errs)
 	}
 	if err := uh.UserServ.Update(ctx, req.Updates, id); err != nil {

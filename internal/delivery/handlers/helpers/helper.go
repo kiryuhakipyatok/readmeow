@@ -19,13 +19,6 @@ type Body struct{}
 func (Query) isRequestType() {}
 func (Body) isRequestType()  {}
 
-func ValidateStruct(s any, v *validator.Validator) map[string]string {
-	if errs := v.ValidateStruct(s); errs != nil {
-		return errs
-	}
-	return nil
-}
-
 func ParseAndValidateRequest[T any](c *fiber.Ctx, request *T, requestType RequestType, v *validator.Validator) error {
 	switch requestType.(type) {
 	case Body:
@@ -37,7 +30,7 @@ func ParseAndValidateRequest[T any](c *fiber.Ctx, request *T, requestType Reques
 			return apierr.InvalidRequest()
 		}
 	}
-	if errs := ValidateStruct(request, v); errs != nil {
+	if errs := v.ValidateStruct(request); len(errs) > 0 {
 		return apierr.ValidationError(errs)
 	}
 	return nil

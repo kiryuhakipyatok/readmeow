@@ -77,7 +77,7 @@ func (rh *ReadmeHandl) CreateReadme(c *fiber.Ctx) error {
 		req.Image = image
 	}
 
-	if errs := helpers.ValidateStruct(req, rh.Validator); len(errs) > 0 {
+	if errs := rh.Validator.ValidateStruct(req); len(errs) > 0 {
 		return apierr.ValidationError(errs)
 	}
 
@@ -164,7 +164,7 @@ func (rh *ReadmeHandl) UpdateReadme(c *fiber.Ctx) error {
 		Updates: updates,
 		Id:      id,
 	}
-	if errs := helpers.ValidateStruct(req, rh.Validator); len(errs) > 0 {
+	if errs := rh.Validator.ValidateStruct(req); len(errs) > 0 {
 		return apierr.ValidationError(errs)
 	}
 	if err := rh.ReadmeServ.Update(ctx, req.Updates, req.Id); err != nil {

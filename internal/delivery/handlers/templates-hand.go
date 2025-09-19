@@ -84,7 +84,7 @@ func (th *TemplateHandl) CreateTemplate(c *fiber.Ctx) error {
 		req.Image = image
 	}
 
-	if errs := helpers.ValidateStruct(req, th.Validator); len(errs) > 0 {
+	if errs := th.Validator.ValidateStruct(req); len(errs) > 0 {
 		return apierr.ValidationError(errs)
 	}
 	if err := th.TemplateServ.Create(ctx, oid, req.Title, req.Description, req.Image, req.Links, req.RenderOrder, req.Text, req.Widgets, req.IsPublic); err != nil {
@@ -157,7 +157,7 @@ func (th *TemplateHandl) UpdateTemplate(c *fiber.Ctx) error {
 		Updates: updates,
 		Id:      id,
 	}
-	if errs := helpers.ValidateStruct(req, th.Validator); len(errs) > 0 {
+	if errs := th.Validator.ValidateStruct(req); len(errs) > 0 {
 		return apierr.ValidationError(errs)
 	}
 

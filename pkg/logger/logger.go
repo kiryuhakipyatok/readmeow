@@ -14,6 +14,7 @@ const (
 	prodEnv  = "prod"
 )
 
+// method wrapper
 type Logger struct {
 	Log *slog.Logger
 }
