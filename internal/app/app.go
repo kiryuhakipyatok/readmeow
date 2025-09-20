@@ -34,43 +34,43 @@ func Run() {
 	cfg := config.MustLoadConfig(os.Getenv("CONFIG_PATH"))
 	log := logger.NewLogger(cfg.App)
 
-	log.Log.Info("config loaded")
+	log.Info("config loaded")
 
 	validator := validator.NewValidator()
 
 	storage := stor.MustConnect(cfg.Storage)
 	defer func() {
 		storage.Close()
-		log.Log.Info("postgres closed")
+		log.Info("postgres closed")
 	}()
-	log.Log.Info("connected to postgres")
+	log.Info("connected to postgres")
 
 	cache := cache.MustConnect(cfg.Cache)
 	defer func() {
 		cache.MustClose()
-		log.Log.Info("redis closed")
+		log.Info("redis closed")
 	}()
-	log.Log.Info("connected to redis")
+	log.Info("connected to redis")
 
 	search := search.MustConnect(cfg.Search)
-	log.Log.Info("connected to elasticsearch")
+	log.Info("connected to elasticsearch")
 
 	ps := monitoring.NewPrometheusSetup()
-	log.Log.Info("prometheus setuped")
+	log.Info("prometheus setuped")
 
 	server := server.NewServer(cfg.Server, cfg.Auth, cfg.App, ps)
 	defer func() {
 		ctx, cancel := context.WithTimeout(context.Background(), cfg.Server.CloseTimeout)
 		defer cancel()
 		server.MustClose(ctx)
-		log.Log.Info("server closed")
+		log.Info("server closed")
 	}()
-	log.Log.Info("server created")
+	log.Info("server created")
 
 	smtpAuth := smtp.PlainAuth("", cfg.Email.Address, cfg.Email.Password, cfg.Email.SmtpAddress)
 
 	cloudStorage := cloudstorage.MustConnect(cfg.CloudStorage)
-	log.Log.Info("connected to cloudinary")
+	log.Info("connected to cloudinary")
 
 	userRepo := repositories.NewUserRepo(storage)
 	widgetRepo := repositories.NewWidgetRepo(storage, cache, search)
@@ -97,9 +97,9 @@ func Run() {
 	sheduler.Start()
 	defer func() {
 		sheduler.Stop()
-		log.Log.Info("sheduler stopped")
+		log.Info("sheduler stopped")
 	}()
-	log.Log.Info("sheduler started")
+	log.Info("sheduler started")
 
 	routConfig := routes.NewRoutConfig(server.App, userHandl, authHandl, templateHandl, readmeHandl, widgetHandl)
 	routConfig.SetupRoutes()
@@ -118,5 +118,5 @@ func Run() {
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
-	log.Log.Info("app shutting down...")
+	log.Info("app shutting down...")
 }

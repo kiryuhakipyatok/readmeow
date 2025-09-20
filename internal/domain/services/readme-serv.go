@@ -50,7 +50,7 @@ func NewReadmeServ(rr repositories.ReadmeRepo, ur repositories.UserRepo, tr repo
 func (rs *readmeServ) Create(ctx context.Context, tid, oid, title string, image *multipart.FileHeader, text, links, order []string, widgets []map[string]string) error {
 	op := "readmeServ.Create"
 	log := rs.Logger.AddOp(op)
-	log.Log.Info("creating readme")
+	log.Info("creating readme")
 	_, err := rs.Transactor.WithinTransaction(ctx, func(c context.Context) (any, error) {
 		user, err := rs.UserRepo.Get(c, oid)
 		if err != nil {
@@ -138,17 +138,17 @@ func (rs *readmeServ) Create(ctx context.Context, tid, oid, title string, image 
 		return nil, nil
 	})
 	if err != nil {
-		log.Log.Error("failed to create new readme", logger.Err(err))
+		log.Error("failed to create new readme", logger.Err(err))
 		return errs.NewAppError(op, err)
 	}
-	log.Log.Info("new readme created successfully")
+	log.Info("new readme created successfully")
 	return nil
 }
 
 func (rs *readmeServ) Delete(ctx context.Context, id, uid string) error {
 	op := "readmeServ"
 	log := rs.Logger.AddOp(op)
-	log.Log.Info("deleting readme")
+	log.Info("deleting readme")
 	if _, err := rs.Transactor.WithinTransaction(ctx, func(c context.Context) (any, error) {
 		user, err := rs.UserRepo.Get(c, uid)
 		if err != nil {
@@ -195,18 +195,18 @@ func (rs *readmeServ) Delete(ctx context.Context, id, uid string) error {
 		}
 		return nil, nil
 	}); err != nil {
-		log.Log.Error("failed to delete readme", logger.Err(err))
+		log.Error("failed to delete readme", logger.Err(err))
 		return errs.NewAppError(op, err)
 	}
 
-	log.Log.Info("readme deleted successfully")
+	log.Info("readme deleted successfully")
 	return nil
 }
 
 func (rs *readmeServ) Update(ctx context.Context, updates map[string]any, id string) error {
 	op := "readmeServ.Update"
 	log := rs.Logger.AddOp(op)
-	log.Log.Info("updating readme")
+	log.Info("updating readme")
 	if _, err := rs.Transactor.WithinTransaction(ctx, func(c context.Context) (any, error) {
 		fileAnyH, fOk := updates["image"]
 		widgs, wOk := updates["widgets"]
@@ -292,34 +292,34 @@ func (rs *readmeServ) Update(ctx context.Context, updates map[string]any, id str
 		}
 		return nil, nil
 	}); err != nil {
-		log.Log.Error("faield to update readme")
+		log.Error("faield to update readme")
 		return errs.NewAppError(op, err)
 	}
 
-	log.Log.Info("readme updated successfully")
+	log.Info("readme updated successfully")
 	return nil
 }
 
 func (rs *readmeServ) Get(ctx context.Context, id string) (*models.Readme, error) {
 	op := "readmeServ.Get"
 	log := rs.Logger.AddOp(op)
-	log.Log.Info("receiving readme")
+	log.Info("receiving readme")
 	readme, err := rs.ReadmeRepo.Get(ctx, id)
 	if err != nil {
-		log.Log.Error("failed to receive readme", logger.Err(err))
+		log.Error("failed to receive readme", logger.Err(err))
 		return nil, errs.NewAppError(op, err)
 	}
-	log.Log.Info("readme received successfully")
+	log.Info("readme received successfully")
 	return readme, nil
 }
 
 func (rs *readmeServ) FetchByUser(ctx context.Context, amount, page uint, uid string) ([]dto.ReadmeResponse, error) {
 	op := "readmeServ.FetchByUser"
 	log := rs.Logger.AddOp(op)
-	log.Log.Info("receiving readmes by user")
+	log.Info("receiving readmes by user")
 	rdms, err := rs.ReadmeRepo.FetchByUser(ctx, amount, page, uid)
 	if err != nil {
-		log.Log.Error("failed to receive readmes", logger.Err(err))
+		log.Error("failed to receive readmes", logger.Err(err))
 		return nil, errs.NewAppError(op, err)
 	}
 	readmes := make([]dto.ReadmeResponse, 0, len(rdms))
@@ -333,6 +333,6 @@ func (rs *readmeServ) FetchByUser(ctx context.Context, amount, page uint, uid st
 		}
 		readmes = append(readmes, readme)
 	}
-	log.Log.Info("readmes received successfully")
+	log.Info("readmes received successfully")
 	return readmes, nil
 }

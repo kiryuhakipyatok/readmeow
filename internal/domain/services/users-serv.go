@@ -44,7 +44,7 @@ func NewUserServ(ur repositories.UserRepo, tr repositories.TemplateRepo, cs clou
 func (us *userServ) Update(ctx context.Context, updates map[string]any, id string) error {
 	op := "userServ.Update"
 	log := us.Logger.AddOp(op)
-	log.Log.Info("updating user info")
+	log.Info("updating user info")
 	if _, err := us.Transactor.WithinTransaction(ctx, func(c context.Context) (any, error) {
 		fileAnyH, ok := updates["avatar"]
 		var (
@@ -90,18 +90,18 @@ func (us *userServ) Update(ctx context.Context, updates map[string]any, id strin
 		}
 		return nil, nil
 	}); err != nil {
-		log.Log.Error("failed to update user", logger.Err(err))
+		log.Error("failed to update user", logger.Err(err))
 		return errs.NewAppError(op, err)
 	}
 
-	log.Log.Info("user info updated successfully")
+	log.Info("user info updated successfully")
 	return nil
 }
 
 func (us *userServ) Delete(ctx context.Context, id, password string) error {
 	op := "userServ.Delete"
 	log := us.Logger.AddOp(op)
-	log.Log.Info("deleting user")
+	log.Info("deleting user")
 	if _, err := us.Transactor.WithinTransaction(ctx, func(c context.Context) (any, error) {
 		userPassword, err := us.UserRepo.GetPassword(c, id)
 		if err != nil {
@@ -115,18 +115,18 @@ func (us *userServ) Delete(ctx context.Context, id, password string) error {
 		}
 		return nil, nil
 	}); err != nil {
-		log.Log.Error("failed to delete user", logger.Err(err))
+		log.Error("failed to delete user", logger.Err(err))
 		return errs.NewAppError(op, err)
 	}
 
-	log.Log.Info("user deleted successfully")
+	log.Info("user deleted successfully")
 	return nil
 }
 
 func (us *userServ) ChangePassword(ctx context.Context, id string, oldPassword, newPasswrod string) error {
 	op := "userServ.UpdatePassword"
 	log := us.Logger.AddOp(op)
-	log.Log.Info("changing user password")
+	log.Info("changing user password")
 	if _, err := us.Transactor.WithinTransaction(ctx, func(c context.Context) (any, error) {
 		userPassword, err := us.UserRepo.GetPassword(c, id)
 		if err != nil {
@@ -147,18 +147,18 @@ func (us *userServ) ChangePassword(ctx context.Context, id string, oldPassword, 
 		}
 		return nil, nil
 	}); err != nil {
-		log.Log.Error("failed to change user password", logger.Err(err))
+		log.Error("failed to change user password", logger.Err(err))
 		return errs.NewAppError(op, err)
 	}
 
-	log.Log.Info("user password changed successfully")
+	log.Info("user password changed successfully")
 	return nil
 }
 
 func (us *userServ) Get(ctx context.Context, id string, showPrivate bool) (*dto.UserResponse, error) {
 	op := "userServ.Get"
 	log := us.Logger.AddOp(op)
-	log.Log.Info("receiving user")
+	log.Info("receiving user")
 	type userRes struct {
 		user *models.User
 		err  error
@@ -180,11 +180,11 @@ func (us *userServ) Get(ctx context.Context, id string, showPrivate bool) (*dto.
 	userResponse := <-userChan
 	templateResponse := <-templChan
 	if err := userResponse.err; err != nil {
-		log.Log.Error("failed to get user", logger.Err(err))
+		log.Error("failed to get user", logger.Err(err))
 		return nil, errs.NewAppError(op, err)
 	}
 	if err := templateResponse.err; err != nil {
-		log.Log.Error("failed to fetch user templates", logger.Err(err))
+		log.Error("failed to fetch user templates", logger.Err(err))
 		return nil, errs.NewAppError(op, err)
 	}
 	templates := templateResponse.templs
@@ -212,6 +212,6 @@ func (us *userServ) Get(ctx context.Context, id string, showPrivate bool) (*dto.
 		TimeOfRegister: user.TimeOfRegister,
 		Templates:      templateInfo,
 	}
-	log.Log.Info("user received successfully")
+	log.Info("user received successfully")
 	return userResp, nil
 }

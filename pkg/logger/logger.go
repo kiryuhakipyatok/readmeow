@@ -47,6 +47,18 @@ func NewLogger(acfg config.AppConfig) *Logger {
 	return logger
 }
 
+func (l *Logger) Info(msg string, args ...any) {
+	l.Log.Info(msg, args...)
+}
+
+func (l *Logger) Error(msg string, args ...any) {
+	l.Log.Error(msg, args...)
+}
+
+func (l *Logger) Debug(msg string, args ...any) {
+	l.Log.Debug(msg, args...)
+}
+
 func (l *Logger) AddOp(op string) *Logger {
 	logger := &Logger{
 		Log: l.Log.With(slog.String("op", op)),

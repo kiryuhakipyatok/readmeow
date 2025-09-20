@@ -41,11 +41,11 @@ func (s *Scheduler) Start() {
 		log := s.Logger.AddOp(op)
 		ctx, cancel := context.WithTimeout(context.Background(), s.ShedulerConfig.CleanCodesTimeout)
 		defer cancel()
-		log.Log.Info("cleaning expired verify codes")
+		log.Info("cleaning expired verify codes")
 		if err := s.VerificationRepo.DeleteExpired(ctx); err != nil {
-			log.Log.Error("failed to delete expired verify codes", logger.Err(err))
+			log.Error("failed to delete expired verify codes", logger.Err(err))
 		} else {
-			log.Log.Info("expired verify codes cleaned successfully")
+			log.Info("expired verify codes cleaned successfully")
 		}
 	}); err != nil {
 		panic(fmt.Errorf("failed to start CleanExpiredVerifyCodes sheduler: %w", err))
@@ -55,11 +55,11 @@ func (s *Scheduler) Start() {
 		log := s.Logger.AddOp(op)
 		ctx, cancel := context.WithTimeout(context.Background(), s.ShedulerConfig.WidgetBulkTimeout)
 		defer cancel()
-		log.Log.Info("bulking widgets data")
+		log.Info("bulking widgets data")
 		if err := s.WidgetRepo.MustBulk(ctx, s.SearchConfig); err != nil {
-			log.Log.Error("failed to bulk widgets", logger.Err(err))
+			log.Error("failed to bulk widgets", logger.Err(err))
 		} else {
-			log.Log.Info("widgets data bulked successfully")
+			log.Info("widgets data bulked successfully")
 		}
 	}); err != nil {
 		panic(fmt.Errorf("failed to start BulkWidgetsData sheduler: %w", err))
@@ -69,11 +69,11 @@ func (s *Scheduler) Start() {
 		log := s.Logger.AddOp(op)
 		ctx, cancel := context.WithTimeout(context.Background(), s.ShedulerConfig.TemplateBulkTimeout)
 		defer cancel()
-		log.Log.Info("bulking templates data")
+		log.Info("bulking templates data")
 		if err := s.TemplateRepo.MustBulk(ctx, s.SearchConfig); err != nil {
-			log.Log.Error("failed to bulk templates", logger.Err(err))
+			log.Error("failed to bulk templates", logger.Err(err))
 		} else {
-			log.Log.Info("templates data bulked successfully")
+			log.Info("templates data bulked successfully")
 		}
 	}); err != nil {
 		panic(fmt.Errorf("failed to start BulkWidgetsTemplates: %w", err))

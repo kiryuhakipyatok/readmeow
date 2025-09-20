@@ -56,7 +56,7 @@ var baseTemplateId = uuid.Nil
 func (ts *templateServ) Create(ctx context.Context, oid, title, description string, image *multipart.FileHeader, links, order, text []string, widgets []map[string]string, isPublic bool) error {
 	op := "templateServ.Create"
 	log := ts.Logger.AddOp(op)
-	log.Log.Info("creating template")
+	log.Info("creating template")
 	_, err := ts.Transactor.WithinTransaction(ctx, func(c context.Context) (any, error) {
 		user, err := ts.UserRepo.Get(c, oid)
 		if err != nil {
@@ -136,20 +136,20 @@ func (ts *templateServ) Create(ctx context.Context, oid, title, description stri
 		return nil, nil
 	})
 	if err != nil {
-		log.Log.Error("failed to create template", logger.Err(err))
+		log.Error("failed to create template", logger.Err(err))
 		return errs.NewAppError(op, err)
 	}
-	log.Log.Info("template created successfully")
+	log.Info("template created successfully")
 	return nil
 }
 
 func (ts *templateServ) FetchByUser(ctx context.Context, id string, showPrivate bool, amount, page uint) ([]dto.TemplateInfo, error) {
 	op := "templateServ.FetchByUser"
 	log := ts.Logger.AddOp(op)
-	log.Log.Info("fetching tempaltes by user")
+	log.Info("fetching tempaltes by user")
 	templs, err := ts.TemplateRepo.FetchByUser(ctx, id, showPrivate)
 	if err != nil {
-		log.Log.Error("failed to fetch templates by user", logger.Err(err))
+		log.Error("failed to fetch templates by user", logger.Err(err))
 		return nil, errs.NewAppError(op, err)
 	}
 	templResp := make([]dto.TemplateInfo, 0, len(templs))
@@ -171,7 +171,7 @@ func (ts *templateServ) FetchByUser(ctx context.Context, id string, showPrivate 
 func (ts *templateServ) Update(ctx context.Context, updates map[string]any, id string) error {
 	op := "templateServ.Update"
 	log := ts.Logger.AddOp(op)
-	log.Log.Info("updating template")
+	log.Info("updating template")
 	if _, err := ts.Transactor.WithinTransaction(ctx, func(c context.Context) (any, error) {
 		fileAnyH, ok := updates["image"]
 		now := time.Now()
@@ -218,18 +218,18 @@ func (ts *templateServ) Update(ctx context.Context, updates map[string]any, id s
 		}
 		return nil, nil
 	}); err != nil {
-		log.Log.Error("failed to update tempalte", logger.Err(err))
+		log.Error("failed to update tempalte", logger.Err(err))
 		return errs.NewAppError(op, err)
 	}
 
-	log.Log.Info("template updated successfully")
+	log.Info("template updated successfully")
 	return nil
 }
 
 func (ts *templateServ) Delete(ctx context.Context, id, uid string) error {
 	op := "templateServ.Delete"
 	log := ts.Logger.AddOp(op)
-	log.Log.Info("deleting template")
+	log.Info("deleting template")
 	if _, err := ts.Transactor.WithinTransaction(ctx, func(c context.Context) (any, error) {
 		user, err := ts.UserRepo.Get(c, uid)
 		if err != nil {
@@ -266,36 +266,36 @@ func (ts *templateServ) Delete(ctx context.Context, id, uid string) error {
 
 		return nil, nil
 	}); err != nil {
-		log.Log.Error("failed to delete template", logger.Err(err))
+		log.Error("failed to delete template", logger.Err(err))
 		return errs.NewAppError(op, err)
 	}
 
-	log.Log.Info("template deleted successfully")
+	log.Info("template deleted successfully")
 	return nil
 }
 
 func (ts *templateServ) Get(ctx context.Context, id string) (*models.TemplateWithOwner, error) {
 	op := "templateServ.Get"
 	log := ts.Logger.AddOp(op)
-	log.Log.Info("receiving template")
+	log.Info("receiving template")
 
 	template, err := ts.TemplateRepo.Get(ctx, id)
 	if err != nil {
-		log.Log.Error("failed to receive template", logger.Err(err))
+		log.Error("failed to receive template", logger.Err(err))
 		return nil, errs.NewAppError(op, err)
 	}
 
-	log.Log.Info("template received successfully")
+	log.Info("template received successfully")
 	return template, nil
 }
 
 func (ts *templateServ) FetchFavorite(ctx context.Context, id string, amount, page uint) ([]dto.TemplateResponse, error) {
 	op := "templateServ.FetchFavorite"
 	log := ts.Logger.AddOp(op)
-	log.Log.Info("fetching favorite templates")
+	log.Info("fetching favorite templates")
 	templs, err := ts.TemplateRepo.FetchFavorite(ctx, id, amount, page)
 	if err != nil {
-		log.Log.Error("failed to fetch favorite templates", logger.Err(err))
+		log.Error("failed to fetch favorite templates", logger.Err(err))
 		return nil, errs.NewAppError(op, err)
 	}
 	templates := make([]dto.TemplateResponse, 0, len(templs))
@@ -318,17 +318,17 @@ func (ts *templateServ) FetchFavorite(ctx context.Context, id string, amount, pa
 		}
 		templates = append(templates, template)
 	}
-	log.Log.Info("templates fetched successfully")
+	log.Info("templates fetched successfully")
 	return templates, nil
 }
 
 func (ts *templateServ) Search(ctx context.Context, amount, page uint, query string, filter map[string]bool, sort map[string]string) ([]dto.TemplateResponse, error) {
 	op := "templateServ.Search"
 	log := ts.Logger.AddOp(op)
-	log.Log.Info("fetching searched templates")
+	log.Info("fetching searched templates")
 	templs, err := ts.TemplateRepo.Search(ctx, amount, page, query, filter, sort)
 	if err != nil {
-		log.Log.Error("failed to fetch searched templates", logger.Err(err))
+		log.Error("failed to fetch searched templates", logger.Err(err))
 		return nil, errs.NewAppError(op, err)
 	}
 	templates := make([]dto.TemplateResponse, 0, len(templs))
@@ -351,14 +351,14 @@ func (ts *templateServ) Search(ctx context.Context, amount, page uint, query str
 		}
 		templates = append(templates, template)
 	}
-	log.Log.Info("searched templates fetched successfully")
+	log.Info("searched templates fetched successfully")
 	return templates, nil
 }
 
 func (ts *templateServ) Like(ctx context.Context, id, uid string) error {
 	op := "templateServ.Like"
 	log := ts.Logger.AddOp(op)
-	log.Log.Info("liking template")
+	log.Info("liking template")
 	if _, err := ts.Transactor.WithinTransaction(ctx, func(c context.Context) (any, error) {
 		if err := ts.TemplateRepo.Like(c, id, uid); err != nil {
 			return nil, err
@@ -371,18 +371,18 @@ func (ts *templateServ) Like(ctx context.Context, id, uid string) error {
 		}
 		return nil, nil
 	}); err != nil {
-		log.Log.Error("failed to like template", logger.Err(err))
+		log.Error("failed to like template", logger.Err(err))
 		return errs.NewAppError(op, err)
 	}
 
-	log.Log.Info("template liked successfully")
+	log.Info("template liked successfully")
 	return nil
 }
 
 func (ts *templateServ) Dislike(ctx context.Context, id, uid string) error {
 	op := "templateServ.Dislike"
 	log := ts.Logger.AddOp(op)
-	log.Log.Info("disliking template")
+	log.Info("disliking template")
 	if _, err := ts.Transactor.WithinTransaction(ctx, func(c context.Context) (any, error) {
 		if err := ts.TemplateRepo.Dislike(c, id, uid); err != nil {
 			return nil, err
@@ -397,6 +397,6 @@ func (ts *templateServ) Dislike(ctx context.Context, id, uid string) error {
 	}); err != nil {
 		return errs.NewAppError(op, err)
 	}
-	log.Log.Info("template disliked successfully")
+	log.Info("template disliked successfully")
 	return nil
 }

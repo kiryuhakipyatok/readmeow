@@ -67,7 +67,7 @@ type loginData struct {
 func (as *authServ) Register(ctx context.Context, email, code string) (*loginData, error) {
 	op := "authServ.Register"
 	log := as.Logger.AddOp(op)
-	log.Log.Info("registering user")
+	log.Info("registering user")
 	res, err := as.Transactor.WithinTransaction(ctx, func(c context.Context) (any, error) {
 		codeHash := sha256.Sum256([]byte(code))
 		res, err := as.VerificationRepo.CodeCheck(c, email, codeHash[:])
@@ -117,13 +117,13 @@ func (as *authServ) Register(ctx context.Context, email, code string) (*loginDat
 		return user, nil
 	})
 	if err != nil {
-		log.Log.Error("failed to register user", logger.Err(err))
+		log.Error("failed to register user", logger.Err(err))
 		return nil, errs.NewAppError(op, err)
 	}
 	user := res.(*models.User)
 	jwtToken, ttl, err := utils.GenerateJWT(as.AuthConfig.TokenTTL, user.Id.String(), as.AuthConfig.Secret)
 	if err != nil {
-		log.Log.Error("failed to generate jwt token", logger.Err(err))
+		log.Error("failed to generate jwt token", logger.Err(err))
 		return nil, errs.NewAppError(op, err)
 	}
 	loginData := &loginData{
@@ -133,27 +133,27 @@ func (as *authServ) Register(ctx context.Context, email, code string) (*loginDat
 		JWT:      jwtToken,
 		TTL:      *ttl,
 	}
-	log.Log.Info("user registered successfully")
+	log.Info("user registered successfully")
 	return loginData, nil
 }
 
 func (as *authServ) Login(ctx context.Context, login, password string) (*loginData, error) {
 	op := "authServ.Login"
 	log := as.Logger.AddOp(op)
-	log.Log.Info("logining user")
+	log.Info("logining user")
 
 	user, err := as.UserRepo.GetByLogin(ctx, login)
 	if err != nil {
-		log.Log.Error("failed to get user by login", logger.Err(err))
+		log.Error("failed to get user by login", logger.Err(err))
 		return nil, errs.NewAppError(op, err)
 	}
 	if err := bcrypt.CompareHashAndPassword(user.Password, []byte(password)); err != nil {
-		log.Log.Error("invalid credentials", logger.Err(err))
+		log.Error("invalid credentials", logger.Err(err))
 		return nil, errs.NewAppError(op, err)
 	}
 	jwtToken, ttl, err := utils.GenerateJWT(as.AuthConfig.TokenTTL, user.Id.String(), as.AuthConfig.Secret)
 	if err != nil {
-		log.Log.Error("failed to generate jwt token", logger.Err(err))
+		log.Error("failed to generate jwt token", logger.Err(err))
 		return nil, errs.NewAppError(op, err)
 	}
 	loginData := &loginData{
@@ -164,14 +164,14 @@ func (as *authServ) Login(ctx context.Context, login, password string) (*loginDa
 		TTL:      *ttl,
 	}
 
-	log.Log.Info("user loggined successfully")
+	log.Info("user loggined successfully")
 	return loginData, nil
 }
 
 func (as *authServ) SendVerifyCode(ctx context.Context, email, login, nickname, password string) error {
 	op := "authServ.SendVerifyCode"
 	log := as.Logger.AddOp(op)
-	log.Log.Info("sending verify code")
+	log.Info("sending verify code")
 	if _, err := as.Transactor.WithinTransaction(ctx, func(c context.Context) (any, error) {
 		exist, err := as.UserRepo.ExistanceCheck(c, login, email)
 		if err != nil {
@@ -201,17 +201,17 @@ func (as *authServ) SendVerifyCode(ctx context.Context, email, login, nickname, 
 		}
 		return nil, nil
 	}); err != nil {
-		log.Log.Error("failed to send verification code", logger.Err(err))
+		log.Error("failed to send verification code", logger.Err(err))
 		return errs.NewAppError(op, err)
 	}
-	log.Log.Info("code sended successfully")
+	log.Info("code sended successfully")
 	return nil
 }
 
 func (as *authServ) SendNewCode(ctx context.Context, email string) error {
 	op := "authServ.SendNewCode"
 	log := as.Logger.AddOp(op)
-	log.Log.Info("sending new verify code")
+	log.Info("sending new verify code")
 	if _, err := as.Transactor.WithinTransaction(ctx, func(c context.Context) (any, error) {
 		r := rand.New(rand.NewSource(time.Now().UnixNano()))
 		code := fmt.Sprintf("%06d", r.Intn(1000000))
@@ -230,18 +230,18 @@ func (as *authServ) SendNewCode(ctx context.Context, email string) error {
 		}
 		return nil, nil
 	}); err != nil {
-		log.Log.Error("failed to send new verify code", logger.Err(err))
+		log.Error("failed to send new verify code", logger.Err(err))
 		return errs.NewAppError(op, err)
 	}
 
-	log.Log.Info("new code sended successfully")
+	log.Info("new code sended successfully")
 	return nil
 }
 
 func (as *authServ) OAuthLogin(ctx context.Context, nickname, avatar, email, pid, provider string) (*loginData, error) {
 	op := "authServ.GoogleAuth"
 	log := as.Logger.AddOp(op)
-	log.Log.Info("user oauth loggining")
+	log.Info("user oauth loggining")
 	res, err := as.Transactor.WithinTransaction(ctx, func(c context.Context) (any, error) {
 		user := &models.User{}
 		var err error
@@ -298,10 +298,10 @@ func (as *authServ) OAuthLogin(ctx context.Context, nickname, avatar, email, pid
 		return loginData, nil
 	})
 	if err != nil {
-		log.Log.Error("failed to login user with oauth", logger.Err(err))
+		log.Error("failed to login user with oauth", logger.Err(err))
 		return nil, errs.NewAppError(op, err)
 	}
 
-	log.Log.Info("token generated successfully")
+	log.Info("token generated successfully")
 	return res.(*loginData), nil
 }
