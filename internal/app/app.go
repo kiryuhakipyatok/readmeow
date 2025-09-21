@@ -55,10 +55,10 @@ func Run() {
 	search := search.MustConnect(cfg.Search)
 	log.Info("connected to elasticsearch")
 
-	ps := monitoring.NewPrometheusSetup()
+	prometheus := monitoring.NewPrometheusSetup()
 	log.Info("prometheus setuped")
 
-	server := server.NewServer(cfg.Server, cfg.Auth, cfg.App, ps)
+	server := server.NewServer(cfg.Server, cfg.Auth, cfg.App, prometheus)
 	defer func() {
 		ctx, cancel := context.WithTimeout(context.Background(), cfg.Server.CloseTimeout)
 		defer cancel()

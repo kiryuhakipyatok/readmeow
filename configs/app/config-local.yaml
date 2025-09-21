@@ -74,4 +74,7 @@ oauth:
   githubClientId: "${GITHUB_CLIENT_ID}"
   githubClientSecret: "${GITHUB_CLIENT_SECRET}"
   stateTTL: 5m
+
+monitoring:
+  namespace: "readmeow"
   

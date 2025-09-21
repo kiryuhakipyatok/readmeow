@@ -21,6 +21,7 @@ type Config struct {
 	Sheduler     ShedulerConfig     `mapstructure:"sheduler"`
 	CloudStorage CloudStorageConfig `mapstructure:"cloudstorage"`
 	OAuth        OAuthConfig        `mapstructure:"oauth"`
+	Monitoring   MonitoringConfig   `mapstructure:"monitoring"`
 }
 
 type AppConfig struct {
@@ -108,6 +109,10 @@ type ShedulerConfig struct {
 type CloudStorageConfig struct {
 	CloudURL string        `mapstructure:"cloudURL"`
 	Timeout  time.Duration `mapstructure:"timeout"`
+}
+
+type MonitoringConfig struct {
+	Namespace string `mapstructure:"namespace"`
 }
 
 func MustLoadConfig(path string) *Config {
