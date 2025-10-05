@@ -6,11 +6,17 @@ import (
 	"net/smtp"
 	"readmeow/internal/config"
 
+	"bytes"
+	_ "embed"
+	"html/template"
+
 	"github.com/jordan-wright/email"
 )
 
 type EmailSender interface {
 	SendMessage(ctx context.Context, sub string, content []byte, to []string, attachFiles []string) error
+	BuildVerificationEmailLetter(code string) (string, error)
+	BuildResetPasswordEmailLetter(link string) (string, error)
 }
 
 type emailSender struct {
@@ -53,4 +59,34 @@ func (es *emailSender) SendMessage(ctx context.Context, sub string, content []by
 		return fmt.Errorf("%s : %w", op, ctx.Err())
 	}
 	return nil
+}
+
+//go:embed templates/verification-email.html
+var verifyEmailHTML string
+
+//go:embed templates/reset-password-email.html
+var resetPasswordEmailHTML string
+
+func (es *emailSender) BuildVerificationEmailLetter(code string) (string, error) {
+	tmpl, err := template.New("verification-email").Parse(verifyEmailHTML)
+	if err != nil {
+		return "", err
+	}
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, code); err != nil {
+		return "", err
+	}
+	return buf.String(), nil
+}
+
+func (es *emailSender) BuildResetPasswordEmailLetter(link string) (string, error) {
+	tmpl, err := template.New("reset-password-email").Parse(resetPasswordEmailHTML)
+	if err != nil {
+		return "", err
+	}
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, link); err != nil {
+		return "", err
+	}
+	return buf.String(), nil
 }

@@ -2,6 +2,8 @@ package services
 
 import (
 	"context"
+	"crypto/sha256"
+	"errors"
 	"fmt"
 	"mime/multipart"
 	"readmeow/internal/domain/models"
@@ -21,23 +23,26 @@ type UserServ interface {
 	Update(ctx context.Context, updates map[string]any, id string) error
 	Delete(ctx context.Context, id, password string) error
 	ChangePassword(ctx context.Context, id string, oldPassword, newPasswrod string) error
+	ResetPassword(ctx context.Context, email, token, newPassword string) error
 }
 
 type userServ struct {
-	UserRepo     repositories.UserRepo
-	TemplateRepo repositories.TemplateRepo
-	CloudStorage cloudstorage.CloudStorage
-	Transactor   storage.Transactor
-	Logger       *logger.Logger
+	UserRepo          repositories.UserRepo
+	TemplateRepo      repositories.TemplateRepo
+	PasswordResetRepo repositories.PasswordResetRepo
+	CloudStorage      cloudstorage.CloudStorage
+	Transactor        storage.Transactor
+	Logger            *logger.Logger
 }
 
-func NewUserServ(ur repositories.UserRepo, tr repositories.TemplateRepo, cs cloudstorage.CloudStorage, t storage.Transactor, l *logger.Logger) UserServ {
+func NewUserServ(ur repositories.UserRepo, prr repositories.PasswordResetRepo, tr repositories.TemplateRepo, cs cloudstorage.CloudStorage, t storage.Transactor, l *logger.Logger) UserServ {
 	return &userServ{
-		UserRepo:     ur,
-		TemplateRepo: tr,
-		CloudStorage: cs,
-		Transactor:   t,
-		Logger:       l,
+		UserRepo:          ur,
+		TemplateRepo:      tr,
+		PasswordResetRepo: prr,
+		CloudStorage:      cs,
+		Transactor:        t,
+		Logger:            l,
 	}
 }
 
@@ -124,7 +129,7 @@ func (us *userServ) Delete(ctx context.Context, id, password string) error {
 }
 
 func (us *userServ) ChangePassword(ctx context.Context, id string, oldPassword, newPasswrod string) error {
-	op := "userServ.UpdatePassword"
+	op := "userServ.ChangePassword"
 	log := us.Logger.AddOp(op)
 	log.Info("changing user password")
 	if _, err := us.Transactor.WithinTransaction(ctx, func(c context.Context) (any, error) {
@@ -152,6 +157,41 @@ func (us *userServ) ChangePassword(ctx context.Context, id string, oldPassword, 
 	}
 
 	log.Info("user password changed successfully")
+	return nil
+}
+
+func (us *userServ) ResetPassword(ctx context.Context, email, token, newPassword string) error {
+	op := "userServ.ResetPassword"
+	log := us.Logger.AddOp(op)
+	log.Info("reseting user password")
+	if _, err := us.Transactor.WithinTransaction(ctx, func(c context.Context) (any, error) {
+		id, err := us.UserRepo.GetByEmail(c, email)
+		if err != nil {
+			return nil, err
+		}
+		tokenHash := sha256.Sum256([]byte(token))
+		res, err := us.PasswordResetRepo.CheckToken(c, id, tokenHash[:])
+		if err != nil {
+			return nil, err
+		}
+		if !res {
+			return nil, errors.New("invalid token")
+		}
+		password, err := bcrypt.GenerateFromPassword([]byte(newPassword), 12)
+		if err != nil {
+			return nil, err
+		}
+		if err := us.UserRepo.ChangePassword(c, id, password); err != nil {
+			return nil, err
+		}
+		if err := us.PasswordResetRepo.Delete(c, id); err != nil {
+			return nil, err
+		}
+		return nil, nil
+	}); err != nil {
+		log.Error("failed to reset user password", logger.Err(err))
+		return errs.NewAppError(op, err)
+	}
 	return nil
 }
 

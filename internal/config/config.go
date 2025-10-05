@@ -48,6 +48,7 @@ type AuthConfig struct {
 	Secret       string        `mapstructure:"secret"`
 	CodeTTL      time.Duration `mapstructure:"codeTTL"`
 	CodeAttempts int           `mapstructure:"codeAttempts"`
+	AuthTokenTTL time.Duration `mapstructure:"authTokenTTL"`
 	TokenTTL     time.Duration `mapstructure:"tokenTTL"`
 }
 
@@ -104,6 +105,8 @@ type ShedulerConfig struct {
 	TemplateBulkTimeout time.Duration `mapstructure:"templateBulkTimeout"`
 	CleanCodesTime      time.Duration `mapstructure:"cleanCodesTime"`
 	CleanCodesTimeout   time.Duration `mapstructure:"cleanCodesTimeout"`
+	CleanTokensTime     time.Duration `mapstructure:"cleanTokenTime"`
+	CleanTokensTimeout  time.Duration `mapstructure:"cleanTokenTimeout"`
 }
 
 type CloudStorageConfig struct {
@@ -126,10 +129,7 @@ func MustLoadConfig(path string) *Config {
 	}
 	data = []byte(os.ExpandEnv(string(data)))
 	v := viper.New()
-	v.SetConfigName("config-local")
 	v.SetConfigType("yaml")
-	v.AutomaticEnv()
-	v.AddConfigPath(path)
 	if err := v.ReadConfig(bytes.NewBuffer(data)); err != nil {
 		panic(fmt.Errorf("failed to read config: %w", err))
 	}

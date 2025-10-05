@@ -11,31 +11,47 @@ import (
 )
 
 type Scheduler struct {
-	Cron             *cron.Cron
-	WidgetRepo       repositories.WidgetRepo
-	TemplateRepo     repositories.TemplateRepo
-	VerificationRepo repositories.VerificationRepo
-	ShedulerConfig   config.ShedulerConfig
-	SearchConfig     config.SearchConfig
-	Logger           *logger.Logger
+	Cron              *cron.Cron
+	WidgetRepo        repositories.WidgetRepo
+	TemplateRepo      repositories.TemplateRepo
+	VerificationRepo  repositories.VerificationRepo
+	PasswordResetRepo repositories.PasswordResetRepo
+	ShedulerConfig    config.ShedulerConfig
+	SearchConfig      config.SearchConfig
+	Logger            *logger.Logger
 }
 
-func NewScheduler(wr repositories.WidgetRepo, tr repositories.TemplateRepo, vr repositories.VerificationRepo, shcfg config.ShedulerConfig, scfg config.SearchConfig, l *logger.Logger) *Scheduler {
+func NewScheduler(wr repositories.WidgetRepo, pr repositories.PasswordResetRepo, tr repositories.TemplateRepo, vr repositories.VerificationRepo, shcfg config.ShedulerConfig, scfg config.SearchConfig, l *logger.Logger) *Scheduler {
 	cr := cron.New(cron.WithChain(
 		cron.SkipIfStillRunning(cron.DefaultLogger),
 	))
 	return &Scheduler{
-		Cron:             cr,
-		WidgetRepo:       wr,
-		TemplateRepo:     tr,
-		VerificationRepo: vr,
-		ShedulerConfig:   shcfg,
-		SearchConfig:     scfg,
-		Logger:           l,
+		Cron:              cr,
+		WidgetRepo:        wr,
+		TemplateRepo:      tr,
+		PasswordResetRepo: pr,
+		VerificationRepo:  vr,
+		ShedulerConfig:    shcfg,
+		SearchConfig:      scfg,
+		Logger:            l,
 	}
 }
 
 func (s *Scheduler) Start() {
+	if _, err := s.Cron.AddFunc(fmt.Sprintf("@every %s", s.ShedulerConfig.CleanTokensTime), func() {
+		op := "sheduler.CleanExpiredPasswordResetToken"
+		log := s.Logger.AddOp(op)
+		ctx, cancel := context.WithTimeout(context.Background(), s.ShedulerConfig.CleanTokensTimeout)
+		defer cancel()
+		log.Info("cleaning expired password reset token")
+		if err := s.PasswordResetRepo.DeleteExpired(ctx); err != nil {
+			log.Error("failed to delete expired password reset token", logger.Err(err))
+		} else {
+			log.Info("expired password reset token cleaned successfully")
+		}
+	}); err != nil {
+		panic(fmt.Errorf("failed to start CleanExpiredPasswordResetToken sheduler: %w", err))
+	}
 	if _, err := s.Cron.AddFunc(fmt.Sprintf("@every %s", s.ShedulerConfig.CleanCodesTime), func() {
 		op := "sheduler.CleanExpiredVerifyCodes"
 		log := s.Logger.AddOp(op)

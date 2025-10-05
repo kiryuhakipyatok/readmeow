@@ -36,6 +36,8 @@ const (
 	githubAuthCallback = "/api/auth/github/callback"
 	fetchTemplates     = "/api/templates"
 	fetchWidgets       = "/api/widgets"
+	forgotPassword     = "/api/auth/forgot-password"
+	resetPassword      = "/api/auth/reset-password"
 )
 
 func NewServer(scfg config.ServerConfig, acfg config.AuthConfig, apcfg config.AppConfig, ps *monitoring.PrometheusSetup) *Server {
@@ -63,32 +65,36 @@ func NewServer(scfg config.ServerConfig, acfg config.AuthConfig, apcfg config.Ap
 
 	swaggerGroup := app.Group("/api/swagger")
 
-	validIps := map[string]bool{
-		"172.21.0.1": true,
+	validIps := map[string]struct{}{
+		"172.21.0.1": {},
 	}
 
-	validAuthPaths := map[string]bool{
-		login:              true,
-		register:           true,
-		verify:             true,
-		newcode:            true,
-		googleAuth:         true,
-		googleAuthCallback: true,
-		githubAuth:         true,
-		githubAuthCallback: true,
-		fetchTemplates:     true,
-		fetchWidgets:       true,
+	validAuthPaths := map[string]struct{}{
+		login:              {},
+		register:           {},
+		verify:             {},
+		newcode:            {},
+		googleAuth:         {},
+		googleAuthCallback: {},
+		githubAuth:         {},
+		githubAuthCallback: {},
+		fetchTemplates:     {},
+		fetchWidgets:       {},
+		resetPassword:      {},
+		forgotPassword:     {},
 	}
 
-	validAlreadyLoginPaths := map[string]bool{
-		login:              true,
-		register:           true,
-		verify:             true,
-		newcode:            true,
-		googleAuth:         true,
-		googleAuthCallback: true,
-		githubAuth:         true,
-		githubAuthCallback: true,
+	validAlreadyLoginPaths := map[string]struct{}{
+		login:              {},
+		register:           {},
+		verify:             {},
+		newcode:            {},
+		googleAuth:         {},
+		googleAuthCallback: {},
+		githubAuth:         {},
+		githubAuthCallback: {},
+		resetPassword:      {},
+		forgotPassword:     {},
 	}
 
 	swaggerGroup.Use(

@@ -62,33 +62,33 @@ func (tr *templateRepo) Create(ctx context.Context, template *models.Template) e
 
 func (tr *templateRepo) Update(ctx context.Context, updates map[string]any, id string) error {
 	op := "templateRepo.Update"
-	validFields := map[string]bool{
-		"title":            true,
-		"image":            true,
-		"text":             true,
-		"links":            true,
-		"description":      true,
-		"widgets":          true,
-		"render_order":     true,
-		"num_of_users":     true,
-		"likes":            true,
-		"last_update_time": true,
-		"is_public":        true,
+	validFields := map[string]struct{}{
+		"title":            {},
+		"image":            {},
+		"text":             {},
+		"links":            {},
+		"description":      {},
+		"widgets":          {},
+		"render_order":     {},
+		"num_of_users":     {},
+		"likes":            {},
+		"last_update_time": {},
+		"is_public":        {},
 	}
-	validValuesForLikesAndNumOfUsers := map[string]bool{
-		"+": true,
-		"-": true,
+	validValuesForLikesAndNumOfUsers := map[string]struct{}{
+		"+": {},
+		"-": {},
 	}
 	str := []string{}
 	args := []any{}
 	i := 1
 	for k, v := range updates {
-		if !validFields[k] {
+		if _, ok := validFields[k]; !ok {
 			return errs.ErrInvalidFields(op)
 		}
 		if k == "likes" || k == "num_of_users" {
 			val := v.(string)
-			if !validValuesForLikesAndNumOfUsers[val] {
+			if _, ok := validValuesForLikesAndNumOfUsers[val]; !ok {
 				return errs.ErrInvalidFields(op)
 			}
 			str = append(str, fmt.Sprintf(" %s = GREATEST(%s %s 1, 0)", k, k, val))
@@ -292,19 +292,20 @@ func (tr *templateRepo) Search(ctx context.Context, amount, page uint, query str
 
 	sorts := []types.SortCombinations{}
 	if len(sort) > 0 {
-		validSortFields := map[string]bool{
-			"Likes":          true,
-			"NumOfUsers":     true,
-			"LastUpdateTime": true,
+		validSortFields := map[string]struct{}{
+			"Likes":          {},
+			"NumOfUsers":     {},
+			"LastUpdateTime": {},
 		}
-		validSortValues := map[string]bool{
-			"desc": true,
-			"asc":  true,
+		validSortValues := map[string]struct{}{
+			"desc": {},
+			"asc":  {},
 		}
 		for k, v := range sort {
-			if !validSortFields[k] {
+			if _, ok := validSortFields[k]; !ok {
 				return nil, errs.ErrInvalidFields(op)
-			} else if !validSortValues[strings.ToLower(v)] {
+			}
+			if _, ok := validSortValues[strings.ToLower(v)]; !ok {
 				return nil, errs.ErrInvalidValues(op)
 			}
 			order := &sortorder.Desc
@@ -323,11 +324,11 @@ func (tr *templateRepo) Search(ctx context.Context, amount, page uint, query str
 
 	filters := []types.Query{}
 	if len(filter) > 0 {
-		validFilterFields := map[string]bool{
-			"isOfficial": true,
+		validFilterFields := map[string]struct{}{
+			"isOfficial": {},
 		}
 		for k, v := range filter {
-			if !validFilterFields[k] {
+			if _, ok := validFilterFields[k]; !ok {
 				return nil, errs.ErrInvalidFields(op)
 			}
 			if v {

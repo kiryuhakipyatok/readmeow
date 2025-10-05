@@ -50,6 +50,9 @@ func (rc *RouteConfig) AuthRoutes() {
 	authGroup.Post("/newcode", rc.AuthHandl.SendNewCode)
 	authGroup.Post("/login", rc.AuthHandl.Login)
 	authGroup.Post("/logout", rc.AuthHandl.Logout)
+	authGroup.Post("/forgot-password", rc.AuthHandl.SendPasswordResetLink)
+
+	authGroup.Patch("/reset-password", rc.AuthHandl.ResetPassword)
 
 	authGroup.Get("/google", rc.AuthHandl.GoogleOAuth)
 	authGroup.Get("/github", rc.AuthHandl.GitHubOAuth)

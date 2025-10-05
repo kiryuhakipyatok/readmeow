@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/smtp"
 	"os"
@@ -32,6 +33,7 @@ func Run() {
 	// 	panic("failed to load .env" + err.Error())
 	// }
 	cfg := config.MustLoadConfig(os.Getenv("CONFIG_PATH"))
+	fmt.Println(cfg)
 	log := logger.NewLogger(cfg.App)
 
 	log.Info("config loaded")
@@ -77,15 +79,16 @@ func Run() {
 	readmeRepo := repositories.NewReadmeStorage(storage)
 	templateRepo := repositories.NewTemplateRepo(storage, cache, search)
 	verificationRepo := repositories.NewVerificationRepo(storage)
+	passwordResetRepo := repositories.NewPasswordResetRepo(storage)
 	transactor := stor.NewTransactor(storage)
 	emailSendler := email.NewEmailSender(smtpAuth, cfg.Email)
 	oauthConf := oauth.NewOAuthConfig(cfg.OAuth)
 
-	authServ := services.NewAuthServ(userRepo, verificationRepo, cloudStorage, transactor, emailSendler, log, cfg.Auth)
+	authServ := services.NewAuthServ(userRepo, passwordResetRepo, verificationRepo, cloudStorage, transactor, emailSendler, log, cfg.Auth)
 	readmeServ := services.NewReadmeServ(readmeRepo, userRepo, templateRepo, widgetRepo, transactor, cloudStorage, log)
 	widgetServ := services.NewWidgetServ(widgetRepo, userRepo, transactor, log)
 	templateServ := services.NewTemplateServ(templateRepo, readmeRepo, userRepo, widgetRepo, transactor, cloudStorage, log)
-	userServ := services.NewUserServ(userRepo, templateRepo, cloudStorage, transactor, log)
+	userServ := services.NewUserServ(userRepo, passwordResetRepo, templateRepo, cloudStorage, transactor, log)
 
 	authHandl := handlers.NewAuthHandle(authServ, userServ, oauthConf, validator)
 	readmeHandl := handlers.NewReadmeHandl(readmeServ, authServ, validator)
@@ -93,7 +96,7 @@ func Run() {
 	templateHandl := handlers.NewTemplateHandl(templateServ, authServ, validator)
 	userHandl := handlers.NewUserHandl(userServ, authServ, validator)
 
-	sheduler := scheduler.NewScheduler(widgetRepo, templateRepo, verificationRepo, cfg.Sheduler, cfg.Search, log)
+	sheduler := scheduler.NewScheduler(widgetRepo, passwordResetRepo, templateRepo, verificationRepo, cfg.Sheduler, cfg.Search, log)
 	sheduler.Start()
 	defer func() {
 		sheduler.Stop()

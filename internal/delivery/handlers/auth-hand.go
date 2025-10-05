@@ -388,3 +388,27 @@ func (ah *AuthHandl) GitHubOAuthCallback(c *fiber.Ctx) error {
 	}
 	return c.JSON(response)
 }
+
+func (ah *AuthHandl) SendPasswordResetLink(c *fiber.Ctx) error {
+	ctx := c.UserContext()
+	req := dto.SendResetPasswordTokenRequest{}
+	if err := helpers.ParseAndValidateRequest(c, &req, helpers.Body{}, ah.Validator); err != nil {
+		return err
+	}
+	if err := ah.AuthServ.SendResetPasswordLink(ctx, req.Email); err != nil {
+		return apierr.ToApiError(err)
+	}
+	return helpers.SuccessResponse(c)
+}
+
+func (ah *AuthHandl) ResetPassword(c *fiber.Ctx) error {
+	ctx := c.UserContext()
+	req := dto.ResetPasswordRequest{}
+	if err := helpers.ParseAndValidateRequest(c, &req, helpers.Body{}, ah.Validator); err != nil {
+		return err
+	}
+	if err := ah.UserServ.ResetPassword(ctx, req.Email, req.Token, req.NewPassword); err != nil {
+		return apierr.ToApiError(err)
+	}
+	return helpers.SuccessResponse(c)
+}
