@@ -16,6 +16,7 @@ type UserRepo interface {
 	Get(ctx context.Context, id string) (*models.User, error)
 	GetByProviderId(ctx context.Context, pid, provider string) (*models.User, error)
 	GetByLogin(ctx context.Context, login string) (*models.User, error)
+	GetByEmail(ctx context.Context, email string) (string, error)
 	GetByIds(ctx context.Context, ids []string) ([]models.User, error)
 	Update(ctx context.Context, updates map[string]any, id string) error
 	Delete(ctx context.Context, id string) error
@@ -155,26 +156,26 @@ func (ur *userRepo) Delete(ctx context.Context, id string) error {
 
 func (ur *userRepo) Update(ctx context.Context, updates map[string]any, id string) error {
 	op := "userRepo.Update"
-	validFields := map[string]bool{
-		"nickname":         true,
-		"avatar":           true,
-		"num_of_readmes":   true,
-		"num_of_templates": true,
+	validFields := map[string]struct{}{
+		"nickname":         {},
+		"avatar":           {},
+		"num_of_readmes":   {},
+		"num_of_templates": {},
 	}
 	str := []string{}
 	args := []any{}
 	i := 1
-	validValuesForNumOfTemplsAndNumOfReadmes := map[string]bool{
-		"+": true,
-		"-": true,
+	validValuesForNumOfTemplsAndNumOfReadmes := map[string]struct{}{
+		"+": {},
+		"-": {},
 	}
 	for k, v := range updates {
-		if !validFields[k] {
+		if _, ok := validFields[k]; !ok {
 			return errs.ErrInvalidFields(op)
 		}
 		if k == "num_of_readmes" || k == "num_of_templates" {
 			val := v.(string)
-			if !validValuesForNumOfTemplsAndNumOfReadmes[val] {
+			if _, ok := validValuesForNumOfTemplsAndNumOfReadmes[val]; !ok {
 				return errs.ErrInvalidFields(op)
 			}
 			str = append(str, fmt.Sprintf(" %s = GREATEST(%s %s 1, 0)", k, k, val))
@@ -212,4 +213,15 @@ func (ur *userRepo) GetPassword(ctx context.Context, id string) ([]byte, error) 
 		return nil, err
 	}
 	return password, nil
+}
+
+func (ur *userRepo) GetByEmail(ctx context.Context, email string) (string, error) {
+	op := "userRepo.GetByEmail"
+	query := "SELECT id FROM users WHERE email = $1"
+	var id string
+	qd := helpers.NewQueryData(ctx, ur.Storage, op, query, email)
+	if err := qd.QueryRowWithTx(&id); err != nil {
+		return "", err
+	}
+	return id, nil
 }

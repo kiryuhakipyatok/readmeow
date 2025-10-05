@@ -155,18 +155,19 @@ func (wr *widgetRepo) Search(ctx context.Context, amount, page uint, query strin
 
 	sorts := []types.SortCombinations{}
 	if len(sort) > 0 {
-		validSortFields := map[string]bool{
-			"Likes":      true,
-			"NumOfUsers": true,
+		validSortFields := map[string]struct{}{
+			"Likes":      {},
+			"NumOfUsers": {},
 		}
-		validSortValues := map[string]bool{
-			"desc": true,
-			"asc":  true,
+		validSortValues := map[string]struct{}{
+			"desc": {},
+			"asc":  {},
 		}
 		for k, v := range sort {
-			if !validSortFields[k] {
+			if _, ok := validSortFields[k]; !ok {
 				return nil, errs.ErrInvalidFields(op)
-			} else if !validSortValues[strings.ToLower(v)] {
+			}
+			if _, ok := validSortValues[strings.ToLower(v)]; !ok {
 				return nil, errs.ErrInvalidValues(op)
 			}
 			order := &sortorder.Desc
@@ -187,12 +188,12 @@ func (wr *widgetRepo) Search(ctx context.Context, amount, page uint, query strin
 
 	if len(filter) > 0 {
 
-		validFilterFields := map[string]bool{
-			"Tags":  true,
-			"Types": true,
+		validFilterFields := map[string]struct{}{
+			"Tags":  {},
+			"Types": {},
 		}
 		for k := range filter {
-			if !validFilterFields[k] {
+			if _, ok := validFilterFields[k]; !ok {
 				return nil, errs.ErrInvalidFields(op)
 			}
 		}
@@ -419,18 +420,21 @@ func (wr *widgetRepo) MustBulk(ctx context.Context, cfg config.SearchConfig) err
 
 func (wr *widgetRepo) Update(ctx context.Context, updates map[string]string, id string) error {
 	op := "widgetRepo.Update"
-	validFields := map[string]bool{
-		"num_of_users": true,
-		"likes":        true,
+	validFields := map[string]struct{}{
+		"num_of_users": {},
+		"likes":        {},
 	}
-	validValues := map[string]bool{
-		"+": true,
-		"-": true,
+	validValues := map[string]struct{}{
+		"+": {},
+		"-": {},
 	}
 	str := []string{}
 	for k, v := range updates {
-		if !validFields[k] || !validValues[v] {
+		if _, ok := validFields[k]; !ok {
 			return errs.ErrInvalidFields(op)
+		}
+		if _, ok := validValues[v]; !ok {
+			return errs.ErrInvalidValues(op)
 		}
 		str = append(str, fmt.Sprintf(" %s = GREATEST(%s %s 1, 0)", k, k, v))
 	}

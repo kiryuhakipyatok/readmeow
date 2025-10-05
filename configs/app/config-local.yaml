@@ -20,7 +20,8 @@ auth:
   secret: "${SECRET}"
   codeTTL: 5m
   codeAttempts: 5
-  tokenTTL: 259200s
+  tokenTTL: 600s
+  authTokenTTL: 259200s
 
 storage:
   user: "${POSTGRES_USER}"
@@ -61,6 +62,8 @@ sheduler:
   templateBulkTimeout: 5s
   cleanCodesTime: 1m
   cleanCodesTimeout: 5s
+  cleanTokenTime: 1m
+  cleanTokenTimeout: 5s
 
 cloudstorage:
   cloudURL: "${CLOUDINARY_URL}"

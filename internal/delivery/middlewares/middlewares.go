@@ -15,9 +15,9 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 )
 
-func AuthMiddleware(acfg config.AuthConfig, valid map[string]bool) fiber.Handler {
+func AuthMiddleware(acfg config.AuthConfig, valid map[string]struct{}) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		if valid[c.Path()] {
+		if _, ok := valid[c.Path()]; ok {
 			return c.Next()
 		}
 		return jwtware.New(jwtware.Config{
@@ -108,7 +108,7 @@ func RateLimiterMiddleware(scfg config.ServerConfig) fiber.Handler {
 	}
 }
 
-func ValidIpsMiddleware(validIps map[string]bool) fiber.Handler {
+func ValidIpsMiddleware(validIps map[string]struct{}) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		if _, ok := validIps[c.IP()]; !ok {
 			return apierr.Forbidden()
@@ -117,9 +117,9 @@ func ValidIpsMiddleware(validIps map[string]bool) fiber.Handler {
 	}
 }
 
-func AlreadyLoginCheck(valid map[string]bool) fiber.Handler {
+func AlreadyLoginCheck(valid map[string]struct{}) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		if !valid[c.Path()] {
+		if _, ok := valid[c.Path()]; !ok {
 			return c.Next()
 		}
 		if c.Cookies("jwt") != "" {

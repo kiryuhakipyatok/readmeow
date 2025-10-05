@@ -64,6 +64,8 @@ func ToApiError(err error) ApiErr {
 		return CodeIsExpired()
 	case errors.Is(err, errs.ErrIncorrectOldPasswordBase):
 		return IncorrectOldPassword()
+	case errors.Is(err, errs.ErrIncorrectLoginOrPasswordBase):
+		return IncorrectLoginOrPassword()
 	default:
 		return InternalServerError()
 	}
@@ -119,4 +121,8 @@ func Unauthorized() ApiErr {
 
 func IncorrectOldPassword() ApiErr {
 	return NewApiError(fiber.StatusBadRequest, errs.ErrIncorrectOldPasswordBase)
+}
+
+func IncorrectLoginOrPassword() ApiErr {
+	return NewApiError(fiber.StatusBadRequest, errs.ErrIncorrectLoginOrPasswordBase)
 }

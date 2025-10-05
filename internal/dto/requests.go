@@ -190,3 +190,13 @@ type GitHubOAuthRequest struct {
 	Avatar string `json:"avatar_url"`
 	Email  string `json:"email"`
 }
+
+type SendResetPasswordTokenRequest struct {
+	Email string `json:"email"`
+}
+
+type ResetPasswordRequest struct {
+	Token       string `json:"token"`
+	Email       string `json:"email"`
+	NewPassword string `json:"new_password"`
+}

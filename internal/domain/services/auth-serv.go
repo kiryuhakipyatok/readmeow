@@ -12,7 +12,7 @@ import (
 	"readmeow/internal/domain/models"
 	"readmeow/internal/domain/repositories"
 	"readmeow/internal/domain/services/utils"
-	em "readmeow/internal/email"
+	"readmeow/internal/email"
 	"readmeow/pkg/cloudstorage"
 	"readmeow/pkg/errs"
 	"readmeow/pkg/logger"
@@ -28,28 +28,31 @@ type AuthServ interface {
 	Login(ctx context.Context, login, password string) (*loginData, error)
 	SendVerifyCode(ctx context.Context, email, login, nickname, password string) error
 	SendNewCode(ctx context.Context, email string) error
+	SendResetPasswordLink(ctx context.Context, email string) error
 	OAuthLogin(ctx context.Context, nickname, avatar, email, pid, provider string) (*loginData, error)
 }
 
 type authServ struct {
-	UserRepo         repositories.UserRepo
-	VerificationRepo repositories.VerificationRepo
-	Transactor       storage.Transactor
-	AuthConfig       config.AuthConfig
-	CloudStorage     cloudstorage.CloudStorage
-	EmailSender      em.EmailSender
-	Logger           *logger.Logger
+	UserRepo          repositories.UserRepo
+	VerificationRepo  repositories.VerificationRepo
+	PasswordResetRepo repositories.PasswordResetRepo
+	Transactor        storage.Transactor
+	AuthConfig        config.AuthConfig
+	CloudStorage      cloudstorage.CloudStorage
+	EmailSender       email.EmailSender
+	Logger            *logger.Logger
 }
 
-func NewAuthServ(ur repositories.UserRepo, vr repositories.VerificationRepo, cs cloudstorage.CloudStorage, t storage.Transactor, es em.EmailSender, l *logger.Logger, cfg config.AuthConfig) AuthServ {
+func NewAuthServ(ur repositories.UserRepo, pr repositories.PasswordResetRepo, vr repositories.VerificationRepo, cs cloudstorage.CloudStorage, t storage.Transactor, es email.EmailSender, l *logger.Logger, cfg config.AuthConfig) AuthServ {
 	return &authServ{
-		UserRepo:         ur,
-		VerificationRepo: vr,
-		Transactor:       t,
-		Logger:           l,
-		EmailSender:      es,
-		CloudStorage:     cs,
-		AuthConfig:       cfg,
+		UserRepo:          ur,
+		VerificationRepo:  vr,
+		PasswordResetRepo: pr,
+		Transactor:        t,
+		Logger:            l,
+		EmailSender:       es,
+		CloudStorage:      cs,
+		AuthConfig:        cfg,
 	}
 }
 
@@ -75,8 +78,7 @@ func (as *authServ) Register(ctx context.Context, email, code string) (*loginDat
 			return nil, err
 		}
 		if !res {
-			err := errors.New("invalid code")
-			return nil, err
+			return nil, errors.New("invalid code")
 		}
 		credentials, err := as.VerificationRepo.GetCredentials(c, email)
 		if err != nil {
@@ -121,7 +123,7 @@ func (as *authServ) Register(ctx context.Context, email, code string) (*loginDat
 		return nil, errs.NewAppError(op, err)
 	}
 	user := res.(*models.User)
-	jwtToken, ttl, err := utils.GenerateJWT(as.AuthConfig.TokenTTL, user.Id.String(), as.AuthConfig.Secret)
+	jwtToken, ttl, err := utils.GenerateJWT(as.AuthConfig.AuthTokenTTL, user.Id.String(), as.AuthConfig.Secret)
 	if err != nil {
 		log.Error("failed to generate jwt token", logger.Err(err))
 		return nil, errs.NewAppError(op, err)
@@ -148,10 +150,13 @@ func (as *authServ) Login(ctx context.Context, login, password string) (*loginDa
 		return nil, errs.NewAppError(op, err)
 	}
 	if err := bcrypt.CompareHashAndPassword(user.Password, []byte(password)); err != nil {
+		if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
+			return nil, errs.ErrIncorrectLoginOrPassword(op)
+		}
 		log.Error("invalid credentials", logger.Err(err))
 		return nil, errs.NewAppError(op, err)
 	}
-	jwtToken, ttl, err := utils.GenerateJWT(as.AuthConfig.TokenTTL, user.Id.String(), as.AuthConfig.Secret)
+	jwtToken, ttl, err := utils.GenerateJWT(as.AuthConfig.AuthTokenTTL, user.Id.String(), as.AuthConfig.Secret)
 	if err != nil {
 		log.Error("failed to generate jwt token", logger.Err(err))
 		return nil, errs.NewAppError(op, err)
@@ -192,7 +197,7 @@ func (as *authServ) SendVerifyCode(ctx context.Context, email, login, nickname, 
 			return nil, err
 		}
 		subject := "Email Verifying"
-		content, err := em.BuildEmailLetter(code)
+		content, err := as.EmailSender.BuildVerificationEmailLetter(code)
 		if err != nil {
 			return nil, err
 		}
@@ -221,7 +226,7 @@ func (as *authServ) SendNewCode(ctx context.Context, email string) error {
 			return nil, err
 		}
 		subject := "Repeated Email Verifying"
-		content, err := em.BuildEmailLetter(code)
+		content, err := as.EmailSender.BuildVerificationEmailLetter(code)
 		if err != nil {
 			return nil, err
 		}
@@ -304,4 +309,36 @@ func (as *authServ) OAuthLogin(ctx context.Context, nickname, avatar, email, pid
 
 	log.Info("token generated successfully")
 	return res.(*loginData), nil
+}
+
+func (as *authServ) SendResetPasswordLink(ctx context.Context, email string) error {
+	op := "authServ.SendResetPasswordLink"
+	log := as.Logger.AddOp(op)
+	log.Info("sending reset password link")
+	if _, err := as.Transactor.WithinTransaction(ctx, func(c context.Context) (any, error) {
+		id, err := as.UserRepo.GetByEmail(c, email)
+		if err != nil {
+			return nil, err
+		}
+		token := uuid.New().String()
+		tokenHash := sha256.Sum256([]byte(token))
+		ttl := time.Now().Add(as.AuthConfig.TokenTTL)
+		if err := as.PasswordResetRepo.AddToken(c, id, tokenHash[:], ttl); err != nil {
+			return nil, err
+		}
+		subject := "Password Reset"
+		link := fmt.Sprintf("http://localhost:3333/reset-password/?token=%s", token)
+		content, err := as.EmailSender.BuildResetPasswordEmailLetter(link)
+		if err != nil {
+			return nil, err
+		}
+		if err := as.EmailSender.SendMessage(c, subject, []byte(content), []string{email}, nil); err != nil {
+			return nil, err
+		}
+		return nil, nil
+	}); err != nil {
+		log.Error("failed to send reset password link", logger.Err(err))
+		return errs.NewAppError(op, err)
+	}
+	return nil
 }

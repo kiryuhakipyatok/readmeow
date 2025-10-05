@@ -57,21 +57,21 @@ func (rr *readmeRepo) Delete(ctx context.Context, id string) error {
 
 func (rr *readmeRepo) Update(ctx context.Context, updates map[string]any, id string) error {
 	op := "readmeRepo.Update"
-	validFields := map[string]bool{
-		"title":            true,
-		"image":            true,
-		"text":             true,
-		"links":            true,
-		"widgets":          true,
-		"render_order":     true,
-		"last_update_time": true,
+	validFields := map[string]struct{}{
+		"title":            {},
+		"image":            {},
+		"text":             {},
+		"links":            {},
+		"widgets":          {},
+		"render_order":     {},
+		"last_update_time": {},
 	}
 	str := []string{}
 	args := []any{}
 	i := 1
 
 	for k, v := range updates {
-		if !validFields[k] {
+		if _, ok := validFields[k]; !ok {
 			return errs.ErrInvalidFields(op)
 		}
 
