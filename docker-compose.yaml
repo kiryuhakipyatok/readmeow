@@ -131,8 +131,8 @@ services:
         condition: service_healthy
     env_file:
       - .env
-    # volumes:
-    #   - ./internal/migrations:/migrations
+      # volumes:
+      #   - ./internal/migrations:/migrations
     entrypoint: ["goose", "-dir", "/migrations"]
     networks:
       - app-network
