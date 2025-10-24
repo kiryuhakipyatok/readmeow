@@ -3,7 +3,6 @@ package app
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 	"net/smtp"
 	"os"
@@ -33,7 +32,6 @@ func Run() {
 	// 	panic("failed to load .env" + err.Error())
 	// }
 	cfg := config.MustLoadConfig(os.Getenv("CONFIG_PATH"))
-	fmt.Println(cfg)
 	log := logger.NewLogger(cfg.App)
 
 	log.Info("config loaded")
