@@ -58,6 +58,5 @@ migrations-job:
 deploy-job:      
   stage: deploy  
   script:
-    - docker-compose up -d redis elasticsearch
     - docker-compose up -d readmeow 
     - docker-compose logs readmeow 
