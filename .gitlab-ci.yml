@@ -58,6 +58,5 @@ deploy-job:
   stage: deploy  
   script:
     - docker-compose up -d redis elasticsearch
-    - docker-compose logs -f elasticsearch
     - docker-compose up -d readmeow 
-    - docker-compose logs -f readmeow
+    - docker-compose logs readmeow
