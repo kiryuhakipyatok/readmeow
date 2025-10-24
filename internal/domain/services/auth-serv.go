@@ -163,7 +163,7 @@ func (as *authServ) Login(ctx context.Context, login, password string) (*loginDa
 	}
 	loginData := &loginData{
 		Id:       user.Id.String(),
-		Nickname: *user.Login,
+		Nickname: user.Nickname,
 		Avatar:   user.Avatar,
 		JWT:      jwtToken,
 		TTL:      *ttl,
