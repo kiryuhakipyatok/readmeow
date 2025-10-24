@@ -1,6 +1,6 @@
 services:
   readmeow:
-    # build: ./
+    #build: ./
     image: readmeow-image:latest
     env_file:
       - .env
@@ -66,6 +66,7 @@ services:
     environment:
       - node.name=elasticsearch
       - cluster.name=readmeow-cluster
+      - ES_JAVA_OPTS=-Xms2g -Xmx2g
       - discovery.type=single-node
       - xpack.security.enabled=false
       - xpack.security.http.ssl.enabled=false
