@@ -59,4 +59,3 @@ deploy-job:
   script:
     - docker-compose up -d redis elasticsearch
     - docker-compose up -d readmeow 
-    - docker-compose logs -f readmeow
