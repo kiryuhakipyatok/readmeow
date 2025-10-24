@@ -26,6 +26,8 @@ services:
       - .db/postgres/data:/var/lib/postgresql
     env_file:
       - .env
+    environment:
+    - TZ=${POSTGRES_TIMEZONE}
     ports:
       - ${POSTGRES_PORT}:5432
     healthcheck:
