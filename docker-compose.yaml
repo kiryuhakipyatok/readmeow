@@ -78,8 +78,6 @@ services:
       start_period: 90s
     networks:
       - app-network
-    volumes:
-      - .elasticsearch-data:/usr/share/elasticsearch/data
     stop_grace_period: 5s
   
   logstash:
