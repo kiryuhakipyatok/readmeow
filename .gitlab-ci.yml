@@ -9,6 +9,7 @@ before_script:
   - echo "CONFIG_PATH=$CONFIG_PATH" > .env
   - echo "APP_ENV=$APP_ENV" >> .env
   - echo "POSTGRES_PORT=$POSTGRES_PORT" >> .env
+  - echo "POSTGRES_TIMEZONE=$POSTGRES_TIMEZONE" >> .env
   - echo "REDIS_PORT=$REDIS_PORT" >> .env
   - echo "SECRET=$SECRET" >> .env
   - echo "ELASTICSEARCH_PORT=$ELASTICSEARCH_PORT" >> .env
