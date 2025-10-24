@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1.6
 FROM golang:1.25-alpine AS builder
 
 WORKDIR /usr/local/src
@@ -5,11 +6,20 @@ WORKDIR /usr/local/src
 COPY go.mod go.sum ./
 RUN go mod download 
 
-RUN go install github.com/pressly/goose/v3/cmd/goose@latest
+RUN --mount=type=cache,target=/root/.cache/go-build \
+    --mount=type=cache,target=/go/pkg/mod \
+    go install -tags='no_sqlite no_mysql no_clickhouse no_mssql no_ydb no_vertica no_libsql' \
+    github.com/pressly/goose/v3/cmd/goose@latest
 
 COPY . .
 
-RUN go build -o ./bin/app cmd/app/main.go
+RUN --mount=type=cache,target=/root/.cache/go-build \
+    go build \
+    -trimpath \
+    -ldflags="-s -w" \
+    -p 4 \
+    -o ./bin/app \
+    cmd/app/main.go
 
 FROM alpine AS runner
 

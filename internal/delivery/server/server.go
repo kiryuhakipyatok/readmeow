@@ -104,11 +104,14 @@ func NewServer(scfg config.ServerConfig, acfg config.AuthConfig, apcfg config.Ap
 
 	swaggerGroup.Get("/*", swagger.HandlerDefault)
 
-	logFile, err := os.OpenFile(apcfg.LogPath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
-	if err != nil {
-		panic(fmt.Errorf("faield to open log file: %w", err))
+	writer := io.Writer(os.Stdout)
+	if len(apcfg.LogPath) > 0 {
+		logFile, err := os.OpenFile(apcfg.LogPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
+		if err != nil {
+			panic(fmt.Errorf("failed to open log file: %w", err))
+		}
+		writer = io.MultiWriter(logFile, os.Stdout)
 	}
-	writer := io.MultiWriter(logFile, os.Stdout)
 	log := logger.New(logger.Config{
 		Format:   "{\"time\":\"${time}\",\"method\":\"${method}\",\"path\":\"${path}\",\"status\":${status},\"latency\":\"${latency}\",\"type\":\"http\"}\n",
 		TimeZone: "Europe/Minsk",

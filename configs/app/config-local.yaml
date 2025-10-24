@@ -2,7 +2,7 @@ app:
   name: "READMEOW"
   version: "1.0.0"
   env: "${APP_ENV}"
-  logPath: "/logs/readmeow.log"
+  logPath: ""
 
 server:
   host: "0.0.0.0"

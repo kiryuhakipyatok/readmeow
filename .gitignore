@@ -6,3 +6,4 @@
 .kibana-data
 .elasticsearch-data
 .redis-data
+.idea

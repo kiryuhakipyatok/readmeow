@@ -1,0 +1,60 @@
+stages:          
+  - build
+  - test
+  - migrations
+  - deploy
+
+before_script:
+  - echo "generating .env file..."
+  - echo "CONFIG_PATH=$CONFIG_PATH" > .env
+  - echo "APP_ENV=$APP_ENV" >> .env
+  - echo "POSTGRES_PORT=$POSTGRES_PORT" >> .env
+  - echo "REDIS_PORT=$REDIS_PORT" >> .env
+  - echo "SECRET=$SECRET" >> .env
+  - echo "ELASTICSEARCH_PORT=$ELASTICSEARCH_PORT" >> .env
+  - echo "METRIC_SERVER_PORT=$METRIC_SERVER_PORT" >> .env
+  - echo "POSTGRES_PASSWORD=$POSTGRES_PASSWORD" >> .env
+  - echo "SSL_MODE=$SSL_MODE" >> .env
+  - echo "REDIS_PASSWORD=$REDIS_PASSWORD" >> .env
+  - echo "ELASTICSEARCH_PASSWORD=$ELASTICSEARCH_PASSWORD" >> .env
+  - echo "ELASTICSEARCH_USER=$ELASTICSEARCH_USER" >> .env
+  - echo "POSTGRES_USER=$POSTGRES_USER" >> .env
+  - echo "POSTGRES_DB=$POSTGRES_DB" >> .env
+  - echo "CLOUDINARY_URL=$CLOUDINARY_URL" >> .env
+  - echo "GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID" >> .env
+  - echo "GOOGLE_CLIENT_SECRET=$GOOGLE_CLIENT_SECRET" >> .env
+  - echo "GITHUB_CLIENT_ID=$GITHUB_CLIENT_ID" >> .env
+  - echo "GITHUB_CLIENT_SECRET=$GITHUB_CLIENT_SECRET" >> .env
+  - echo "GF_SECURITY_ADMIN_PASSWORD=$GF_SECURITY_ADMIN_PASSWORD" >> .env
+  - echo "GRAFANA_PORT=$GRAFANA_PORT" >> .env
+  - echo "PROMETHEUS_PORT =$PROMETHEUS_PORT " >> .env
+  - echo "KIBANA_PORT=$KIBANA_PORT" >> .env
+  - echo "SERVER_PORT=$SERVER_PORT" >> .env
+  - echo "EMAIL_ADDRESS=$EMAIL_ADDRESS" >> .env
+  - echo "EMAIL_PASSWORD=$EMAIL_PASSWORD" >> .env
+  - echo "GOOSE_DRIVER=$GOOSE_DRIVER" >> .env
+  - echo "GOOSE_DBSTRING=$GOOSE_DBSTRING" >> .env
+  - echo "GOOSE_MIGRATIONS_DIR=$GOOSE_MIGRATIONS_DIR" >> .env
+  - echo "MIGRATIONS_PATH=$MIGRATIONS_PATH" >> .env
+  - echo ".env file generated"
+
+build-job:      
+  stage: build
+  script:
+    - docker build -t readmeow-image .
+
+test-job:
+  stage: test
+  script:
+    - echo "ooops... there are no tests"
+
+migrations-job:  
+  stage: migrations   
+  script:
+    - docker-compose run --rm migrate up
+
+deploy-job:      
+  stage: deploy  
+  script:
+    - docker-compose up -d postgres redis elasticsearch
+    - docker-compose up -d readmeow 
