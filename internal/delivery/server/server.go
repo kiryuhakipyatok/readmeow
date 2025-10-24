@@ -66,7 +66,7 @@ func NewServer(scfg config.ServerConfig, acfg config.AuthConfig, apcfg config.Ap
 	swaggerGroup := app.Group("/api/swagger")
 
 	validIps := map[string]struct{}{
-		"172.21.0.1": {},
+		"51.159.125.188": {},
 	}
 
 	validAuthPaths := map[string]struct{}{

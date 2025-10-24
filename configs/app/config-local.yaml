@@ -56,9 +56,9 @@ email:
   smtpServerAddress: "smtp.gmail.com:587"
 
 sheduler:
-  widgetBulkTime: 1m
+  widgetBulkTime: 3m
   widgetBulkTimeout: 5s
-  templateBulkTime: 1m
+  templateBulkTime: 3m
   templateBulkTimeout: 5s
   cleanCodesTime: 1m
   cleanCodesTimeout: 5s
