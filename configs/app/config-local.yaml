@@ -5,7 +5,7 @@ app:
   logPath: ""
 
 server:
-  host: "0.0.0.0"
+  host: "157.230.121.154"
   port: "${SERVER_PORT}"
   metricPort: "${METRIC_SERVER_PORT}"
   writeTimeout: 10s
