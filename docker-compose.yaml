@@ -74,8 +74,8 @@ services:
       test: ["CMD-SHELL", "curl -s http://localhost:9200/_cluster/health?wait_for_status=green&timeout=60s || exit 1"]
       interval: 10s
       timeout: 5s
-      retries: 5
-      start_period: 30s
+      retries: 10
+      start_period: 90s
     networks:
       - app-network
     volumes:
