@@ -3,6 +3,7 @@ package middlewares
 import (
 	"context"
 	"errors"
+	"fmt"
 	"readmeow/internal/config"
 	"readmeow/internal/delivery/apierr"
 	"readmeow/internal/delivery/ratelimiter"
@@ -110,6 +111,7 @@ func RateLimiterMiddleware(scfg config.ServerConfig) fiber.Handler {
 
 func ValidIpsMiddleware(validIps map[string]struct{}) fiber.Handler {
 	return func(c *fiber.Ctx) error {
+		fmt.Println(c.IP())
 		if _, ok := validIps[c.IP()]; !ok {
 			return apierr.Forbidden()
 		}
