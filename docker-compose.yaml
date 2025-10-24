@@ -23,7 +23,7 @@ services:
   postgres:
     image: postgres:latest
     volumes:
-      - .db/postgres/data:/var/lib/postgresql/data
+      - .db/postgres/data:/var/lib/postgresql
     env_file:
       - .env
     ports:
