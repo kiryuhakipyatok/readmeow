@@ -27,7 +27,7 @@ before_script:
   - echo "GITHUB_CLIENT_SECRET=$GITHUB_CLIENT_SECRET" >> .env
   - echo "GF_SECURITY_ADMIN_PASSWORD=$GF_SECURITY_ADMIN_PASSWORD" >> .env
   - echo "GRAFANA_PORT=$GRAFANA_PORT" >> .env
-  - echo "PROMETHEUS_PORT =$PROMETHEUS_PORT " >> .env
+  - echo "PROMETHEUS_PORT=$PROMETHEUS_PORT " >> .env
   - echo "KIBANA_PORT=$KIBANA_PORT" >> .env
   - echo "SERVER_PORT=$SERVER_PORT" >> .env
   - echo "EMAIL_ADDRESS=$EMAIL_ADDRESS" >> .env

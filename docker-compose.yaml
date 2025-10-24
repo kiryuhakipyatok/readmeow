@@ -126,6 +126,9 @@ services:
   migrate:
     # build: ./
     image: readmeow-image:latest
+    depends_on:
+      postgres:
+        condition: service_healthy
     env_file:
       - .env
     # volumes:
