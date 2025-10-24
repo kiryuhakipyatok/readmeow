@@ -71,11 +71,11 @@ services:
       - xpack.security.enabled=false
       - xpack.security.http.ssl.enabled=false
     healthcheck:
-      test: ["CMD-SHELL", "curl -s http://localhost:9200/_cluster/health?wait_for_status=green&timeout=60s || exit 1"]
+      test: ["CMD-SHELL", "curl -s http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=60s || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 10
-      start_period: 90s
+      start_period: 120s
     networks:
       - app-network
     stop_grace_period: 5s
