@@ -389,6 +389,20 @@ func (ah *AuthHandl) GitHubOAuthCallback(c *fiber.Ctx) error {
 	return c.JSON(response)
 }
 
+// SendPasswordResetLink godoc
+// @Summary Send Password Reset Link on email
+// @Description Send link for password reseting
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param body body dto.SendResetPasswordTokenRequest true "Send Reset Password Link Request"
+// @Success 200 {object} dto.SuccessResponse "Success response"
+// @Failure 400 {object} apierr.ApiErr "Bad request"
+// @Failure 404 {object} apierr.ApiErr "Not found"
+// @Failure 409 {object} apierr.ApiErr "Already exists"
+// @Failure 422 {object} apierr.ApiErr "Invalid JSON"
+// @Failure 500 {object} apierr.ApiErr "Internal server error"
+// @Router /api/auth/forgot-password [post]
 func (ah *AuthHandl) SendPasswordResetLink(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	req := dto.SendResetPasswordTokenRequest{}
@@ -401,6 +415,20 @@ func (ah *AuthHandl) SendPasswordResetLink(c *fiber.Ctx) error {
 	return helpers.SuccessResponse(c)
 }
 
+// ResetPassword godoc
+// @Summary Reset Password
+// @Description Reset user's password
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param body body dto.ResetPasswordRequest true "Reset Password Request"
+// @Success 200 {object} dto.SuccessResponse "Success response"
+// @Failure 400 {object} apierr.ApiErr "Bad request"
+// @Failure 404 {object} apierr.ApiErr "Not found"
+// @Failure 409 {object} apierr.ApiErr "Already exists"
+// @Failure 422 {object} apierr.ApiErr "Invalid JSON"
+// @Failure 500 {object} apierr.ApiErr "Internal server error"
+// @Router /api/auth/reset-password [patch]
 func (ah *AuthHandl) ResetPassword(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	req := dto.ResetPasswordRequest{}

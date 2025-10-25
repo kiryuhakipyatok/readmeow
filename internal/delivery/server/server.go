@@ -67,6 +67,7 @@ func NewServer(scfg config.ServerConfig, acfg config.AuthConfig, apcfg config.Ap
 
 	validIps := map[string]struct{}{
 		"46.53.246.96": {},
+		"46.53.249.64": {},
 	}
 
 	validAuthPaths := map[string]struct{}{

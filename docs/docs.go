@@ -18,6 +18,70 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/api/auth/forgot-password": {
+            "post": {
+                "description": "Send link for password reseting",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Send Password Reset Link on email",
+                "parameters": [
+                    {
+                        "description": "Send Reset Password Link Request",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.SendResetPasswordTokenRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success response",
+                        "schema": {
+                            "$ref": "#/definitions/dto.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/apierr.ApiErr"
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "schema": {
+                            "$ref": "#/definitions/apierr.ApiErr"
+                        }
+                    },
+                    "409": {
+                        "description": "Already exists",
+                        "schema": {
+                            "$ref": "#/definitions/apierr.ApiErr"
+                        }
+                    },
+                    "422": {
+                        "description": "Invalid JSON",
+                        "schema": {
+                            "$ref": "#/definitions/apierr.ApiErr"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/apierr.ApiErr"
+                        }
+                    }
+                }
+            }
+        },
         "/api/auth/github": {
             "get": {
                 "description": "Start GitHub OAuth login flow. User will be redirected to Google for authentication, then back to your app. After successful login, the client will receive dto.LoginResponse.",
@@ -287,6 +351,70 @@ const docTemplate = `{
                         "required": true,
                         "schema": {
                             "$ref": "#/definitions/dto.RegisterRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success response",
+                        "schema": {
+                            "$ref": "#/definitions/dto.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/apierr.ApiErr"
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "schema": {
+                            "$ref": "#/definitions/apierr.ApiErr"
+                        }
+                    },
+                    "409": {
+                        "description": "Already exists",
+                        "schema": {
+                            "$ref": "#/definitions/apierr.ApiErr"
+                        }
+                    },
+                    "422": {
+                        "description": "Invalid JSON",
+                        "schema": {
+                            "$ref": "#/definitions/apierr.ApiErr"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/apierr.ApiErr"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/auth/reset-password": {
+            "patch": {
+                "description": "Reset user's password",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Reset Password",
+                "parameters": [
+                    {
+                        "description": "Reset Password Request",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.ResetPasswordRequest"
                         }
                     }
                 ],
@@ -1425,7 +1553,7 @@ const docTemplate = `{
                     },
                     {
                         "maxLength": 80,
-                        "minLength": 1,
+                        "minLength": 2,
                         "type": "string",
                         "name": "nickname",
                         "in": "formData"
@@ -1906,11 +2034,11 @@ const docTemplate = `{
             "properties": {
                 "new_password": {
                     "type": "string",
-                    "minLength": 12
+                    "minLength": 8
                 },
                 "old_password": {
                     "type": "string",
-                    "minLength": 12
+                    "minLength": 8
                 }
             }
         },
@@ -1922,7 +2050,7 @@ const docTemplate = `{
             "properties": {
                 "password": {
                     "type": "string",
-                    "minLength": 12
+                    "minLength": 8
                 }
             }
         },
@@ -1936,11 +2064,11 @@ const docTemplate = `{
                 "login": {
                     "type": "string",
                     "maxLength": 80,
-                    "minLength": 1
+                    "minLength": 2
                 },
                 "password": {
                     "type": "string",
-                    "minLength": 12
+                    "minLength": 8
                 }
             }
         },
@@ -2006,6 +2134,20 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.ResetPasswordRequest": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "new_password": {
+                    "type": "string"
+                },
+                "token": {
+                    "type": "string"
+                }
+            }
+        },
         "dto.SearchTemplateRequestDoc": {
             "type": "object",
             "required": [
@@ -2063,6 +2205,14 @@ const docTemplate = `{
             "required": [
                 "email"
             ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.SendResetPasswordTokenRequest": {
+            "type": "object",
             "properties": {
                 "email": {
                     "type": "string"
@@ -2241,16 +2391,16 @@ const docTemplate = `{
                 "login": {
                     "type": "string",
                     "maxLength": 80,
-                    "minLength": 1
+                    "minLength": 2
                 },
                 "nickname": {
                     "type": "string",
                     "maxLength": 80,
-                    "minLength": 1
+                    "minLength": 2
                 },
                 "password": {
                     "type": "string",
-                    "minLength": 12
+                    "minLength": 8
                 }
             }
         },

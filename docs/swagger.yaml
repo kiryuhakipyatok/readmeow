@@ -9,10 +9,10 @@ definitions:
   dto.ChangePasswordRequest:
     properties:
       new_password:
-        minLength: 12
+        minLength: 8
         type: string
       old_password:
-        minLength: 12
+        minLength: 8
         type: string
     required:
     - new_password
@@ -21,7 +21,7 @@ definitions:
   dto.DeleteUserRequest:
     properties:
       password:
-        minLength: 12
+        minLength: 8
         type: string
     required:
     - password
@@ -30,10 +30,10 @@ definitions:
     properties:
       login:
         maxLength: 80
-        minLength: 1
+        minLength: 2
         type: string
       password:
-        minLength: 12
+        minLength: 8
         type: string
     required:
     - login
@@ -82,6 +82,15 @@ definitions:
     - code
     - email
     type: object
+  dto.ResetPasswordRequest:
+    properties:
+      email:
+        type: string
+      new_password:
+        type: string
+      token:
+        type: string
+    type: object
   dto.SearchTemplateRequestDoc:
     properties:
       amount:
@@ -124,6 +133,11 @@ definitions:
         type: string
     required:
     - email
+    type: object
+  dto.SendResetPasswordTokenRequest:
+    properties:
+      email:
+        type: string
     type: object
   dto.SuccessResponse:
     properties:
@@ -247,14 +261,14 @@ definitions:
         type: string
       login:
         maxLength: 80
-        minLength: 1
+        minLength: 2
         type: string
       nickname:
         maxLength: 80
-        minLength: 1
+        minLength: 2
         type: string
       password:
-        minLength: 12
+        minLength: 8
         type: string
     required:
     - email
@@ -434,6 +448,48 @@ info:
   title: REODMEOW API
   version: 1.0.0
 paths:
+  /api/auth/forgot-password:
+    post:
+      consumes:
+      - application/json
+      description: Send link for password reseting
+      parameters:
+      - description: Send Reset Password Link Request
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.SendResetPasswordTokenRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success response
+          schema:
+            $ref: '#/definitions/dto.SuccessResponse'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/apierr.ApiErr'
+        "404":
+          description: Not found
+          schema:
+            $ref: '#/definitions/apierr.ApiErr'
+        "409":
+          description: Already exists
+          schema:
+            $ref: '#/definitions/apierr.ApiErr'
+        "422":
+          description: Invalid JSON
+          schema:
+            $ref: '#/definitions/apierr.ApiErr'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/apierr.ApiErr'
+      summary: Send Password Reset Link on email
+      tags:
+      - Auth
   /api/auth/github:
     get:
       description: Start GitHub OAuth login flow. User will be redirected to Google
@@ -638,6 +694,48 @@ paths:
           schema:
             $ref: '#/definitions/apierr.ApiErr'
       summary: Register
+      tags:
+      - Auth
+  /api/auth/reset-password:
+    patch:
+      consumes:
+      - application/json
+      description: Reset user's password
+      parameters:
+      - description: Reset Password Request
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.ResetPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success response
+          schema:
+            $ref: '#/definitions/dto.SuccessResponse'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/apierr.ApiErr'
+        "404":
+          description: Not found
+          schema:
+            $ref: '#/definitions/apierr.ApiErr'
+        "409":
+          description: Already exists
+          schema:
+            $ref: '#/definitions/apierr.ApiErr'
+        "422":
+          description: Invalid JSON
+          schema:
+            $ref: '#/definitions/apierr.ApiErr'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/apierr.ApiErr'
+      summary: Reset Password
       tags:
       - Auth
   /api/auth/verify:
@@ -1348,7 +1446,7 @@ paths:
         type: string
       - in: formData
         maxLength: 80
-        minLength: 1
+        minLength: 2
         name: nickname
         type: string
       produces:
