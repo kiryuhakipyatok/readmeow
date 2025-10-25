@@ -59,4 +59,6 @@ deploy-job:
   stage: deploy  
   script:
     - docker-compose up -d readmeow 
+    - sleep 5s
+    - docker-compose ps readmeow
     - docker-compose logs readmeow 
