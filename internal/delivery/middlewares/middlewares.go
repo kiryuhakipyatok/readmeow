@@ -100,8 +100,17 @@ func ErrorHandler(c *fiber.Ctx, err error) error {
 
 func RateLimiterMiddleware(scfg config.ServerConfig) fiber.Handler {
 	return func(c *fiber.Ctx) error {
+		var key string
 		ip := c.IP()
-		limiter := ratelimiter.RateLimit(ip, scfg.RateLimit, scfg.Burst)
+		userAgent := c.Get("User-Agent")
+		id := c.Locals("userId").(string)
+		if len(id) > 0 {
+			key = fmt.Sprintf("%s|%s|%s", ip, id, userAgent)
+		} else {
+			key = fmt.Sprintf("%s|%s", ip, userAgent)
+		}
+		// identifier := sha256.Sum224([]byte(key))
+		limiter := ratelimiter.RateLimit(key, scfg.RateLimit, scfg.Burst)
 		if !limiter.Allow() {
 			return apierr.TooManyRequests()
 		}

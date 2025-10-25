@@ -10,6 +10,7 @@ import (
 type client struct {
 	Limiter      *rate.Limiter
 	LastSeenTime time.Time
+	mu           sync.Mutex
 }
 
 var (
@@ -34,15 +35,17 @@ func cleanIps() {
 	}()
 }
 
-func RateLimit(ip string, rl, burst int) *rate.Limiter {
+func RateLimit(identifier string, rl, burst int) *rate.Limiter {
 	once.Do(cleanIps)
-	lim, _ := ipLimiter.LoadOrStore(ip,
+	lim, _ := ipLimiter.LoadOrStore(identifier,
 		&client{
 			Limiter:      rate.NewLimiter(rate.Limit(rl), burst),
 			LastSeenTime: time.Now(),
 		},
 	)
 	user := lim.(*client)
+	user.mu.Lock()
 	user.LastSeenTime = time.Now()
+	user.mu.Unlock()
 	return user.Limiter
 }
