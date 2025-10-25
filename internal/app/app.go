@@ -52,7 +52,7 @@ func Run() {
 	}()
 	log.Info("connected to redis")
 
-	search := search.MustConnect(cfg.Search)
+	search := search.MustConnect(cfg.Search, log)
 	log.Info("connected to elasticsearch")
 
 	prometheus := monitoring.NewPrometheusSetup()

@@ -73,7 +73,7 @@ services:
       - xpack.security.enabled=false
       - xpack.security.http.ssl.enabled=false
     healthcheck:
-      test: ["CMD-SHELL", "curl -s http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=120s || exit 1"]
+      test: ["CMD-SHELL", "curl -fs http://localhost:9200/_cat/health?h=status | grep -qE 'yellow|green'"]
       interval: 10s
       timeout: 5s
       retries: 10
