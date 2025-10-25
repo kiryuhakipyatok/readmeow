@@ -35,9 +35,9 @@ func cleanIps() {
 	}()
 }
 
-func RateLimit(identifier string, rl, burst int) *rate.Limiter {
+func RateLimit(key string, rl, burst int) *rate.Limiter {
 	once.Do(cleanIps)
-	lim, _ := ipLimiter.LoadOrStore(identifier,
+	lim, _ := ipLimiter.LoadOrStore(key,
 		&client{
 			Limiter:      rate.NewLimiter(rate.Limit(rl), burst),
 			LastSeenTime: time.Now(),
