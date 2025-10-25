@@ -103,8 +103,8 @@ func RateLimiterMiddleware(scfg config.ServerConfig) fiber.Handler {
 		var key string
 		ip := c.IP()
 		userAgent := c.Get("User-Agent")
-		id := c.Locals("userId").(string)
-		if len(id) > 0 {
+		id, ok := c.Locals("userId").(string)
+		if ok && len(id) > 0 {
 			key = fmt.Sprintf("%s|%s|%s", ip, id, userAgent)
 		} else {
 			key = fmt.Sprintf("%s|%s", ip, userAgent)
