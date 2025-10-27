@@ -3,6 +3,8 @@ FROM golang:1.25-alpine AS builder
 
 WORKDIR /usr/local/src
 
+RUN apk add -U --no-cache ca-certificates
+
 COPY go.mod go.sum ./
 RUN go mod download 
 
@@ -23,19 +25,21 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
 
 FROM alpine AS runner
 
-RUN apk update && apk add --no-cache tzdata ca-certificates make
+RUN apk add --no-cache tzdata
 
-ENV TZ=Europe/Moscow
 ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
-
+ENV TZ=Europe/Moscow
 
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+RUN apk add --no-cache make
 
 WORKDIR /app
 
 COPY --from=builder /usr/local/src/bin/app .
 
 COPY --from=builder /go/bin/goose /usr/local/bin/goose
+
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
 COPY configs /configs
 
