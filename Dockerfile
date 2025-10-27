@@ -3,6 +3,8 @@ FROM golang:1.25-bookworm AS builder
 
 WORKDIR /usr/local/src
 
+RUN apt-get update && apt-get install -y ca-certificates tzdata make
+
 COPY go.mod go.sum ./
 RUN go mod download 
 
@@ -23,7 +25,7 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
 
 FROM debian:bookworm-slim AS runner
 
-RUN apk add --no-cache tzdata ca-certificates make
+RUN apt-get update && apt-get install -y ca-certificates tzdata make && rm -rf /var/lib/apt/lists/*
 
 ENV TZ=Europe/Minsk
 ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
@@ -37,6 +39,6 @@ COPY --from=builder /go/bin/goose /usr/local/bin/goose
 COPY configs /configs
 COPY internal/migrations /migrations
 
-EXPOSE 3333
+EXPOSE 80
 
 CMD ["./app"]
