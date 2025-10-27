@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.6
-FROM golang:1.25-alpine AS builder
+FROM golang:1.25-bookworm AS builder
 
 WORKDIR /usr/local/src
 
@@ -21,7 +21,7 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
     -o ./bin/app \
     cmd/app/main.go
 
-FROM alpine AS runner
+FROM debian:bookworm-slim AS runner
 
 RUN apk add --no-cache tzdata ca-certificates make
 
