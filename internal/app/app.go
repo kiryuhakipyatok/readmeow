@@ -105,8 +105,11 @@ func Run() {
 	routConfig := routes.NewRoutConfig(server.App, userHandl, authHandl, templateHandl, readmeHandl, widgetHandl)
 	routConfig.SetupRoutes()
 
+	certFile := "/etc/ssl/certs/fullchain.pem"
+	keyFile := "/etc/ssl/certs/privkey.pem"
+
 	go func() {
-		if err := server.App.Listen(cfg.Server.Host + ":" + cfg.Server.Port); err != nil {
+		if err := server.App.ListenTLS(cfg.Server.Host+":"+cfg.Server.Port, certFile, keyFile); err != nil {
 			panic("failed to start server: " + err.Error())
 		}
 	}()

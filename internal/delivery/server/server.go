@@ -23,6 +23,7 @@ import (
 type Server struct {
 	App    *fiber.App
 	Metric *http.Server
+	Config config.ServerConfig
 }
 
 const (
@@ -129,7 +130,13 @@ func NewServer(scfg config.ServerConfig, acfg config.AuthConfig, apcfg config.Ap
 		middlewares.MetricsMiddleware(ps),
 	)
 
-	return &Server{App: app, Metric: metrics}
+	return &Server{App: app, Metric: metrics, Config: scfg}
+}
+
+func (s *Server) MustStart() {
+	if err := s.App.ListenTLS(s.Config.Host+":"+s.Config.Port, s.Config.CertFile, s.Config.KeyFile); err != nil {
+		panic("failed to start server: " + err.Error())
+	}
 }
 
 func (s *Server) MustClose(ctx context.Context) {

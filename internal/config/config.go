@@ -42,6 +42,8 @@ type ServerConfig struct {
 	CloseTimeout   time.Duration `mapstructure:"closeTimeout"`
 	RateLimit      int           `mapstructure:"rateLimit"`
 	Burst          int           `mapstructure:"burst"`
+	CertFile       string        `mapstructure:"certFile"`
+	KeyFile        string        `mapstructure:"keyFile"`
 }
 
 type AuthConfig struct {
