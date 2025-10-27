@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.6
-FROM golang:1.25-alpine AS builder
+FROM golang:1.25-bullseye AS builder
 
 WORKDIR /usr/local/src
 
@@ -21,11 +21,10 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
     -o ./bin/app \
     cmd/app/main.go
 
-FROM alpine AS runner
+FROM debian:bullseye-slim AS runner
 
-RUN apk update && apk add --no-cache tzdata ca-certificates make
+RUN apt-get update && apt-get install -y tzdata ca-certificates make && rm -rf /var/lib/apt/lists/*
 
-ENV TZ=Europe/Moscow
 ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
