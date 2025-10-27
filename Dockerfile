@@ -23,12 +23,12 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
 
 FROM alpine AS runner
 
-RUN apk update && apk add --no-cache tzdata ca-certificates
+RUN apk update && apk add --no-cache tzdata ca-certificates make
 
 ENV TZ=Europe/Moscow
+ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
-RUN apk add --no-cache make
 
 WORKDIR /app
 
