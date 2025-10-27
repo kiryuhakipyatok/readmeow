@@ -60,7 +60,8 @@ deploy-job:
   script:
     - docker-compose up -d readmeow 
     - sleep 5s
-    - EXIT_CODE=$(docker inspect -f '{{.State.ExitCode}}' readmeow)
+    - CONTAINER_NAME=$(docker-compose ps -q readmeow)
+    - EXIT_CODE=$(docker inspect -f '{{.State.ExitCode}}' $CONTAINER_NAME)
     - if [ "$EXIT_CODE" -ne 0 ]; then
         echo "container failed with exit code $EXIT_CODE";
         docker logs readmeow;
