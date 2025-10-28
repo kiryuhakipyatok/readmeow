@@ -39,10 +39,12 @@ services:
     volumes:
       - ./certs:/etc/letsencrypt
       - ./certbot-www:/var/www/certbot
-    entrypoint: ""
-    command: certonly --webroot -w /var/www/certbot \
-              -d api.readmeow.tech \
-              --email kiryuhakipyatok@gmail.com --agree-tos --no-eff-email
+    entrypoint: ["certbot"]
+    command: ["certonly", "--webroot", "-w", "/var/www/certbot",
+            "-d", "api.readmeow.tech",
+            "--email", "kiryuhakipyatok@gmail.com",
+            "--agree-tos",
+            "--no-eff-email"]
     networks:
       - app-network
 
