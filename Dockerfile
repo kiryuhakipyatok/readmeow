@@ -1,9 +1,9 @@
 # syntax=docker/dockerfile:1.6
-FROM golang:1.25-bookworm AS builder
+FROM golang:1.25-alpine AS builder
 
 WORKDIR /usr/local/src
 
-RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates tzdata make && rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache ca-certificates tzdata make
 
 COPY go.mod go.sum ./
 RUN go mod download 
@@ -23,10 +23,9 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
     -o ./bin/app \
     cmd/app/main.go
 
-FROM debian:bookworm-slim AS runner
+FROM alpine AS runner
 
-RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates tzdata && update-ca-certificates && rm -rf /var/lib/apt/lists/*
-
+RUN apk add --no-cache ca-certificates tzdata
 ENV TZ=Europe/Minsk
 ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 
