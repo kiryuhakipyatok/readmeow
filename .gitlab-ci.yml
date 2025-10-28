@@ -2,6 +2,7 @@ stages:
   - build
   - test
   - migrations
+  - cert
   - deploy
 
 before_script:
@@ -56,6 +57,22 @@ migrations-job:
     - docker-compose up -d postgres
     - docker-compose run --rm migrate up
 
+cert-job:
+  stage: cert
+  script:
+  - mkdir -p ./data/certbot/conf
+  - mkdir -p ./data/certbot/credentials
+  - echo "dns_digitalocean_token = $DIGITALOCEAN_API_TOKEN" > ./data/certbot/credentials/digitalocean.ini
+  - chmod 600 ./data/certbot/credentials/digitalocean.ini # Ограничиваем права доступа к файлу с секретом
+  - docker-compose run --rm certbot
+  cache:
+    paths:
+      - ./data/certbot/conf
+      - ./data/certbot/credentials
+    policy: push
+  variables:
+    DIGITALOCEAN_API_TOKEN: $DIGITALOCEAN_API_TOKEN
+
 deploy-job:
   stage: deploy
   script:
@@ -70,4 +87,10 @@ deploy-job:
         docker logs readmeow-readmeow-1;
         exit 1;
       fi
-    - docker-compose up -d --force-recreate nginx
+    - docker-compose logs readmeow
+    - docker-compose up -d nginx
+  cache:
+    paths:
+      - ./data/certbot/conf
+      - ./data/certbot/credentials
+    policy: pull
