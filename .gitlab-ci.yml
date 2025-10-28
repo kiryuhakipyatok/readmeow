@@ -58,7 +58,7 @@ migrations-job:
 deploy-job:
   stage: deploy
   script:
-    - docker-compose up -d nginx
+    
     # - docker-compose run --rm certbot
     # - docker-compose restart nginx
     - docker-compose up -d readmeow
@@ -69,3 +69,4 @@ deploy-job:
         docker logs readmeow-readmeow-1;
         exit 1;
       fi
+    - docker-compose up -d nginx
