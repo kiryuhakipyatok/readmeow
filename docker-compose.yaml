@@ -37,7 +37,6 @@ services:
     image: certbot/certbot
     volumes:
       - ./certs:/etc/letsencrypt
-    entrypoint: ""
     command: certonly --webroot -w /var/www/certbot \
               -d api.readmeow.tech \
               --email kiryuhakipyatok@gmail.com --agree-tos --no-eff-email
