@@ -69,4 +69,10 @@ deploy-job:
         docker logs readmeow-readmeow-1;
         exit 1;
       fi
+       - echo "--- Debugging Nginx config file path ---"
+    - pwd
+    - ls -la configs/
+    - ls -la configs/nginx/
+    - file configs/nginx/default.conf
+    - echo "--- End Debugging ---"
     - docker-compose up -d nginx
