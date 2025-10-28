@@ -66,10 +66,10 @@ func NewServer(scfg config.ServerConfig, acfg config.AuthConfig, apcfg config.Ap
 
 	swaggerGroup := app.Group("/api/swagger")
 
-	validIps := map[string]struct{}{
-		"46.53.246.96": {},
-		"46.53.249.64": {},
-	}
+	// validIps := map[string]struct{}{
+	// 	"46.53.246.96": {},
+	// 	"46.53.249.64": {},
+	// }
 
 	validAuthPaths := map[string]struct{}{
 		login:              {},
@@ -101,7 +101,7 @@ func NewServer(scfg config.ServerConfig, acfg config.AuthConfig, apcfg config.Ap
 
 	swaggerGroup.Use(
 		corsMiddleware,
-		middlewares.ValidIpsMiddleware(validIps),
+		// middlewares.ValidIpsMiddleware(validIps),
 	)
 
 	swaggerGroup.Get("/*", swagger.HandlerDefault)

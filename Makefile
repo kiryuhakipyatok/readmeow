@@ -19,15 +19,21 @@ docker-run-elk:
 	@docker-compose up -d kibana filebeat logstash
 
 docker-run-app:
-	docker-compose up -d readmeow --build
+	docker-compose up -d readmeow
 
 docker-run-monitoring:
 	@docker-compose up -d  prometheus grafana
 
+docker-run-nginx:
+	@docker-compose up -d nginx
+
+docker-build-app:
+	@docker build -t readmeow-image .
+
 docker-app-logs:
 	@docker-compose logs -f readmeow
 
-docker-run-all: docker-run-infra docker-run-elk docker-run-app docker-run-monitoring docker-app-logs
+docker-run-all: docker-run-infra docker-build-app docker-run-app docker-run-nginx docker-app-logs
 
 docker-down:
 	@docker-compose down

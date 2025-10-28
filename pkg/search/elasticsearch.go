@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"readmeow/internal/config"
 	"readmeow/pkg/logger"
-	"time"
 
 	es "github.com/elastic/go-elasticsearch/v9"
 )
@@ -25,13 +24,11 @@ func MustConnect(cfg config.SearchConfig, l *logger.Logger) *SearchClient {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), cfg.PingTimeout)
 	defer cancel()
-	for i := 0; i < 10; i++ {
-		if _, err := client.Ping().Do(ctx); err != nil {
-			break
-		}
-		l.Info("elasticsearch not ready yet (attempt %d/10), retrying...")
-		time.Sleep(5 * time.Second)
+
+	if _, err := client.Ping().Do(ctx); err != nil {
+		panic(err)
 	}
+
 	sc := &SearchClient{
 		Client: client,
 	}
