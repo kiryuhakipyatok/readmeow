@@ -22,7 +22,7 @@ services:
     stop_grace_period: 5s
 
   nginx:
-    image: nginx:1.29.2-alpine
+    image: nginx:latest
     volumes:
       - ./certs:/etc/letsencrypt
       - ./configs/nginx/default.conf:/etc/nginx/conf.d/default.conf

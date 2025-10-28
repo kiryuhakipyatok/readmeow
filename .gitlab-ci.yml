@@ -75,4 +75,4 @@ deploy-job:
     - ls -la configs/nginx/
     - file configs/nginx/default.conf
     - echo "--- End Debugging ---"
-    - docker-compose up -d nginx
+    - docker-compose up -d --force-recreate nginx
