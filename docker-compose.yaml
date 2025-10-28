@@ -16,6 +16,7 @@ services:
         condition: service_healthy
       elasticsearch:
         condition: service_healthy
+      
     networks:
       - app-network
     stop_grace_period: 5s
@@ -29,8 +30,6 @@ services:
     ports:
       - 80:80
       - 443:443
-    depends_on:
-      - readmeow
     networks:
       - app-network
 
