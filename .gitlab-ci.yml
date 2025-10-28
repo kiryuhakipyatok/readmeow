@@ -43,6 +43,7 @@ build-job:
   stage: build
   script:
     - docker build -t readmeow-image .
+    - docker build -f nginx.Dockerfile -t custom-nginx-image .
 
 test-job:
   stage: test
