@@ -20,6 +20,37 @@ services:
       - app-network
     stop_grace_period: 5s
 
+  nginx:
+    image: nginx:latest
+    volumes:
+      - ./certs:/etc/letsencrypt
+      - ./configs/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - 80:80
+      - 443:443
+    depends_on:
+      - readmeow
+    networks:
+      - app-network
+
+  certbot:
+    image: certbot/certbot
+    volumes:
+      - ./certs:/etc/letsencrypt
+    entrypoint: ""
+    command: certonly --webroot -w /var/www/certbot \
+              -d api.readmeow.tech \
+              --email kiryuhakipyatok@gmail.com --agree-tos --no-eff-email
+    networks:
+      - app-network
+
+  certbot-renew:
+    image: certbot/certbot
+    volumes:
+      - ./certs:/etc/letsencrypt
+    entrypoint: ""
+    command: renew --webroot -w /var/www/certbot
+
   postgres:
     image: postgres:latest
     volumes:
