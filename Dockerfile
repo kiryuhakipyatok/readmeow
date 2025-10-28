@@ -41,6 +41,6 @@ COPY configs /configs
 COPY internal/migrations /migrations
 
 
-EXPOSE 80
+EXPOSE 3333
 
 CMD ["./app"]
