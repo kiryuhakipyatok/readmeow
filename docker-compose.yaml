@@ -53,7 +53,7 @@ services:
     entrypoint: ["certbot"]
     command: ["certonly", "--dns-digitalocean",
              "--dns-digitalocean-credentials", "credentials/digitalocean.ini",
-             "-d api.readmeow.tech", "--email kiryuhakipyatok@gmail.com", 
+             "-d api.readmeow.tech", "--email", "kiryuhakipyatok@gmail.com", 
              "--agree-tos", "--non-interactive"]
     networks:
       - app-network
