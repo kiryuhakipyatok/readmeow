@@ -104,9 +104,6 @@ func Run() {
 	routConfig := routes.NewRoutConfig(server.App, userHandl, authHandl, templateHandl, readmeHandl, widgetHandl)
 	routConfig.SetupRoutes()
 
-	// certFile := "/etc/ssl/certs/fullchain.pem"
-	// keyFile := "/etc/ssl/certs/privkey.pem"
-
 	go func() {
 		server.MustStart()
 	}()

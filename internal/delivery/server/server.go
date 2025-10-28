@@ -134,12 +134,12 @@ func NewServer(scfg config.ServerConfig, acfg config.AuthConfig, apcfg config.Ap
 }
 
 func (s *Server) MustStart() {
-	// if err := s.App.ListenTLS(s.Config.Host+":"+s.Config.Port, s.Config.CertFile, s.Config.KeyFile); err != nil {
-	// 	panic("failed to start server: " + err.Error())
-	// }
-	if err := s.App.Listen(s.Config.Host + ":" + s.Config.Port); err != nil {
+	if err := s.App.ListenTLS(s.Config.Host+":"+s.Config.Port, s.Config.CertFile, s.Config.KeyFile); err != nil {
 		panic("failed to start server: " + err.Error())
 	}
+	// if err := s.App.Listen(s.Config.Host + ":" + s.Config.Port); err != nil {
+	// 	panic("failed to start server: " + err.Error())
+	// }
 }
 
 func (s *Server) MustClose(ctx context.Context) {
