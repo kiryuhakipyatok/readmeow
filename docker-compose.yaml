@@ -33,26 +33,26 @@ services:
     networks:
       - app-network
 
-  certbot:
-    image: certbot/certbot
-    volumes:
-      - ./certs:/etc/letsencrypt
-      - ./certbot-www:/var/www/certbot
-    entrypoint: ["certbot"]
-    command: ["certonly", "--webroot", "-w", "/var/www/certbot",
-            "-d", "api.readmeow.tech",
-            "--email", "kiryuhakipyatok@gmail.com",
-            "--agree-tos",
-            "--no-eff-email"]
-    networks:
-      - app-network
+  # certbot:
+  #   image: certbot/certbot
+  #   volumes:
+  #     - ./certs:/etc/letsencrypt
+  #     - ./certbot-www:/var/www/certbot
+  #   entrypoint: ["certbot"]
+  #   command: ["certonly", "--webroot", "-w", "/var/www/certbot",
+  #           "-d", "api.readmeow.tech",
+  #           "--email", "kiryuhakipyatok@gmail.com",
+  #           "--agree-tos",
+  #           "--no-eff-email"]
+  #   networks:
+  #     - app-network
 
-  certbot-renew:
-    image: certbot/certbot
-    volumes:
-      - ./certs:/etc/letsencrypt
-    entrypoint: ""
-    command: renew --webroot -w /var/www/certbot
+  # certbot-renew:
+  #   image: certbot/certbot
+  #   volumes:
+  #     - ./certs:/etc/letsencrypt
+  #   entrypoint: ""
+  #   command: renew --webroot -w /var/www/certbot
 
   postgres:
     image: postgres:latest

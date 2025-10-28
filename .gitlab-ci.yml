@@ -59,8 +59,8 @@ deploy-job:
   stage: deploy
   script:
     - docker-compose up -d nginx
-    - docker-compose run --rm certbot
-    - docker-compose restart nginx
+    # - docker-compose run --rm certbot
+    # - docker-compose restart nginx
     - docker-compose up -d readmeow
     - sleep 5s
     - EXIT_CODE=$(docker inspect -f '{{.State.ExitCode}}' readmeow-readmeow-1)
