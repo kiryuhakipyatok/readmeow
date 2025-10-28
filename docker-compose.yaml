@@ -4,8 +4,8 @@ services:
     image: readmeow-image:latest
     env_file:
       - .env
-    volumes:
-      - ./etc/letsencrypt/live/api.readmeow.tech:/etc/ssl/certs:ro
+    # volumes:
+    #   - ./etc/letsencrypt/live/api.readmeow.tech:/etc/ssl/certs:ro
     ports:
       - ${SERVER_PORT}:${SERVER_PORT}
       - ${METRIC_SERVER_PORT}:${METRIC_SERVER_PORT}
@@ -22,9 +22,9 @@ services:
     stop_grace_period: 5s
 
   nginx:
-    build:
-    context: . 
-    dockerfile: nginx.Dockerfil
+    # build:
+    #   context: . 
+    #   dockerfile: nginx.Dockerfile
     image: custom-nginx-image:latest
     # volumes:
     #   - ./certs:/etc/letsencrypt
