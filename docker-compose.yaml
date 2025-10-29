@@ -42,8 +42,6 @@ services:
     volumes:
       - ./data/certbot/conf:/etc/letsencrypt
       - ./data/certbot/credentials:/credentials
-    environment: 
-      - DO_API_TOKEN=${DIGITALOCEAN_API_TOKEN}
     entrypoint: ["certbot"]
     command: ["certonly", "--dns-digitalocean",
              "--dns-digitalocean-credentials", "/credentials/digitalocean.ini",

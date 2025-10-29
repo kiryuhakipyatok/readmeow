@@ -80,6 +80,9 @@ cert-job:
   - ls -l ./data/certbot/credentials/digitalocean.ini
   - cat ./data/certbot/credentials/digitalocean.ini # ВНИМАНИЕ: Это выведет токен в логи CI. Удалите после отладки!
   - echo "-----------------------------------------"
+  - echo "--- Проверка монтирования внутри контейнера Certbot ---"
+  - docker-compose run --rm certbot bash -c "ls -la /etc/letsencrypt && ls -la /credentials && cat /credentials/digitalocean.ini"
+  - echo "-----------------------------------------------------"
   - docker-compose run --rm certbot
   cache:
     paths:
