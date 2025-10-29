@@ -26,8 +26,9 @@ services:
     #   context: . 
     #   dockerfile: nginx.Dockerfile
     image: custom-nginx-image:latest
+    container_name: nginx-1
     volumes:
-      - /readmeow/certbot/conf:/etc/letsencrypt:ro
+      - .data/certbot/conf:/etc/letsencrypt:ro
       # - ./data/certbot/www:/var/www/certbot:ro
     ports:
       - 80:80
