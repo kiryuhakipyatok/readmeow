@@ -77,7 +77,7 @@ migrations-job:
 deploy-job:
   stage: deploy
   script:
-    
+    - ls -l /
     # - docker-compose run --rm certbot
     # - docker-compose restart nginx
     - docker-compose up -d readmeow
