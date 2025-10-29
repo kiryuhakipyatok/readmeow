@@ -5,7 +5,7 @@ services:
     env_file:
       - .env
     volumes:
-      - ./data/certbot/conf:/etc/letsencrypt:ro
+      - .data/certbot/conf:/etc/letsencrypt:ro
     ports:
       - ${SERVER_PORT}:${SERVER_PORT}
       - ${METRIC_SERVER_PORT}:${METRIC_SERVER_PORT}
@@ -27,7 +27,7 @@ services:
     #   dockerfile: nginx.Dockerfile
     image: custom-nginx-image:latest
     volumes:
-      - ./data/certbot/conf:/etc/letsencrypt:ro
+      - .data/certbot/conf:/etc/letsencrypt:ro
       # - ./data/certbot/www:/var/www/certbot:ro
     ports:
       - 80:80
@@ -40,8 +40,8 @@ services:
   certbot:
     image: certbot/dns-digitalocean
     volumes:
-      - ./data/certbot/conf:/etc/letsencrypt
-      - ./data/certbot/credentials/digitalocean.ini:/credentials/digitalocean.ini
+      - .data/certbot/conf:/etc/letsencrypt
+      - .data/certbot/credentials:/credentials 
     entrypoint: ["certbot"]
     command: ["certonly", "--dns-digitalocean",
              "--dns-digitalocean-credentials", "/credentials/digitalocean.ini",

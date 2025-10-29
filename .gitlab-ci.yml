@@ -2,7 +2,7 @@ stages:
   - build
   - test
   - migrations
-  - cert
+  # - cert
   - deploy
 
 before_script:
@@ -57,22 +57,22 @@ migrations-job:
     - docker-compose up -d postgres
     - docker-compose run --rm migrate up
 
-cert-job:
-  stage: cert
-  script:
-  - pwd
-  - ls -la
-  - mkdir -p ./data/certbot/conf
-  - mkdir -p ./data/certbot/credentials
-  - ls -la
-  - echo "dns_digitalocean_token = $DIGITALOCEAN_API_TOKEN" > ./data/certbot/credentials/digitalocean.ini
-  - chmod 600 ./data/certbot/credentials/digitalocean.ini 
-  - docker-compose run --rm certbot
-  cache:
-    paths:
-      - ./data/certbot/conf
-      - ./data/certbot/credentials
-    policy: push
+# cert-job:
+#   stage: cert
+#   script:
+#   - pwd
+#   - ls -la
+#   - mkdir -p ./data/certbot/conf
+#   - mkdir -p ./data/certbot/credentials
+#   - ls -la
+#   - echo "dns_digitalocean_token = $DIGITALOCEAN_API_TOKEN" > ./data/certbot/credentials/digitalocean.ini
+#   - chmod 600 ./data/certbot/credentials/digitalocean.ini 
+#   - docker-compose run --rm certbot
+#   cache:
+#     paths:
+#       - ./data/certbot/conf
+#       - ./data/certbot/credentials
+#     policy: push
 
 deploy-job:
   stage: deploy
