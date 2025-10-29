@@ -48,7 +48,7 @@ services:
     command: ["certonly",
             #  "--dns-digitalocean-credentials", "/credentials/digitalocean.ini",
              "-d", "api.readmeow.tech", "--email", "kiryuhakipyatok@gmail.com", 
-             "--agree-tos", "--non-interactive"]
+             "--agree-tos", "--non-interactive", "--dns-plugins", "dns-digitalocean"]
     networks:
       - app-network
 
