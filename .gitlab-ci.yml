@@ -90,9 +90,8 @@ deploy-job:
       fi
     - docker-compose logs readmeow
     - docker-compose up -d nginx
-    - N_EXIT_CODE=$(docker inspect -f '{{.State.ExitCode}}' nginx-1)
-    - if [ "$N_EXIT_CODE" -ne 0 ]; then
-        echo "Container failed with exit code $N_EXIT_CODE";
-        docker logs nginx-1;
+    - sleep 3s
+    - if docker logs nginx-1 2>&1 | grep -q 'emerg'; then
+        echo "Nginx failed due to config error";
         exit 1;
       fi
