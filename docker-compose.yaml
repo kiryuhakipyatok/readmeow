@@ -46,9 +46,9 @@ services:
       - DO_API_TOKEN=${DIGITALOCEAN_API_TOKEN}
     entrypoint: ["certbot"]
     command: ["certonly",
-            #  "--dns-digitalocean-credentials", "/credentials/digitalocean.ini",
+             "--authenticator", "dns-digitalocean", # <--- Используем --authenticator
              "-d", "api.readmeow.tech", "--email", "kiryuhakipyatok@gmail.com", 
-             "--agree-tos", "--non-interactive", "--dns-plugins", "dns-digitalocean"]
+             "--agree-tos", "--non-interactive"]
     networks:
       - app-network
 
