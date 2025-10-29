@@ -25,15 +25,18 @@ docker-run-monitoring:
 	@docker-compose up -d  prometheus grafana
 
 docker-run-nginx:
-	@docker-compose up -d nginx
+	@docker-compose up nginx
 
 docker-build-app:
 	@docker build -t readmeow-image .
 
+docker-build-nginx:
+	@docker build -t custom-nginx-image -f nginx.Dockerfile  . 
+
 docker-app-logs:
 	@docker-compose logs -f readmeow
 
-docker-run-all: docker-run-infra docker-build-app docker-run-app docker-run-nginx docker-app-logs
+docker-run-all: docker-run-infra docker-build-app docker-run-app docker-build-nginx docker-run-nginx docker-app-logs
 
 docker-down:
 	@docker-compose down
