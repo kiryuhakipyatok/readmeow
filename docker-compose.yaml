@@ -45,7 +45,7 @@ services:
     environment: 
       - DO_API_TOKEN=${DIGITALOCEAN_API_TOKEN}
     entrypoint: ["certbot"]
-    command: ["certonly", "--dns-digitalocean",
+    command: ["certonly",
             #  "--dns-digitalocean-credentials", "/credentials/digitalocean.ini",
              "-d", "api.readmeow.tech", "--email", "kiryuhakipyatok@gmail.com", 
              "--agree-tos", "--non-interactive"]
