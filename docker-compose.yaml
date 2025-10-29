@@ -4,8 +4,8 @@ services:
     image: readmeow-image:latest
     env_file:
       - .env
-    volumes:
-      - .data/certbot/conf:/etc/letsencrypt:ro
+    # volumes:
+    #   - .data/certbot/conf:/etc/letsencrypt:ro
     ports:
       - ${SERVER_PORT}:${SERVER_PORT}
       - ${METRIC_SERVER_PORT}:${METRIC_SERVER_PORT}
