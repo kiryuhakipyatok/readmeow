@@ -90,6 +90,11 @@ deploy-job:
       fi
     - docker-compose logs readmeow
     - docker-compose up -d nginx
+    - if [ "$EXIT_CODE" -ne 0 ]; then
+        echo "Container failed with exit code $EXIT_CODE";
+        docker logs nginx-nginx-1;
+        exit 1;
+      fi
   cache:
     paths:
       - .data/certbot/conf
