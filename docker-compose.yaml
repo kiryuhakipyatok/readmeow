@@ -41,7 +41,7 @@ services:
     image: certbot/dns-digitalocean
     volumes:
       - ./data/certbot/conf:/etc/letsencrypt
-      - ./data/certbot/credentials:/credentials
+      - ./data/certbot/credentials/digitalocean.ini:/credentials/digitalocean.ini
     entrypoint: ["certbot"]
     command: ["certonly", "--dns-digitalocean",
              "--dns-digitalocean-credentials", "/credentials/digitalocean.ini",
