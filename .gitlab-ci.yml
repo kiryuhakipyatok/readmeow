@@ -78,7 +78,7 @@ deploy-job:
   stage: deploy
   script:
     - ls -la
-    - ls -R ./data/certbot/conf
+    - ls -R .data/certbot/conf
     # - docker-compose run --rm certbot
     # - docker-compose restart nginx
     - docker-compose up -d readmeow
