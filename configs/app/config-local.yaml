@@ -15,7 +15,7 @@ server:
   closeTimeout: 30s
   rateLimit: 1
   burst: 2
-  certFile: "/etc/letsencrypt/live/api.readmeow.tech/fullchain.pem;"
+  certFile: "/etc/letsencrypt/live/api.readmeow.tech/fullchain.pem"
   keyFile: "/etc/letsencrypt/live/api.readmeow.tech/privkey.pem"
 
 auth:
