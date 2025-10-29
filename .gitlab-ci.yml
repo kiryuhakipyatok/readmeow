@@ -61,14 +61,31 @@ cert-job:
   stage: cert
   script:
   - mkdir -p ./data/certbot/conf
-  - chmod 700 ./data/certbot/conf
+  - mkdir -p ./data/certbot/credentials
+    # 2. Проверяем, что директории созданы и какие у них права
+  - echo "--- Проверка директорий на хосте ---"
+  - ls -ld ./data/certbot
+  - ls -ld ./data/certbot/conf
+  - ls -ld ./data/certbot/credentials
+  - echo "-----------------------------------"
+
+  # 3. Создаем файл credentials
+  - echo "dns_digitalocean_token = $DIGITALOCEAN_API_TOKEN" > ./data/certbot/credentials/digitalocean.ini
+
+  # 4. Устанавливаем права на файл credentials
+  - chmod 600 ./data/certbot/credentials/digitalocean.ini 
+
+  # 5. Проверяем, что файл создан и какие у него права на хосте
+  - echo "--- Проверка файла credentials на хосте ---"
+  - ls -l ./data/certbot/credentials/digitalocean.ini
+  - cat ./data/certbot/credentials/digitalocean.ini # ВНИМАНИЕ: Это выведет токен в логи CI. Удалите после отладки!
+  - echo "-----------------------------------------"
   - docker-compose run --rm certbot
   cache:
     paths:
       - ./data/certbot/conf
+      - ./data/certbot/credentials
     policy: push
-  variables:
-    DIGITALOCEAN_API_TOKEN: $DIGITALOCEAN_API_TOKEN
 
 deploy-job:
   stage: deploy
