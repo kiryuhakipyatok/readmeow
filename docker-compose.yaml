@@ -28,7 +28,7 @@ services:
     image: custom-nginx-image:latest
     container_name: nginx-1
     volumes:
-      - .data/certbot/conf:/etc/letsencrypt
+      - ./.data/certbot/conf:/etc/letsencrypt
       # - ./data/certbot/www:/var/www/certbot:ro
     ports:
       - 80:80
