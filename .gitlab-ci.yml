@@ -90,6 +90,7 @@ deploy-job:
         exit 1;
       fi
     - docker-compose logs readmeow
+    - docker-compose run --rm nginx ls -l /etc/letsencrypt
     - docker-compose run --rm nginx nginx -t 
     - docker-compose up -d nginx
     - sleep 3s
