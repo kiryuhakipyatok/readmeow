@@ -60,18 +60,16 @@ migrations-job:
 cert-job:
   stage: cert
   script:
-  - mkdir -p ./data/certbot/conf
-  - mkdir -p ./data/certbot/credentials
-  - echo "dns_digitalocean_token = $DIGITALOCEAN_API_TOKEN" > ./data/certbot/credentials/digitalocean.ini
-  - chmod 600 ./data/certbot/credentials/digitalocean.ini 
+  - mkdir -p .data/certbot/conf
+  - mkdir -p .data/certbot/credentials
+  - echo "dns_digitalocean_token = $DIGITALOCEAN_API_TOKEN" > .data/certbot/credentials/digitalocean.ini
+  - chmod 600 .data/certbot/credentials/digitalocean.ini 
   - docker-compose run --rm certbot
   cache:
     paths:
-      - ./data/certbot/conf
-      - ./data/certbot/credentials
+      - .data/certbot/conf
+      - .data/certbot/credentials
     policy: push
-  variables:
-    DIGITALOCEAN_API_TOKEN: $DIGITALOCEAN_API_TOKEN
 
 deploy-job:
   stage: deploy
@@ -91,6 +89,6 @@ deploy-job:
     - docker-compose up -d nginx
   cache:
     paths:
-      - ./data/certbot/conf
-      - ./data/certbot/credentials
+      - .data/certbot/conf
+      - .data/certbot/credentials
     policy: pull
