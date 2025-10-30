@@ -7,7 +7,7 @@ import "readmeow/internal/app"
 // @description Documentation to READMEOW API
 // @contact.name READMEOW Support
 // @contact.email readmeow@gmail.com
-// @host localhost:3333
+// @host api.readmeow.tech
 // @BasePath /api/
 func main() {
 	app.Run()
