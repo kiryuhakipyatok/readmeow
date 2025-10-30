@@ -439,7 +439,7 @@ definitions:
       type:
         type: string
     type: object
-host: localhost:3333
+host: api.readmeow.tech
 info:
   contact:
     email: readmeow@gmail.com

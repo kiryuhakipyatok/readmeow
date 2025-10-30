@@ -9,7 +9,7 @@
         },
         "version": "1.0.0"
     },
-    "host": "localhost:3333",
+    "host": "api.readmeow.tech",
     "basePath": "/api/",
     "paths": {
         "/api/auth/forgot-password": {
