@@ -2,7 +2,6 @@ stages:
   - build
   - test
   - migrations
-  # - cert
   - deploy
 
 before_script:
@@ -57,30 +56,9 @@ migrations-job:
     - docker-compose up -d postgres
     - docker-compose run --rm migrate up
 
-# cert-job:
-#   stage: cert
-#   script:
-#   - pwd
-#   - ls -la
-#   - mkdir -p ./data/certbot/conf
-#   - mkdir -p ./data/certbot/credentials
-#   - ls -la
-#   - echo "dns_digitalocean_token = $DIGITALOCEAN_API_TOKEN" > ./data/certbot/credentials/digitalocean.ini
-#   - chmod 600 ./data/certbot/credentials/digitalocean.ini 
-#   - docker-compose run --rm certbot
-#   cache:
-#     paths:
-#       - ./data/certbot/conf
-#       - ./data/certbot/credentials
-#     policy: push
-
 deploy-job:
   stage: deploy
   script:
-    - ls -la
-    - ls -R data/certbot/conf
-    # - docker-compose run --rm certbot
-    # - docker-compose restart nginx
     - docker-compose up -d readmeow
     - sleep 5s
     - R_EXIT_CODE=$(docker inspect -f '{{.State.ExitCode}}' readmeow-readmeow-1)
@@ -90,7 +68,6 @@ deploy-job:
         exit 1;
       fi
     - docker-compose logs readmeow
-    - docker-compose run --rm nginx ls -l /etc/letsencrypt
     - docker-compose run --rm nginx nginx -t 
     - docker-compose up -d nginx
     - sleep 3s
