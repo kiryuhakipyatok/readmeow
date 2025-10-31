@@ -57,7 +57,7 @@ func NewServer(scfg config.ServerConfig, acfg config.AuthConfig, apcfg config.Ap
 	}
 
 	corsMiddleware := cors.New(cors.Config{
-		AllowOrigins:     "http://localhost:3000",
+		AllowOrigins:     "*",
 		AllowCredentials: true,
 		AllowMethods:     "GET,POST,DELETE,PATCH,OPTIONS",
 		ExposeHeaders:    "Content-Length",
