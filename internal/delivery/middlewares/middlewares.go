@@ -9,6 +9,7 @@ import (
 	"readmeow/internal/delivery/ratelimiter"
 	"readmeow/pkg/monitoring"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -41,9 +42,9 @@ func AuthMiddleware(acfg config.AuthConfig, valid map[string]struct{}) fiber.Han
 				return apierr.Unauthorized()
 			},
 		})(c)
-		routePath := c.Route().Path
-		if _, ok := valid[routePath]; ok {
-			if routePath == "/api/templates" && c.Method() == "POST" {
+		path := strings.TrimSuffix(c.Path(), "/")
+		if _, ok := valid[path]; ok {
+			if path == "/api/templates" && c.Method() == "POST" {
 				return jwtHand
 			}
 			return c.Next()
