@@ -42,6 +42,7 @@ func AuthMiddleware(acfg config.AuthConfig, valid map[string]struct{}) fiber.Han
 				return apierr.Unauthorized()
 			},
 		})(c)
+		fmt.Println(c.Path())
 		path := strings.TrimSuffix(c.Path(), "/")
 		if _, ok := valid[path]; ok {
 			if path == "/api/templates" && c.Method() == "POST" {
