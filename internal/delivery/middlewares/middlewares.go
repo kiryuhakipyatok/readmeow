@@ -41,15 +41,13 @@ func AuthMiddleware(acfg config.AuthConfig, valid map[string]struct{}) fiber.Han
 				return apierr.Unauthorized()
 			},
 		})(c)
-		fmt.Println(c.Path())
 		if _, ok := valid[c.Path()]; ok {
-			if c.Path() == "/api/templates" && c.Method() == "POST" {
-				return jwtHand
-			}
-			fmt.Println(c.Path())
+			// if c.Path() == "/api/templates" && c.Method() == "POST" {
+			// 	return jwtHand
+			// }
+
 			return c.Next()
 		}
-		fmt.Println(c.Path())
 		return jwtHand
 	}
 }
