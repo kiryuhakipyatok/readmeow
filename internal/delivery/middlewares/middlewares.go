@@ -41,6 +41,8 @@ func AuthMiddleware(acfg config.AuthConfig, valid map[string]struct{}) fiber.Han
 				return apierr.Unauthorized()
 			},
 		})(c)
+		fmt.Println(c.Path())
+		fmt.Println(c.Route().Path)
 		if _, ok := valid[c.Path()]; ok {
 			if c.Path() == "/api/templates" && c.Method() == "POST" {
 				return jwtHand
