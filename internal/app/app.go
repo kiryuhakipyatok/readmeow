@@ -17,6 +17,7 @@ import (
 	"readmeow/internal/email"
 	"readmeow/internal/scheduler"
 	"readmeow/pkg/cache"
+	"readmeow/pkg/cloudstorage"
 	"readmeow/pkg/logger"
 	"readmeow/pkg/monitoring"
 	"readmeow/pkg/search"
@@ -68,8 +69,8 @@ func Run() {
 
 	smtpAuth := smtp.PlainAuth("", cfg.Email.Address, cfg.Email.Password, cfg.Email.SmtpAddress)
 
-	// cloudStorage := cloudstorage.MustConnect(cfg.CloudStorage)
-	// log.Info("connected to cloudinary")
+	cloudStorage := cloudstorage.MustConnect(cfg.CloudStorage)
+	log.Info("connected to cloudinary")
 
 	userRepo := repositories.NewUserRepo(storage)
 	widgetRepo := repositories.NewWidgetRepo(storage, cache, search)
@@ -81,11 +82,11 @@ func Run() {
 	emailSendler := email.NewEmailSender(smtpAuth, cfg.Email)
 	oauthConf := oauth.NewOAuthConfig(cfg.OAuth)
 
-	authServ := services.NewAuthServ(userRepo, passwordResetRepo, verificationRepo, nil, transactor, emailSendler, log, cfg.Auth)
-	readmeServ := services.NewReadmeServ(readmeRepo, userRepo, templateRepo, widgetRepo, transactor, nil, log)
+	authServ := services.NewAuthServ(userRepo, passwordResetRepo, verificationRepo, cloudStorage, transactor, emailSendler, log, cfg.Auth)
+	readmeServ := services.NewReadmeServ(readmeRepo, userRepo, templateRepo, widgetRepo, transactor, cloudStorage, log)
 	widgetServ := services.NewWidgetServ(widgetRepo, userRepo, transactor, log)
-	templateServ := services.NewTemplateServ(templateRepo, readmeRepo, userRepo, widgetRepo, transactor, nil, log)
-	userServ := services.NewUserServ(userRepo, passwordResetRepo, templateRepo, nil, transactor, log)
+	templateServ := services.NewTemplateServ(templateRepo, readmeRepo, userRepo, widgetRepo, transactor, cloudStorage, log)
+	userServ := services.NewUserServ(userRepo, passwordResetRepo, templateRepo, cloudStorage, transactor, log)
 
 	authHandl := handlers.NewAuthHandle(authServ, userServ, oauthConf, validator)
 	readmeHandl := handlers.NewReadmeHandl(readmeServ, authServ, validator)
