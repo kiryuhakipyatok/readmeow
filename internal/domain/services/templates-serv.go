@@ -351,7 +351,6 @@ func (ts *templateServ) Search(ctx context.Context, amount, page uint, query str
 		}
 		templates = append(templates, template)
 	}
-	fmt.Println(templates)
 	log.Info("searched templates fetched successfully")
 	return templates, nil
 }
