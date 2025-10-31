@@ -42,7 +42,7 @@ func AuthMiddleware(acfg config.AuthConfig, valid map[string]struct{}) fiber.Han
 			},
 		})(c)
 		if _, ok := valid[c.Path()]; ok {
-			if (c.Path() == "/api/templates" || c.Path() == "/api/widgets") && c.Method() == "POST" {
+			if c.Path() == "/api/templates" && c.Method() == "POST" {
 				return jwtHand
 			}
 			return c.Next()
