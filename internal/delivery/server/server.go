@@ -130,8 +130,8 @@ func NewServer(scfg config.ServerConfig, acfg config.AuthConfig, apcfg config.Ap
 	app.Use(
 		log,
 		corsMiddleware,
-		middlewares.AlreadyLoginCheck(authPaths),
 		middlewares.AuthMiddleware(acfg, authPaths, exeptions),
+		middlewares.AlreadyLoginCheck(authPaths),
 		middlewares.RateLimiterMiddleware(scfg),
 		middlewares.RequestTimeoutMiddleware(acfg.TokenTTL),
 		middlewares.MetricsMiddleware(ps),
