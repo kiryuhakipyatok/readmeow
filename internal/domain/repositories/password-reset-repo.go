@@ -41,6 +41,9 @@ func (prr *passwordResetRepo) DeleteExpired(ctx context.Context) error {
 	query := "DELETE FROM password_resets WHERE expired_time <= NOW()"
 	qd := helpers.NewQueryData(ctx, prr.Storage, op, query)
 	if err := qd.DeleteOrUpdateWithTx(); err != nil {
+		if errors.Is(err, errs.ErrNotFoundBase) {
+			return nil
+		}
 		return err
 	}
 	return nil

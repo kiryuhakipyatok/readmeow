@@ -18,7 +18,16 @@ import (
 
 func AuthMiddleware(acfg config.AuthConfig, valid map[string]struct{}, exeptions map[string]struct{}) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		jwtHand := jwtware.New(jwtware.Config{
+		path := c.Path()
+
+		if _, ok := exeptions[path]; ok && c.Method() == "GET" {
+			return c.Next()
+		}
+		if _, ok := valid[path]; ok {
+			return c.Next()
+		}
+
+		return jwtware.New(jwtware.Config{
 			SigningKey:  []byte(acfg.Secret),
 			TokenLookup: "cookie:jwt",
 			SuccessHandler: func(c *fiber.Ctx) error {
@@ -41,22 +50,6 @@ func AuthMiddleware(acfg config.AuthConfig, valid map[string]struct{}, exeptions
 				return apierr.Unauthorized()
 			},
 		})(c)
-		path := c.Path()
-		// if (strings.HasPrefix(path, "/api/auth") && !strings.HasSuffix(path, "/logout") && !strings.HasSuffix(path, "/profile")) || strings.HasSuffix(path, "/widgets"){
-		// 	return c.Next()
-		// }
-		fmt.Println(path)
-		fmt.Println(c.Method())
-		if _, ok := exeptions[path]; ok && c.Method() == "GET" {
-			return c.Next()
-		}
-		if _, ok := valid[path]; ok {
-			return c.Next()
-		}
-
-		// 	return c.Next()
-		// }
-		return jwtHand
 	}
 }
 

@@ -54,6 +54,9 @@ func (vr *verificationRepo) Delete(ctx context.Context, email string) error {
 	query := "DELETE FROM verifications WHERE email = $1"
 	qd := helpers.NewQueryData(ctx, vr.Storage, op, query, email)
 	if err := qd.DeleteOrUpdateWithTx(); err != nil {
+		if errors.Is(err, errs.ErrNotFoundBase) {
+			return nil
+		}
 		return err
 	}
 	return nil
