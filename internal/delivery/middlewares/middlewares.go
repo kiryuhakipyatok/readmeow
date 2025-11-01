@@ -16,7 +16,7 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 )
 
-func AuthMiddleware(acfg config.AuthConfig, valid map[string]struct{}) fiber.Handler {
+func AuthMiddleware(acfg config.AuthConfig, valid map[string]struct{}, exeptions map[string]struct{}) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		jwtHand := jwtware.New(jwtware.Config{
 			SigningKey:  []byte(acfg.Secret),
@@ -45,6 +45,9 @@ func AuthMiddleware(acfg config.AuthConfig, valid map[string]struct{}) fiber.Han
 		// if (strings.HasPrefix(path, "/api/auth") && !strings.HasSuffix(path, "/logout") && !strings.HasSuffix(path, "/profile")) || strings.HasSuffix(path, "/widgets"){
 		// 	return c.Next()
 		// }
+		if _, ok := exeptions[path]; ok && c.Method() == "GET" {
+			return c.Next()
+		}
 		if _, ok := valid[path]; ok {
 			return c.Next()
 		}

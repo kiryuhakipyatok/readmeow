@@ -35,10 +35,10 @@ const (
 	googleAuthCallback = "/api/auth/google/callback"
 	githubAuth         = "/api/auth/github"
 	githubAuthCallback = "/api/auth/github/callback"
-	// fetchTemplates     = "/api/templates"
-	fetchWidgets   = "/api/widgets"
-	forgotPassword = "/api/auth/forgot-password"
-	resetPassword  = "/api/auth/reset-password"
+	searchTemplates    = "/api/templates"
+	searchWidgets      = "/api/widgets"
+	forgotPassword     = "/api/auth/forgot-password"
+	resetPassword      = "/api/auth/reset-password"
 )
 
 func NewServer(scfg config.ServerConfig, acfg config.AuthConfig, apcfg config.AppConfig, ps *monitoring.PrometheusSetup) *Server {
@@ -80,9 +80,13 @@ func NewServer(scfg config.ServerConfig, acfg config.AuthConfig, apcfg config.Ap
 		googleAuthCallback: {},
 		githubAuth:         {},
 		githubAuthCallback: {},
-		fetchWidgets:       {},
 		resetPassword:      {},
 		forgotPassword:     {},
+	}
+
+	exeptions := map[string]struct{}{
+		searchTemplates: {},
+		searchWidgets:   {},
 	}
 
 	// validAuthPaths := map[string]struct{}{
@@ -127,7 +131,7 @@ func NewServer(scfg config.ServerConfig, acfg config.AuthConfig, apcfg config.Ap
 		log,
 		corsMiddleware,
 		middlewares.AlreadyLoginCheck(authPaths),
-		middlewares.AuthMiddleware(acfg, authPaths),
+		middlewares.AuthMiddleware(acfg, authPaths, exeptions),
 		middlewares.RateLimiterMiddleware(scfg),
 		middlewares.RequestTimeoutMiddleware(acfg.TokenTTL),
 		middlewares.MetricsMiddleware(ps),
