@@ -80,7 +80,7 @@ func NewServer(scfg config.ServerConfig, acfg config.AuthConfig, apcfg config.Ap
 		googleAuthCallback: {},
 		githubAuth:         {},
 		githubAuthCallback: {},
-		// fetchTemplates:     {},
+		// fetchTemplates:     {},`	`
 		fetchWidgets:   {},
 		resetPassword:  {},
 		forgotPassword: {},
