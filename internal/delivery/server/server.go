@@ -27,18 +27,19 @@ type Server struct {
 }
 
 const (
-	login              = "/api/auth/login"
-	register           = "/api/auth/register"
-	verify             = "/api/auth/verify"
-	newcode            = "/api/auth/newcode"
-	googleAuth         = "/api/auth/google"
-	googleAuthCallback = "/api/auth/google/callback"
-	githubAuth         = "/api/auth/github"
-	githubAuthCallback = "/api/auth/github/callback"
-	// fetchTemplates     = "/api/templates"
-	fetchWidgets   = "/api/widgets"
-	forgotPassword = "/api/auth/forgot-password"
-	resetPassword  = "/api/auth/reset-password"
+// login              = "/api/auth/login"
+// register           = "/api/auth/register"
+// verify             = "/api/auth/verify"
+// newcode            = "/api/auth/newcode"
+// googleAuth         = "/api/auth/google"
+// googleAuthCallback = "/api/auth/google/callback"
+// githubAuth         = "/api/auth/github"
+// githubAuthCallback = "/api/auth/github/callback"
+// // fetchTemplates     = "/api/templates"
+// fetchWidgets   = "/api/widgets"
+// forgotPassword = "/api/auth/forgot-password"
+// resetPassword  = "/api/auth/reset-password"
+// auth = "/api/auth"
 )
 
 func NewServer(scfg config.ServerConfig, acfg config.AuthConfig, apcfg config.AppConfig, ps *monitoring.PrometheusSetup) *Server {
@@ -71,33 +72,33 @@ func NewServer(scfg config.ServerConfig, acfg config.AuthConfig, apcfg config.Ap
 	// 	"46.53.249.64": {},
 	// }
 
-	validAuthPaths := map[string]struct{}{
-		login:              {},
-		register:           {},
-		verify:             {},
-		newcode:            {},
-		googleAuth:         {},
-		googleAuthCallback: {},
-		githubAuth:         {},
-		githubAuthCallback: {},
-		// fetchTemplates:     {},`	`
-		fetchWidgets:   {},
-		resetPassword:  {},
-		forgotPassword: {},
-	}
+	// validAuthPaths := map[string]struct{}{
+	// 	login:              {},
+	// 	register:           {},
+	// 	verify:             {},
+	// 	newcode:            {},
+	// 	googleAuth:         {},
+	// 	googleAuthCallback: {},
+	// 	githubAuth:         {},
+	// 	githubAuthCallback: {},
+	// 	// fetchTemplates:     {},`	`
+	// 	fetchWidgets:   {},
+	// 	resetPassword:  {},
+	// 	forgotPassword: {},
+	// }
 
-	validAlreadyLoginPaths := map[string]struct{}{
-		login:              {},
-		register:           {},
-		verify:             {},
-		newcode:            {},
-		googleAuth:         {},
-		googleAuthCallback: {},
-		githubAuth:         {},
-		githubAuthCallback: {},
-		resetPassword:      {},
-		forgotPassword:     {},
-	}
+	// validAlreadyLoginPaths := map[string]struct{}{
+	// 	login:              {},
+	// 	register:           {},
+	// 	verify:             {},
+	// 	newcode:            {},
+	// 	googleAuth:         {},
+	// 	googleAuthCallback: {},
+	// 	githubAuth:         {},
+	// 	githubAuthCallback: {},
+	// 	resetPassword:      {},
+	// 	forgotPassword:     {},
+	// }
 
 	swaggerGroup.Use(
 		corsMiddleware,
@@ -123,8 +124,8 @@ func NewServer(scfg config.ServerConfig, acfg config.AuthConfig, apcfg config.Ap
 	app.Use(
 		log,
 		corsMiddleware,
-		middlewares.AlreadyLoginCheck(validAlreadyLoginPaths),
-		middlewares.AuthMiddleware(acfg, validAuthPaths),
+		middlewares.AlreadyLoginCheck(),
+		middlewares.AuthMiddleware(acfg),
 		middlewares.RateLimiterMiddleware(scfg),
 		middlewares.RequestTimeoutMiddleware(acfg.TokenTTL),
 		middlewares.MetricsMiddleware(ps),

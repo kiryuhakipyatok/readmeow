@@ -9,6 +9,7 @@ import (
 	"readmeow/internal/delivery/ratelimiter"
 	"readmeow/pkg/monitoring"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -16,7 +17,7 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 )
 
-func AuthMiddleware(acfg config.AuthConfig, valid map[string]struct{}) fiber.Handler {
+func AuthMiddleware(acfg config.AuthConfig) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		jwtHand := jwtware.New(jwtware.Config{
 			SigningKey:  []byte(acfg.Secret),
@@ -41,13 +42,17 @@ func AuthMiddleware(acfg config.AuthConfig, valid map[string]struct{}) fiber.Han
 				return apierr.Unauthorized()
 			},
 		})(c)
-		if _, ok := valid[c.Path()]; ok {
-			// if c.Path() == "/api/templates" && c.Method() == "POST" {
-			// 	return jwtHand
-			// }
-
+		path := c.Path()
+		if strings.HasPrefix(path, "/api/auth") || !strings.HasSuffix(path, "/logout") {
 			return c.Next()
 		}
+		// if _, ok := valid[c.Path()]; ok {
+		// 	// if c.Path() == "/api/templates" && c.Method() == "POST" {
+		// 	// 	return jwtHand
+		// 	// }
+
+		// 	return c.Next()
+		// }
 		return jwtHand
 	}
 }
@@ -133,11 +138,14 @@ func ValidIpsMiddleware(validIps map[string]struct{}) fiber.Handler {
 	}
 }
 
-func AlreadyLoginCheck(valid map[string]struct{}) fiber.Handler {
+func AlreadyLoginCheck() fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		if _, ok := valid[c.Path()]; !ok {
-			return c.Next()
+		if !strings.HasPrefix(c.Path(), "/api/auth") {
+			c.Next()
 		}
+		// if _, ok := valid[c.Path()]; !ok {
+		// 	return c.Next()
+		// }
 		if c.Cookies("jwt") != "" {
 			return apierr.AlreadyLoggined()
 		}
