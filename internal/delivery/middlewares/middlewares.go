@@ -43,7 +43,7 @@ func AuthMiddleware(acfg config.AuthConfig) fiber.Handler {
 			},
 		})(c)
 		path := c.Path()
-		if strings.HasPrefix(path, "/api/auth") || !strings.HasSuffix(path, "/logout") {
+		if strings.HasPrefix(path, "/api/auth") && !strings.HasSuffix(path, "/logout") {
 			return c.Next()
 		}
 		// if _, ok := valid[c.Path()]; ok {
