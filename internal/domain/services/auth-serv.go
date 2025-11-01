@@ -327,7 +327,7 @@ func (as *authServ) SendResetPasswordLink(ctx context.Context, email string) err
 			return nil, err
 		}
 		subject := "Password Reset"
-		link := fmt.Sprintf("http://localhost:3333/reset-password/?token=%s", token)
+		link := fmt.Sprintf("https://readmeow.tech/reset-password/?token=%s", token)
 		content, err := as.EmailSender.BuildResetPasswordEmailLetter(link)
 		if err != nil {
 			return nil, err
