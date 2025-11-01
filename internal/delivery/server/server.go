@@ -35,10 +35,10 @@ const (
 	googleAuthCallback = "/api/auth/google/callback"
 	githubAuth         = "/api/auth/github"
 	githubAuthCallback = "/api/auth/github/callback"
-	fetchTemplates     = "/api/templates"
-	fetchWidgets       = "/api/widgets"
-	forgotPassword     = "/api/auth/forgot-password"
-	resetPassword      = "/api/auth/reset-password"
+	// fetchTemplates     = "/api/templates"
+	fetchWidgets   = "/api/widgets"
+	forgotPassword = "/api/auth/forgot-password"
+	resetPassword  = "/api/auth/reset-password"
 )
 
 func NewServer(scfg config.ServerConfig, acfg config.AuthConfig, apcfg config.AppConfig, ps *monitoring.PrometheusSetup) *Server {
@@ -80,10 +80,10 @@ func NewServer(scfg config.ServerConfig, acfg config.AuthConfig, apcfg config.Ap
 		googleAuthCallback: {},
 		githubAuth:         {},
 		githubAuthCallback: {},
-		fetchTemplates:     {},
-		fetchWidgets:       {},
-		resetPassword:      {},
-		forgotPassword:     {},
+		// fetchTemplates:     {},
+		fetchWidgets:   {},
+		resetPassword:  {},
+		forgotPassword: {},
 	}
 
 	validAlreadyLoginPaths := map[string]struct{}{
