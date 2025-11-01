@@ -45,7 +45,7 @@ func AuthMiddleware(acfg config.AuthConfig, valid map[string]struct{}, exeptions
 		// if (strings.HasPrefix(path, "/api/auth") && !strings.HasSuffix(path, "/logout") && !strings.HasSuffix(path, "/profile")) || strings.HasSuffix(path, "/widgets"){
 		// 	return c.Next()
 		// }
-		if _, ok := exeptions[path]; ok && c.Method() == "GET" {
+		if _, ok := exeptions[path]; !ok && c.Method() == "GET" {
 			return c.Next()
 		}
 		if _, ok := valid[path]; ok {
