@@ -140,7 +140,8 @@ func ValidIpsMiddleware(validIps map[string]struct{}) fiber.Handler {
 
 func AlreadyLoginCheck() fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		if !strings.HasPrefix(c.Path(), "/api/auth") {
+		path := c.Path()
+		if !strings.HasPrefix(path, "/api/auth") && !strings.HasSuffix(path, "/logout") {
 			return c.Next()
 		}
 		// if _, ok := valid[c.Path()]; !ok {
