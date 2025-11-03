@@ -17,6 +17,7 @@ import (
 	"github.com/google/uuid"
 )
 
+//go:generate mockgen -source=templates-serv.go -destination=mocks/templates-serv.go
 type TemplateServ interface {
 	Create(ctx context.Context, oid, title, description string, image *multipart.FileHeader, links, order, text []string, widgets []map[string]string, isPublic bool) error
 	Update(ctx context.Context, updates map[string]any, id string) error

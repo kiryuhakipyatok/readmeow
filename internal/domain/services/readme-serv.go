@@ -17,6 +17,7 @@ import (
 	"github.com/google/uuid"
 )
 
+//go:generate mockgen -source=readme-serv.go -destination=mocks/readme-serv.go
 type ReadmeServ interface {
 	Create(ctx context.Context, tid, oid, title string, image *multipart.FileHeader, text, links, order []string, widgets []map[string]string) error
 	Delete(ctx context.Context, id, uid string) error

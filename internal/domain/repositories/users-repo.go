@@ -11,6 +11,7 @@ import (
 	"strings"
 )
 
+//go:generate mockgen -source=users-repo.go -destination=mocks/users-mock.go
 type UserRepo interface {
 	Create(ctx context.Context, user *models.User) error
 	Get(ctx context.Context, id string) (*models.User, error)

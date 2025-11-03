@@ -10,6 +10,7 @@ import (
 	"readmeow/pkg/storage"
 )
 
+//go:generate mockgen -source=widgets-serv.go -destination=mocks/widgets-serv.go
 type WidgetServ interface {
 	Get(ctx context.Context, id string) (*models.Widget, error)
 	Search(ctx context.Context, amount, page uint, query string, filter map[string][]string, sort map[string]string) ([]dto.WidgetResponse, error)

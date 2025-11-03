@@ -9,6 +9,7 @@ import (
 	"time"
 )
 
+//go:generate mockgen -source=password-reset-repo.go -destination=mocks/password-reset-repo.go
 type PasswordResetRepo interface {
 	AddToken(ctx context.Context, id string, token []byte, ttl time.Time) error
 	Delete(ctx context.Context, id string) error

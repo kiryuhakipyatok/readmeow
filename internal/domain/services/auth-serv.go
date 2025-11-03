@@ -23,6 +23,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+//go:generate mockgen -source=auth-serv.go -destination=mocks/auth-serv.go
 type AuthServ interface {
 	Register(ctx context.Context, email, code string) (*loginData, error)
 	Login(ctx context.Context, login, password string) (*loginData, error)

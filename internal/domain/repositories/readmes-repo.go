@@ -12,6 +12,7 @@ import (
 	"github.com/google/uuid"
 )
 
+//go:generate mockgen -source=readmes-repo.go -destination=mocks/readmes-repo.go
 type ReadmeRepo interface {
 	Create(ctx context.Context, readme *models.Readme) error
 	Delete(ctx context.Context, id string) error

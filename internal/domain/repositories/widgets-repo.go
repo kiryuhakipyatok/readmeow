@@ -22,6 +22,7 @@ import (
 	"github.com/elastic/go-elasticsearch/v9/typedapi/types/enums/sortorder"
 )
 
+//go:generate mockgen -source=widgets-repo.go -destination=mocks/widgets-mock.go
 type WidgetRepo interface {
 	Get(ctx context.Context, id string) (*models.Widget, error)
 	Search(ctx context.Context, amount, page uint, query string, filter map[string][]string, sort map[string]string) ([]models.Widget, error)

@@ -10,6 +10,7 @@ import (
 	"time"
 )
 
+//go:generate mockgen -source=verification-repo.go -destination=mocks/verification-mock.go
 type VerificationRepo interface {
 	AddCode(ctx context.Context, email, login, nickname string, password []byte, code []byte, ttl time.Time, attempts int) error
 	CodeCheck(ctx context.Context, email string, code []byte) (bool, error)

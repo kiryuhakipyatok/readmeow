@@ -22,6 +22,7 @@ import (
 	"github.com/google/uuid"
 )
 
+//go:generate mockgen -source=templates-repo.go -destination=mocks/templates-repo.go
 type TemplateRepo interface {
 	Create(ctx context.Context, template *models.Template) error
 	Update(ctx context.Context, updates map[string]any, id string) error

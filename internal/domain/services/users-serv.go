@@ -18,6 +18,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+//go:generate mockgen -source=users-serv.go -destination=mocks/users-serv.go
 type UserServ interface {
 	Get(ctx context.Context, id string, showPrivate bool) (*dto.UserResponse, error)
 	Update(ctx context.Context, updates map[string]any, id string) error
