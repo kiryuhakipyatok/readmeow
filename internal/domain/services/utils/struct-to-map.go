@@ -17,7 +17,7 @@ func ToMap[T any](req T, typee string) (any, error) {
 		if !fV.IsZero() {
 			switch typee {
 			case "sort":
-				sort[fN] = fV.String()
+				sort[fN] = fV.Interface().(string)
 			case "filter":
 				filter[fN] = fV.Interface().([]string)
 			default:
