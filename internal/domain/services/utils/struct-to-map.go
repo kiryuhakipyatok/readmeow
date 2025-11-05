@@ -2,6 +2,7 @@ package utils
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 )
 
@@ -24,6 +25,8 @@ func ToMap[T any](req T, typee string) (any, error) {
 			}
 		}
 	}
+	fmt.Println(sort)
+	fmt.Println(filter)
 	switch typee {
 	case "sort":
 		return sort, nil
