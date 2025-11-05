@@ -91,38 +91,65 @@ definitions:
       token:
         type: string
     type: object
-  dto.SearchTemplateRequestDoc:
+  dto.SearchTemplateRequest:
     properties:
       amount:
         minimum: 1
         type: integer
-      filter:
-        $ref: '#/definitions/dto.filterTemplatesFields'
+      is_official:
+        type: boolean
+      last_update_time:
+        enum:
+        - asc
+        - desc
+        type: string
+      likes:
+        enum:
+        - asc
+        - desc
+        type: string
+      num_of_users:
+        enum:
+        - asc
+        - desc
+        type: string
       page:
         minimum: 1
         type: integer
       query:
         type: string
-      sort:
-        $ref: '#/definitions/dto.sortTemplatesFields'
     required:
     - amount
     - page
     type: object
-  dto.SearchWidgetRequestDoc:
+  dto.SearchWidgetRequest:
     properties:
       amount:
         minimum: 1
         type: integer
-      filter:
-        $ref: '#/definitions/dto.filterWidgetsFields'
+      likes:
+        enum:
+        - asc
+        - desc
+        type: string
+      num_of_users:
+        enum:
+        - asc
+        - desc
+        type: string
       page:
         minimum: 1
         type: integer
       query:
         type: string
-      sort:
-        $ref: '#/definitions/dto.sortWidgetsFields'
+      tags:
+        items:
+          type: string
+        type: array
+      types:
+        items:
+          type: string
+        type: array
     required:
     - amount
     - page
@@ -299,43 +326,6 @@ definitions:
     - likes
     - num_of_users
     - title
-    type: object
-  dto.filterTemplatesFields:
-    properties:
-      isOfficial:
-        type: boolean
-    type: object
-  dto.filterWidgetsFields:
-    properties:
-      Tags:
-        items:
-          type: string
-        type: array
-      Types:
-        items:
-          type: string
-        type: array
-    type: object
-  dto.sortTemplatesFields:
-    properties:
-      LastUpdateTime:
-        example: desc/asc
-        type: string
-      Likes:
-        example: desc/asc
-        type: string
-      NumOfUsers:
-        example: desc/asc
-        type: string
-    type: object
-  dto.sortWidgetsFields:
-    properties:
-      Likes:
-        example: desc/asc
-        type: string
-      NumOfUsers:
-        example: desc/asc
-        type: string
     type: object
   models.Readme:
     properties:
@@ -1031,7 +1021,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/dto.SearchTemplateRequestDoc'
+          $ref: '#/definitions/dto.SearchTemplateRequest'
       produces:
       - application/json
       responses:
@@ -1565,7 +1555,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/dto.SearchWidgetRequestDoc'
+          $ref: '#/definitions/dto.SearchWidgetRequest'
       produces:
       - application/json
       responses:

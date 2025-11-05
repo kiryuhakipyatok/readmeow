@@ -2,7 +2,6 @@ package dto
 
 import (
 	"mime/multipart"
-	"time"
 )
 
 type VerifyRequest struct {
@@ -46,23 +45,6 @@ type SearchWidgetRequest struct {
 	Tags       []string `json:"tags" validate:"omitempty"`
 }
 
-type SearchWidgetRequestDoc struct {
-	PaginationRequest
-	Query               string `json:"query" validate:"omitempty"`
-	sortWidgetsFields   `json:"sort" validate:"omitempty"`
-	filterWidgetsFields `json:"filter" validate:"omitempty"`
-}
-
-type sortTemplatesFields struct {
-	Likes          string     `json:"Likes,omitempty" example:"desc/asc"`
-	NumOfUsers     string     `json:"NumOfUsers,omitempty" example:"desc/asc"`
-	LastUpdateTime *time.Time `json:"LastUpdateTime,omitempty" example:"desc/asc"`
-}
-
-type filterTemplatesFields struct {
-	IsOfficial bool `json:"isOfficial,omitempty"`
-}
-
 type SearchTemplateRequest struct {
 	PaginationRequest
 	Query          string `json:"query" validate:"omitempty"`
@@ -70,13 +52,6 @@ type SearchTemplateRequest struct {
 	NumOfUsers     string `json:"num_of_users" validate:"omitempty,oneof=asc desc"`
 	LastUpdateTime string `json:"last_update_time" validate:"omitempty,oneof=asc desc"`
 	IsOfficial     *bool  `json:"is_official" validate:"omitempty"`
-}
-
-type SearchTemplateRequestDoc struct {
-	PaginationRequest
-	Query                 string `json:"query" validate:"omitempty"`
-	sortTemplatesFields   `json:"sort" validate:"omitempty"`
-	filterTemplatesFields `json:"filter" validate:"omitempty"`
 }
 
 type UpdateUserRequest struct {

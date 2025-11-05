@@ -909,7 +909,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.SearchTemplateRequestDoc"
+                            "$ref": "#/definitions/dto.SearchTemplateRequest"
                         }
                     }
                 ],
@@ -1734,7 +1734,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.SearchWidgetRequestDoc"
+                            "$ref": "#/definitions/dto.SearchWidgetRequest"
                         }
                     }
                 ],
@@ -2148,7 +2148,7 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.SearchTemplateRequestDoc": {
+        "dto.SearchTemplateRequest": {
             "type": "object",
             "required": [
                 "amount",
@@ -2159,8 +2159,29 @@ const docTemplate = `{
                     "type": "integer",
                     "minimum": 1
                 },
-                "filter": {
-                    "$ref": "#/definitions/dto.filterTemplatesFields"
+                "is_official": {
+                    "type": "boolean"
+                },
+                "last_update_time": {
+                    "type": "string",
+                    "enum": [
+                        "asc",
+                        "desc"
+                    ]
+                },
+                "likes": {
+                    "type": "string",
+                    "enum": [
+                        "asc",
+                        "desc"
+                    ]
+                },
+                "num_of_users": {
+                    "type": "string",
+                    "enum": [
+                        "asc",
+                        "desc"
+                    ]
                 },
                 "page": {
                     "type": "integer",
@@ -2168,13 +2189,10 @@ const docTemplate = `{
                 },
                 "query": {
                     "type": "string"
-                },
-                "sort": {
-                    "$ref": "#/definitions/dto.sortTemplatesFields"
                 }
             }
         },
-        "dto.SearchWidgetRequestDoc": {
+        "dto.SearchWidgetRequest": {
             "type": "object",
             "required": [
                 "amount",
@@ -2185,8 +2203,19 @@ const docTemplate = `{
                     "type": "integer",
                     "minimum": 1
                 },
-                "filter": {
-                    "$ref": "#/definitions/dto.filterWidgetsFields"
+                "likes": {
+                    "type": "string",
+                    "enum": [
+                        "asc",
+                        "desc"
+                    ]
+                },
+                "num_of_users": {
+                    "type": "string",
+                    "enum": [
+                        "asc",
+                        "desc"
+                    ]
                 },
                 "page": {
                     "type": "integer",
@@ -2195,8 +2224,17 @@ const docTemplate = `{
                 "query": {
                     "type": "string"
                 },
-                "sort": {
-                    "$ref": "#/definitions/dto.sortWidgetsFields"
+                "tags": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "types": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         },
@@ -2434,61 +2472,6 @@ const docTemplate = `{
                 },
                 "title": {
                     "type": "string"
-                }
-            }
-        },
-        "dto.filterTemplatesFields": {
-            "type": "object",
-            "properties": {
-                "isOfficial": {
-                    "type": "boolean"
-                }
-            }
-        },
-        "dto.filterWidgetsFields": {
-            "type": "object",
-            "properties": {
-                "Tags": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "Types": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                }
-            }
-        },
-        "dto.sortTemplatesFields": {
-            "type": "object",
-            "properties": {
-                "LastUpdateTime": {
-                    "type": "string",
-                    "example": "desc/asc"
-                },
-                "Likes": {
-                    "type": "string",
-                    "example": "desc/asc"
-                },
-                "NumOfUsers": {
-                    "type": "string",
-                    "example": "desc/asc"
-                }
-            }
-        },
-        "dto.sortWidgetsFields": {
-            "type": "object",
-            "properties": {
-                "Likes": {
-                    "type": "string",
-                    "example": "desc/asc"
-                },
-                "NumOfUsers": {
-                    "type": "string",
-                    "example": "desc/asc"
                 }
             }
         },
