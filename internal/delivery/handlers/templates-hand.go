@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"encoding/json"
-	"fmt"
 	"readmeow/internal/delivery/apierr"
 	"readmeow/internal/delivery/handlers/helpers"
 	"readmeow/internal/domain/services"
@@ -237,12 +236,11 @@ func (th *TemplateHandl) SearchTemplate(c *fiber.Ctx) error {
 	if err := helpers.ParseAndValidateRequest(c, &req, helpers.Query{}, th.Validator); err != nil {
 		return err
 	}
-	fmt.Println(req)
 	templates, err := th.TemplateServ.Search(ctx, req)
 	if err != nil {
 		return apierr.ToApiError(err)
 	}
-	fmt.Println(templates)
+
 	return c.JSON(templates)
 }
 
