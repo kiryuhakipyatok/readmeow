@@ -22,38 +22,38 @@ type LoginRequest struct {
 }
 
 type PaginationRequest struct {
-	Amount uint `json:"amount" validate:"required,min=1"`
-	Page   uint `json:"page" validate:"required,min=1"`
+	Amount uint `query:"amount" json:"amount" validate:"required,min=1"`
+	Page   uint `query:"page" json:"page" validate:"required,min=1"`
 }
 
 type SortWidgetsFields struct {
-	Likes      string `json:"likes" validate:"omitempty,oneof=asc desc"`
-	NumOfUsers string `json:"num_of_users" validate:"omitempty,oneof=asc desc"`
+	Likes      string `query:"likes" json:"likes" validate:"omitempty,oneof=asc desc"`
+	NumOfUsers string `query:"num_of_users" json:"num_of_users" validate:"omitempty,oneof=asc desc"`
 }
 
 type FilterWidgetsFields struct {
-	Types []string `json:"types" validate:"omitempty"`
-	Tags  []string `json:"tags" validate:"omitempty"`
+	Types []string `query:"types" json:"types" validate:"omitempty"`
+	Tags  []string `query:"tags" json:"tags" validate:"omitempty"`
 }
 
 type SortTemplatesFields struct {
-	Likes          string `json:"likes" validate:"omitempty,oneof=asc desc"`
-	NumOfUsers     string `json:"num_of_users" validate:"omitempty,oneof=asc desc"`
-	LastUpdateTime string `json:"last_update_time" validate:"omitempty,oneof=asc desc"`
+	Likes          string `query:"likes" json:"likes" validate:"omitempty,oneof=asc desc"`
+	NumOfUsers     string `query:"num_of_users" json:"num_of_users" validate:"omitempty,oneof=asc desc"`
+	LastUpdateTime string `query:"last_update_time" json:"last_update_time" validate:"omitempty,oneof=asc desc"`
 }
 
 type SearchWidgetRequest struct {
 	PaginationRequest
-	Query string `json:"query" validate:"omitempty"`
+	Query string `query:"query" json:"query" validate:"omitempty"`
 	FilterWidgetsFields
 	SortWidgetsFields
 }
 
 type SearchTemplateRequest struct {
 	PaginationRequest
-	Query string `json:"query" validate:"omitempty"`
+	Query string `query:"query" json:"query" validate:"omitempty"`
 	SortTemplatesFields
-	IsOfficial *bool `json:"is_official" validate:"omitempty"`
+	IsOfficial *bool `query:"is_official" json:"is_official" validate:"omitempty"`
 }
 
 type UpdateUserRequest struct {
