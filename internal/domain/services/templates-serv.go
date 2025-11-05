@@ -328,7 +328,7 @@ func (ts *templateServ) Search(ctx context.Context, req dto.SearchTemplateReques
 	op := "templateServ.Search"
 	log := ts.Logger.AddOp(op)
 	log.Info("fetching searched templates")
-	sort, err := utils.ToMap(req, "sort")
+	sort, err := utils.ToMap(req.SortTemplatesFields, "sort")
 	if err != nil {
 		log.Error("failed to convert struct to map", logger.Err(err))
 		return nil, errs.NewAppError(op, err)

@@ -53,12 +53,12 @@ func (ws *widgetServ) Search(ctx context.Context, req dto.SearchWidgetRequest) (
 	op := "widgetServ.Search"
 	log := ws.Logger.AddOp(op)
 	log.Info("fetching searched widgets")
-	sort, err := utils.ToMap(req, "sort")
+	sort, err := utils.ToMap(req.SortWidgetsFields, "sort")
 	if err != nil {
 		log.Error("failed to convert struct to map", logger.Err(err))
 		return nil, errs.NewAppError(op, err)
 	}
-	filter, err := utils.ToMap(req, "filter")
+	filter, err := utils.ToMap(req.FilterWidgetsFields, "filter")
 	if err != nil {
 		log.Error("failed to convert struct to map", logger.Err(err))
 		return nil, errs.NewAppError(op, err)
