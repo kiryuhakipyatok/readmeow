@@ -65,10 +65,18 @@ func (wh *WidgetHandl) GetWidgetById(c *fiber.Ctx) error {
 func (wh *WidgetHandl) SearchWidgets(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	req := dto.SearchWidgetRequest{}
-	if err := helpers.ParseAndValidateRequest(c, &req, helpers.Body{}, wh.Validator); err != nil {
+	if err := helpers.ParseAndValidateRequest(c, &req, helpers.Query{}, wh.Validator); err != nil {
 		return err
 	}
-	widgets, err := wh.WidgetServ.Search(ctx, req.Amount, req.Page, req.Query, req.Filter, req.Sort)
+	filter := map[string][]string{
+		"Tags":  req.Tags,
+		"Types": req.Types,
+	}
+	sort := map[string]string{
+		"Likes":      req.Likes,
+		"NumOfUsers": req.NumOfUsers,
+	}
+	widgets, err := wh.WidgetServ.Search(ctx, req.Amount, req.Page, req.Query, filter, sort)
 	if err != nil {
 		return apierr.ToApiError(err)
 	}

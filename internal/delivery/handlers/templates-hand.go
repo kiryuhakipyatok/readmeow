@@ -234,10 +234,15 @@ func (th *TemplateHandl) GetTemplate(c *fiber.Ctx) error {
 func (th *TemplateHandl) SearchTemplate(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	req := dto.SearchTemplateRequest{}
-	if err := helpers.ParseAndValidateRequest(c, &req, helpers.Body{}, th.Validator); err != nil {
+	if err := helpers.ParseAndValidateRequest(c, &req, helpers.Query{}, th.Validator); err != nil {
 		return err
 	}
-	templates, err := th.TemplateServ.Search(ctx, req.Amount, req.Page, req.Query, req.Filter, req.Sort)
+	sort := map[string]string{
+		"Likes":          req.Likes,
+		"NumOfUsers":     req.NumOfUsers,
+		"LastUpdateTime": req.LastUpdateTime,
+	}
+	templates, err := th.TemplateServ.Search(ctx, req.Amount, req.Page, req.Query, req.IsOfficial, sort)
 	if err != nil {
 		return apierr.ToApiError(err)
 	}

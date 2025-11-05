@@ -25,7 +25,7 @@ type TemplateServ interface {
 	Get(ctx context.Context, id string) (*models.TemplateWithOwner, error)
 	FetchFavorite(ctx context.Context, id string, amount, page uint) ([]dto.TemplateResponse, error)
 	FetchByUser(ctx context.Context, id string, showPrivate bool, amount, page uint) ([]dto.TemplateInfo, error)
-	Search(ctx context.Context, amount, page uint, query string, filter map[string]bool, sort map[string]string) ([]dto.TemplateResponse, error)
+	Search(ctx context.Context, amount, page uint, query string, filter *bool, sort map[string]string) ([]dto.TemplateResponse, error)
 	Like(ctx context.Context, id, uid string) error
 	Dislike(ctx context.Context, id, uid string) error
 }
@@ -323,7 +323,7 @@ func (ts *templateServ) FetchFavorite(ctx context.Context, id string, amount, pa
 	return templates, nil
 }
 
-func (ts *templateServ) Search(ctx context.Context, amount, page uint, query string, filter map[string]bool, sort map[string]string) ([]dto.TemplateResponse, error) {
+func (ts *templateServ) Search(ctx context.Context, amount, page uint, query string, filter *bool, sort map[string]string) ([]dto.TemplateResponse, error) {
 	op := "templateServ.Search"
 	log := ts.Logger.AddOp(op)
 	log.Info("fetching searched templates")

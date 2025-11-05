@@ -39,9 +39,11 @@ type filterWidgetsFields struct {
 
 type SearchWidgetRequest struct {
 	PaginationRequest
-	Query  string              `json:"query" validate:"omitempty"`
-	Sort   map[string]string   `json:"sort" validate:"omitempty,dive,keys,oneof=Likes NumOfUsers,endkeys"`
-	Filter map[string][]string `json:"filter" validate:"omitempty,dive,keys,oneof=Types Tags,endkeys"`
+	Query      string   `json:"query" validate:"omitempty"`
+	Likes      string   `json:"likes" validate:"omitempty,oneof=asc desc"`
+	NumOfUsers string   `json:"num_of_users" validate:"omitempty,oneof=asc desc"`
+	Types      []string `json:"types" validate:"omitempty"`
+	Tags       []string `json:"tags" validate:"omitempty"`
 }
 
 type SearchWidgetRequestDoc struct {
@@ -63,9 +65,11 @@ type filterTemplatesFields struct {
 
 type SearchTemplateRequest struct {
 	PaginationRequest
-	Query  string            `json:"query" validate:"omitempty"`
-	Sort   map[string]string `json:"sort" validate:"omitempty,dive,keys,oneof=Likes NumOfUsers LastUpdateTime,endkeys"`
-	Filter map[string]bool   `json:"filter" validate:"omitempty,dive,keys,oneof=isOfficial,endkeys"`
+	Query          string `json:"query" validate:"omitempty"`
+	Likes          string `json:"likes" validate:"omitempty,oneof=asc desc"`
+	NumOfUsers     string `json:"num_of_users" validate:"omitempty,oneof=asc desc"`
+	LastUpdateTime string `json:"last_update_time" validate:"omitempty,oneof=asc desc"`
+	IsOfficial     *bool  `json:"is_official" validate:"omitempty"`
 }
 
 type SearchTemplateRequestDoc struct {

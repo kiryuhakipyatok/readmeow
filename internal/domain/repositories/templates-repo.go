@@ -33,7 +33,7 @@ type TemplateRepo interface {
 	Like(ctx context.Context, id, uid string) error
 	Dislike(ctx context.Context, id, uid string) error
 	FetchFavorite(ctx context.Context, id string, amount, page uint) ([]models.TemplateWithOwner, error)
-	Search(ctx context.Context, amount, page uint, query string, filter map[string]bool, sort map[string]string) ([]models.TemplateWithOwner, error)
+	Search(ctx context.Context, amount, page uint, query string, filter *bool, sort map[string]string) ([]models.TemplateWithOwner, error)
 	MustBulk(ctx context.Context, cfg config.SearchConfig) error
 }
 
@@ -274,7 +274,7 @@ func (tr *templateRepo) FetchFavorite(ctx context.Context, id string, amount, pa
 	return templates, nil
 }
 
-func (tr *templateRepo) Search(ctx context.Context, amount, page uint, query string, filter map[string]bool, sort map[string]string) ([]models.TemplateWithOwner, error) {
+func (tr *templateRepo) Search(ctx context.Context, amount, page uint, query string, filter *bool, sort map[string]string) ([]models.TemplateWithOwner, error) {
 	op := "templateRepo.Search"
 	var mainQuery types.Query
 	if query != "" {
@@ -324,34 +324,25 @@ func (tr *templateRepo) Search(ctx context.Context, amount, page uint, query str
 	}
 
 	filters := []types.Query{}
-	if len(filter) > 0 {
-		validFilterFields := map[string]struct{}{
-			"isOfficial": {},
-		}
-		for k, v := range filter {
-			if _, ok := validFilterFields[k]; !ok {
-				return nil, errs.ErrInvalidFields(op)
-			}
-			if v {
-				filters = append(filters, types.Query{
-					Term: map[string]types.TermQuery{
-						"OwnerId.keyword": {Value: uuid.Nil.String()},
-					},
-				})
-			} else {
-				filters = append(filters, types.Query{
-					Bool: &types.BoolQuery{
-						MustNot: []types.Query{
-							{
-								Term: map[string]types.TermQuery{
-									"OwnerId.keyword": {Value: uuid.Nil.String()},
-								},
-							},
+
+	if filter != nil && *filter {
+		filters = append(filters, types.Query{
+			Term: map[string]types.TermQuery{
+				"OwnerId.keyword": {Value: uuid.Nil.String()},
+			},
+		})
+	} else {
+		filters = append(filters, types.Query{
+			Bool: &types.BoolQuery{
+				MustNot: []types.Query{
+					{
+						Term: map[string]types.TermQuery{
+							"OwnerId.keyword": {Value: uuid.Nil.String()},
 						},
 					},
-				})
-			}
-		}
+				},
+			},
+		})
 	}
 
 	ptr := func(i int) *int {
