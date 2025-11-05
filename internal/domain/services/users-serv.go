@@ -234,7 +234,6 @@ func (us *userServ) Get(ctx context.Context, id string, showPrivate bool) (*dto.
 		temlInf := dto.TemplateInfo{
 			Id:             t.Id.String(),
 			Title:          t.Title,
-			Description:    t.Description,
 			Image:          t.Image,
 			LastUpdateTime: t.LastUpdateTime,
 			NumOfUsers:     t.NumOfUsers,

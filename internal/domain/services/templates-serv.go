@@ -159,7 +159,6 @@ func (ts *templateServ) FetchByUser(ctx context.Context, id string, showPrivate 
 		template := dto.TemplateInfo{
 			Id:             t.Id.String(),
 			Image:          t.Image,
-			Description:    t.Description,
 			Title:          t.Title,
 			LastUpdateTime: t.LastUpdateTime,
 			NumOfUsers:     t.NumOfUsers,
@@ -307,7 +306,6 @@ func (ts *templateServ) FetchFavorite(ctx context.Context, id string, amount, pa
 				Id:             t.Id.String(),
 				Title:          t.Title,
 				Image:          t.Image,
-				Description:    t.Description,
 				LastUpdateTime: t.LastUpdateTime,
 				NumOfUsers:     t.NumOfUsers,
 				Likes:          t.Likes,

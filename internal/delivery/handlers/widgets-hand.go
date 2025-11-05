@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"readmeow/internal/delivery/apierr"
 	"readmeow/internal/delivery/handlers/helpers"
 	"readmeow/internal/domain/services"
@@ -68,6 +69,7 @@ func (wh *WidgetHandl) SearchWidgets(c *fiber.Ctx) error {
 	if err := helpers.ParseAndValidateRequest(c, &req, helpers.Query{}, wh.Validator); err != nil {
 		return err
 	}
+	fmt.Println(req)
 	widgets, err := wh.WidgetServ.Search(ctx, req)
 	if err != nil {
 		return apierr.ToApiError(err)
