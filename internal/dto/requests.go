@@ -44,16 +44,16 @@ type SortTemplatesFields struct {
 
 type SearchWidgetRequest struct {
 	PaginationRequest
-	Query               string `json:"query" validate:"omitempty"`
-	FilterWidgetsFields `json:"filter"`
-	SortWidgetsFields   `json:"sort"`
+	Query string `json:"query" validate:"omitempty"`
+	FilterWidgetsFields
+	SortWidgetsFields
 }
 
 type SearchTemplateRequest struct {
 	PaginationRequest
-	Query               string `json:"query" validate:"omitempty"`
-	SortTemplatesFields `json:"sort"`
-	IsOfficial          *bool `json:"is_official" validate:"omitempty"`
+	Query string `json:"query" validate:"omitempty"`
+	SortTemplatesFields
+	IsOfficial *bool `json:"is_official" validate:"omitempty"`
 }
 
 type UpdateUserRequest struct {
