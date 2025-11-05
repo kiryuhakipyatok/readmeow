@@ -4,6 +4,7 @@ import (
 	"context"
 	"readmeow/internal/domain/models"
 	"readmeow/internal/domain/repositories"
+	"readmeow/internal/domain/services/utils"
 	"readmeow/internal/dto"
 	"readmeow/pkg/errs"
 	"readmeow/pkg/logger"
@@ -13,7 +14,7 @@ import (
 //go:generate mockgen -source=widgets-serv.go -destination=mocks/widgets-serv.go
 type WidgetServ interface {
 	Get(ctx context.Context, id string) (*models.Widget, error)
-	Search(ctx context.Context, amount, page uint, query string, filter map[string][]string, sort map[string]string) ([]dto.WidgetResponse, error)
+	Search(ctx context.Context, req dto.SearchWidgetRequest) ([]dto.WidgetResponse, error)
 	Like(ctx context.Context, id, uid string) error
 	Dislike(ctx context.Context, id, uid string) error
 	FetchFavorite(ctx context.Context, id string, amount, page uint) ([]dto.WidgetResponse, error)
@@ -48,11 +49,21 @@ func (ws *widgetServ) Get(ctx context.Context, id string) (*models.Widget, error
 	return widget, nil
 }
 
-func (ws *widgetServ) Search(ctx context.Context, amount, page uint, query string, filter map[string][]string, sort map[string]string) ([]dto.WidgetResponse, error) {
+func (ws *widgetServ) Search(ctx context.Context, req dto.SearchWidgetRequest) ([]dto.WidgetResponse, error) {
 	op := "widgetServ.Search"
 	log := ws.Logger.AddOp(op)
 	log.Info("fetching searched widgets")
-	wids, err := ws.WidgetRepo.Search(ctx, amount, page, query, filter, sort)
+	sort, err := utils.ToMap(req, "sort")
+	if err != nil {
+		log.Error("failed to convert struct to map", logger.Err(err))
+		return nil, errs.NewAppError(op, err)
+	}
+	filter, err := utils.ToMap(req, "filter")
+	if err != nil {
+		log.Error("failed to convert struct to map", logger.Err(err))
+		return nil, errs.NewAppError(op, err)
+	}
+	wids, err := ws.WidgetRepo.Search(ctx, req.Amount, req.Page, req.Query, filter.(map[string][]string), sort.(map[string]string))
 	if err != nil {
 		log.Error("failed to fetch searched widgets", logger.Err(err))
 		return nil, errs.NewAppError(op, err)

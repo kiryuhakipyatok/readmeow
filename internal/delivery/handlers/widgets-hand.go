@@ -68,15 +68,7 @@ func (wh *WidgetHandl) SearchWidgets(c *fiber.Ctx) error {
 	if err := helpers.ParseAndValidateRequest(c, &req, helpers.Query{}, wh.Validator); err != nil {
 		return err
 	}
-	filter := map[string][]string{
-		"Tags":  req.Tags,
-		"Types": req.Types,
-	}
-	sort := map[string]string{
-		"Likes":      req.Likes,
-		"NumOfUsers": req.NumOfUsers,
-	}
-	widgets, err := wh.WidgetServ.Search(ctx, req.Amount, req.Page, req.Query, filter, sort)
+	widgets, err := wh.WidgetServ.Search(ctx, req)
 	if err != nil {
 		return apierr.ToApiError(err)
 	}

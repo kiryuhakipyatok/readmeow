@@ -237,12 +237,7 @@ func (th *TemplateHandl) SearchTemplate(c *fiber.Ctx) error {
 	if err := helpers.ParseAndValidateRequest(c, &req, helpers.Query{}, th.Validator); err != nil {
 		return err
 	}
-	sort := map[string]string{
-		"Likes":          req.Likes,
-		"NumOfUsers":     req.NumOfUsers,
-		"LastUpdateTime": req.LastUpdateTime,
-	}
-	templates, err := th.TemplateServ.Search(ctx, req.Amount, req.Page, req.Query, req.IsOfficial, sort)
+	templates, err := th.TemplateServ.Search(ctx, req)
 	if err != nil {
 		return apierr.ToApiError(err)
 	}

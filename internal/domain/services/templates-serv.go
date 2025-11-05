@@ -7,6 +7,7 @@ import (
 	"mime/multipart"
 	"readmeow/internal/domain/models"
 	"readmeow/internal/domain/repositories"
+	"readmeow/internal/domain/services/utils"
 	"readmeow/internal/dto"
 	"readmeow/pkg/cloudstorage"
 	"readmeow/pkg/errs"
@@ -25,7 +26,7 @@ type TemplateServ interface {
 	Get(ctx context.Context, id string) (*models.TemplateWithOwner, error)
 	FetchFavorite(ctx context.Context, id string, amount, page uint) ([]dto.TemplateResponse, error)
 	FetchByUser(ctx context.Context, id string, showPrivate bool, amount, page uint) ([]dto.TemplateInfo, error)
-	Search(ctx context.Context, amount, page uint, query string, filter *bool, sort map[string]string) ([]dto.TemplateResponse, error)
+	Search(ctx context.Context, req dto.SearchTemplateRequest) ([]dto.TemplateResponse, error)
 	Like(ctx context.Context, id, uid string) error
 	Dislike(ctx context.Context, id, uid string) error
 }
@@ -323,11 +324,16 @@ func (ts *templateServ) FetchFavorite(ctx context.Context, id string, amount, pa
 	return templates, nil
 }
 
-func (ts *templateServ) Search(ctx context.Context, amount, page uint, query string, filter *bool, sort map[string]string) ([]dto.TemplateResponse, error) {
+func (ts *templateServ) Search(ctx context.Context, req dto.SearchTemplateRequest) ([]dto.TemplateResponse, error) {
 	op := "templateServ.Search"
 	log := ts.Logger.AddOp(op)
 	log.Info("fetching searched templates")
-	templs, err := ts.TemplateRepo.Search(ctx, amount, page, query, filter, sort)
+	sort, err := utils.ToMap(req, "sort")
+	if err != nil {
+		log.Error("failed to convert struct to map", logger.Err(err))
+		return nil, errs.NewAppError(op, err)
+	}
+	templs, err := ts.TemplateRepo.Search(ctx, req.Amount, req.Page, req.Query, req.IsOfficial, sort.(map[string]string))
 	if err != nil {
 		log.Error("failed to fetch searched templates", logger.Err(err))
 		return nil, errs.NewAppError(op, err)
