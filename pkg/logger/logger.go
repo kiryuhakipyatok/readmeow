@@ -8,21 +8,22 @@ import (
 	"readmeow/internal/config"
 )
 
-const (
-	localEnv = "local"
-	devEnv   = "dev"
-	prodEnv  = "prod"
-)
-
 type Logger struct {
 	Log *slog.Logger
 }
+
+const (
+	local = "local"
+	dev   = "dev"
+	prod  = "prod"
+	test  = "test"
+)
 
 func NewLogger(acfg config.AppConfig) *Logger {
 	var log *slog.Logger
 	env := acfg.Env
 	writer := io.Writer(os.Stdout)
-	if len(acfg.LogPath) > 0 {
+	if acfg.LogPath != "" {
 		logFile, err := os.OpenFile(acfg.LogPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
 		if err != nil {
 			panic(fmt.Errorf("failed to open log file: %w", err))
@@ -30,12 +31,14 @@ func NewLogger(acfg config.AppConfig) *Logger {
 		writer = io.MultiWriter(logFile, os.Stdout)
 	}
 	switch env {
-	case localEnv:
+	case local:
 		log = slog.New(slog.NewTextHandler(writer, &slog.HandlerOptions{Level: slog.LevelDebug}))
-	case devEnv:
+	case dev:
 		log = slog.New(slog.NewJSONHandler(writer, &slog.HandlerOptions{Level: slog.LevelDebug}))
-	case prodEnv:
+	case prod:
 		log = slog.New(slog.NewJSONHandler(writer, &slog.HandlerOptions{Level: slog.LevelInfo}))
+	case test:
+		log = slog.New(slog.NewJSONHandler(io.Discard, &slog.HandlerOptions{Level: slog.LevelError}))
 	default:
 		log = slog.New(slog.NewJSONHandler(writer, &slog.HandlerOptions{Level: slog.LevelInfo}))
 	}
@@ -63,8 +66,7 @@ func (l *Logger) Debug(msg string, args ...any) {
 }
 
 func (l *Logger) AddOp(op string) *Logger {
-	logger := &Logger{
+	return &Logger{
 		Log: l.Log.With(slog.String("op", op)),
 	}
-	return logger
 }

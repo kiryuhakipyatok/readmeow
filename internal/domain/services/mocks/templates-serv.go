@@ -139,18 +139,18 @@ func (mr *MockTemplateServMockRecorder) Like(ctx, id, uid interface{}) *gomock.C
 }
 
 // Search mocks base method.
-func (m *MockTemplateServ) Search(ctx context.Context, amount, page uint, query string, filter map[string]bool, sort map[string]string) ([]dto.TemplateResponse, error) {
+func (m *MockTemplateServ) Search(ctx context.Context, req dto.SearchTemplateRequest) ([]dto.TemplateResponse, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Search", ctx, amount, page, query, filter, sort)
+	ret := m.ctrl.Call(m, "Search", ctx, req)
 	ret0, _ := ret[0].([]dto.TemplateResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Search indicates an expected call of Search.
-func (mr *MockTemplateServMockRecorder) Search(ctx, amount, page, query, filter, sort interface{}) *gomock.Call {
+func (mr *MockTemplateServMockRecorder) Search(ctx, req interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Search", reflect.TypeOf((*MockTemplateServ)(nil).Search), ctx, amount, page, query, filter, sort)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Search", reflect.TypeOf((*MockTemplateServ)(nil).Search), ctx, req)
 }
 
 // Update mocks base method.

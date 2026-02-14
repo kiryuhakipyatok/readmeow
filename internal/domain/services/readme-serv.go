@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"mime/multipart"
 	"readmeow/internal/domain/models"
@@ -19,7 +18,7 @@ import (
 
 //go:generate mockgen -source=readme-serv.go -destination=mocks/readme-serv.go
 type ReadmeServ interface {
-	Create(ctx context.Context, tid, oid, title string, image *multipart.FileHeader, text, links, order []string, widgets []map[string]string) error
+	Create(ctx context.Context, uid string, req *dto.CreateReadmeRequest) error
 	Delete(ctx context.Context, id, uid string) error
 	Update(ctx context.Context, updates map[string]any, id string) error
 	Get(ctx context.Context, id string) (*models.Readme, error)
@@ -48,19 +47,19 @@ func NewReadmeServ(rr repositories.ReadmeRepo, ur repositories.UserRepo, tr repo
 	}
 }
 
-func (rs *readmeServ) Create(ctx context.Context, tid, oid, title string, image *multipart.FileHeader, text, links, order []string, widgets []map[string]string) error {
+func (rs *readmeServ) Create(ctx context.Context, uid string, req *dto.CreateReadmeRequest) error {
 	op := "readmeServ.Create"
 	log := rs.Logger.AddOp(op)
 	log.Info("creating readme")
 	_, err := rs.Transactor.WithinTransaction(ctx, func(c context.Context) (any, error) {
-		user, err := rs.UserRepo.Get(c, oid)
+		user, err := rs.UserRepo.Get(c, uid)
 		if err != nil {
 			return nil, err
 		}
-		if tid == "" {
-			tid = baseTemplateId.String()
+		if req.TemplateId == "" {
+			req.TemplateId = baseTemplateId.String()
 		}
-		template, err := rs.TemplateRepo.Get(c, tid)
+		template, err := rs.TemplateRepo.Get(c, req.TemplateId)
 		if err != nil {
 			return nil, err
 		}
@@ -72,9 +71,9 @@ func (rs *readmeServ) Create(ctx context.Context, tid, oid, title string, image 
 		}
 		id := uuid.New()
 
-		if len(widgets) != 0 {
-			keys := make([]string, 0, len(widgets))
-			for _, w := range widgets {
+		if len(req.Widgets) != 0 {
+			keys := make([]string, 0, len(req.Widgets))
+			for _, w := range req.Widgets {
 				for k := range w {
 					keys = append(keys, k)
 				}
@@ -101,7 +100,7 @@ func (rs *readmeServ) Create(ctx context.Context, tid, oid, title string, image 
 			return nil, err
 		}
 
-		file, err := image.Open()
+		file, err := req.Image.Open()
 		if err != nil {
 			return nil, err
 		}
@@ -119,12 +118,12 @@ func (rs *readmeServ) Create(ctx context.Context, tid, oid, title string, image 
 			Id:             id,
 			OwnerId:        user.Id,
 			TemplateId:     template.Id,
-			Title:          title,
+			Title:          req.Title,
 			Image:          url,
-			Text:           text,
-			Links:          links,
-			Widgets:        widgets,
-			RenderOrder:    order,
+			Text:           req.Text,
+			Links:          req.Links,
+			Widgets:        req.Widgets,
+			RenderOrder:    req.RenderOrder,
 			CreateTime:     now,
 			LastUpdateTime: now,
 		}
@@ -160,23 +159,26 @@ func (rs *readmeServ) Delete(ctx context.Context, id, uid string) error {
 			return nil, err
 		}
 		if readme.OwnerId != user.Id {
-			err := errors.New("readme owner id and user id are not equal")
-			return nil, err
+			return nil, errs.ErrUserIsNotAOwner(op)
 		}
-		widgets := make(map[string]struct{})
-		for _, w := range readme.Widgets {
-			for id := range w {
-				widgets[id] = struct{}{}
+
+		if len(readme.Widgets) != 0 {
+			widgets := make(map[string]struct{})
+			for _, w := range readme.Widgets {
+				for id := range w {
+					widgets[id] = struct{}{}
+				}
+			}
+			wupd := map[string]string{
+				"num_of_users": "-",
+			}
+			for wid := range widgets {
+				if err := rs.WidgetRepo.Update(c, wupd, wid); err != nil {
+					return nil, err
+				}
 			}
 		}
-		wupd := map[string]string{
-			"num_of_users": "-",
-		}
-		for wid := range widgets {
-			if err := rs.WidgetRepo.Update(c, wupd, wid); err != nil {
-				return nil, err
-			}
-		}
+
 		tupd := map[string]any{
 			"num_of_users": "-",
 		}

@@ -58,7 +58,10 @@ func (us *userServ) Update(ctx context.Context, updates map[string]any, id strin
 			oldURL string
 		)
 		if ok {
-			fileH := fileAnyH.(*multipart.FileHeader)
+			fileH, ok := fileAnyH.(*multipart.FileHeader)
+			if !ok {
+				return nil, errors.New("invalid format for avatar")
+			}
 			file, err := fileH.Open()
 			if err != nil {
 				return nil, err
@@ -79,9 +82,10 @@ func (us *userServ) Update(ctx context.Context, updates map[string]any, id strin
 			updates["avatar"] = url
 		}
 		if err := us.UserRepo.Update(c, updates, id); err != nil {
-			if cerr := us.CloudStorage.DeleteImage(c, newPid); cerr != nil {
-
-				return nil, fmt.Errorf("%w : %w", err, cerr)
+			if ok {
+				if cerr := us.CloudStorage.DeleteImage(c, newPid); cerr != nil {
+					return nil, fmt.Errorf("%w : %w", err, cerr)
+				}
 			}
 			return nil, err
 		}
@@ -129,7 +133,7 @@ func (us *userServ) Delete(ctx context.Context, id, password string) error {
 	return nil
 }
 
-func (us *userServ) ChangePassword(ctx context.Context, id string, oldPassword, newPasswrod string) error {
+func (us *userServ) ChangePassword(ctx context.Context, id, oldPassword, newPasswrod string) error {
 	op := "userServ.ChangePassword"
 	log := us.Logger.AddOp(op)
 	log.Info("changing user password")
@@ -176,7 +180,7 @@ func (us *userServ) ResetPassword(ctx context.Context, email, token, newPassword
 			return nil, err
 		}
 		if !res {
-			return nil, errors.New("invalid token")
+			return nil, errs.ErrIncorrectToken(op)
 		}
 		password, err := bcrypt.GenerateFromPassword([]byte(newPassword), 12)
 		if err != nil {

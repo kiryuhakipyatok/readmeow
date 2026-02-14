@@ -14,6 +14,7 @@ import (
 	"github.com/cloudinary/cloudinary-go/v2/api/uploader"
 )
 
+//go:generate mockgen -source=cloudinary.go -destination=mocks/cloudinary.go
 type CloudStorage interface {
 	UploadImage(ctx context.Context, file io.Reader, filename, folder string) (string, string, error)
 	DeleteImage(ctx context.Context, pid string) error

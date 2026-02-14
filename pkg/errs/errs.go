@@ -15,6 +15,8 @@ var (
 	ErrCodeIsExpiredBase            = errors.New("code is expired")
 	ErrIncorrectOldPasswordBase     = errors.New("old password is incorrect")
 	ErrIncorrectLoginOrPasswordBase = errors.New("login or password is incorrect")
+	ErrIncorrectTokenBase           = errors.New("incorrect token")
+	ErrUserIsNotAOwnerBase          = errors.New("user is not a owner")
 )
 
 type AppError struct {
@@ -71,4 +73,12 @@ func ErrIncorrectLoginOrPassword(op string) AppError {
 
 func ErrIncorrectOldPassword(op string) AppError {
 	return NewAppError(op, fmt.Errorf("%w", ErrIncorrectOldPasswordBase))
+}
+
+func ErrIncorrectToken(op string) AppError {
+	return NewAppError(op, fmt.Errorf("%w", ErrIncorrectTokenBase))
+}
+
+func ErrUserIsNotAOwner(op string) AppError {
+	return NewAppError(op, fmt.Errorf("%w", ErrUserIsNotAOwnerBase))
 }

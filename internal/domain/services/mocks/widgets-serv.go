@@ -95,16 +95,16 @@ func (mr *MockWidgetServMockRecorder) Like(ctx, id, uid interface{}) *gomock.Cal
 }
 
 // Search mocks base method.
-func (m *MockWidgetServ) Search(ctx context.Context, amount, page uint, query string, filter map[string][]string, sort map[string]string) ([]dto.WidgetResponse, error) {
+func (m *MockWidgetServ) Search(ctx context.Context, req dto.SearchWidgetRequest) ([]dto.WidgetResponse, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Search", ctx, amount, page, query, filter, sort)
+	ret := m.ctrl.Call(m, "Search", ctx, req)
 	ret0, _ := ret[0].([]dto.WidgetResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Search indicates an expected call of Search.
-func (mr *MockWidgetServMockRecorder) Search(ctx, amount, page, query, filter, sort interface{}) *gomock.Call {
+func (mr *MockWidgetServMockRecorder) Search(ctx, req interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Search", reflect.TypeOf((*MockWidgetServ)(nil).Search), ctx, amount, page, query, filter, sort)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Search", reflect.TypeOf((*MockWidgetServ)(nil).Search), ctx, req)
 }

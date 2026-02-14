@@ -47,8 +47,10 @@ build-job:
 
 test-job:
   stage: test
+  image: golang:1.25-alpine
   script:
-    - echo "ooops... there are no tests"
+    - go mod download
+    - go test ./... -v -cover -p=2
 
 migrations-job:  
   stage: migrations   

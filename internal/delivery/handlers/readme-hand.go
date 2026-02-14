@@ -81,7 +81,7 @@ func (rh *ReadmeHandl) CreateReadme(c *fiber.Ctx) error {
 		return apierr.ValidationError(errs)
 	}
 
-	if err := rh.ReadmeServ.Create(ctx, req.TemplateId, uid, req.Title, req.Image, req.Text, req.Links, req.RenderOrder, req.Widgets); err != nil {
+	if err := rh.ReadmeServ.Create(ctx, uid, &req); err != nil {
 		return apierr.ToApiError(err)
 	}
 	return helpers.SuccessResponse(c)

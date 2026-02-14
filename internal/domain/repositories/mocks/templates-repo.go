@@ -167,7 +167,7 @@ func (mr *MockTemplateRepoMockRecorder) MustBulk(ctx, cfg interface{}) *gomock.C
 }
 
 // Search mocks base method.
-func (m *MockTemplateRepo) Search(ctx context.Context, amount, page uint, query string, filter map[string]bool, sort map[string]string) ([]models.TemplateWithOwner, error) {
+func (m *MockTemplateRepo) Search(ctx context.Context, amount, page uint, query string, filter *bool, sort map[string]string) ([]models.TemplateWithOwner, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Search", ctx, amount, page, query, filter, sort)
 	ret0, _ := ret[0].([]models.TemplateWithOwner)

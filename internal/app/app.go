@@ -94,13 +94,13 @@ func Run() {
 	templateHandl := handlers.NewTemplateHandl(templateServ, authServ, validator)
 	userHandl := handlers.NewUserHandl(userServ, authServ, validator)
 
-	sheduler := scheduler.NewScheduler(widgetRepo, passwordResetRepo, templateRepo, verificationRepo, cfg.Sheduler, cfg.Search, log)
-	sheduler.Start()
+	scheduler := scheduler.NewScheduler(widgetRepo, passwordResetRepo, templateRepo, verificationRepo, cfg.Sheduler, cfg.Search, log)
+	scheduler.Start()
 	defer func() {
-		sheduler.Stop()
-		log.Info("sheduler stopped")
+		scheduler.Stop()
+		log.Info("scheduler stopped")
 	}()
-	log.Info("sheduler started")
+	log.Info("scheduler started")
 
 	routConfig := routes.NewRoutConfig(server.App, userHandl, authHandl, templateHandl, readmeHandl, widgetHandl)
 	routConfig.SetupRoutes()

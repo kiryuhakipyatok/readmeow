@@ -7,6 +7,7 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
+//go:generate mockgen -source=transactions.go -destination=mocks/transactions.go
 type Transactor interface {
 	WithinTransaction(ctx context.Context, tFunc func(c context.Context) (any, error)) (any, error)
 }
